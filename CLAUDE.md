@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## O projeto
 
-Painel que lê a API pública do Chess.com e mostra placar, indicadores e análise de um jogador. **Todo o projeto é um único arquivo: `index.html`** (~1750 linhas: CSS + HTML + JS vanilla). Isso é decisão de design, não dívida: sem servidor, sem build, sem dependências, sem framework. Não sugerir split em módulos, bundler ou libs — qualquer mudança deve manter o arquivo autocontido.
+Painel que lê a API pública do Chess.com e mostra placar, indicadores e análise de um jogador. **Todo o app é um único arquivo: `index.html`** (~1800 linhas: CSS + HTML + JS vanilla). Isso é decisão de design, não dívida: sem servidor, sem build, sem dependências, sem framework. Não sugerir split em módulos, bundler ou libs — qualquer mudança deve manter o arquivo autocontido.
+
+Os outros arquivos do repo são acessórios: `og.png` é a imagem de preview de link (Open Graph) e `og-card.html` é o fonte dela — abrir no navegador, capturar 1470×772 e redimensionar para 1200×630.
 
 ## Desenvolvimento
 
