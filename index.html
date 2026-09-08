@@ -74,6 +74,12 @@
   @keyframes entra{from{transform:translateY(16px) scale(.97);opacity:0}to{transform:none;opacity:1}}
   .seq{display:inline-flex;align-items:center;gap:.3em;padding:.15em .6em;border-radius:999px;background:var(--surface2);border:1px solid var(--border2);font-size:.8em}
   .seq.w{color:var(--win)}.seq.l{color:var(--loss)}
+  /* placar velho: a atualização falhou e os números podem estar defasados */
+  body.streamer.desatualizado #placar,body.streamer.desatualizado #ovTicker{border-color:var(--amber)}
+  body.streamer.desatualizado #placar::after,body.streamer.desatualizado #ovTicker::after{
+    content:'';position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--amber);animation:pulsa 2s ease-in-out infinite}
+  body.streamer.desatualizado #placar,body.streamer.desatualizado #ovTicker{position:relative}
+  @keyframes pulsa{0%,100%{opacity:.9}50%{opacity:.25}}
   #sairStreamer{display:none;position:fixed;top:8px;right:8px;z-index:60;padding:6px 10px;font-size:.78rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);opacity:.35}
   #sairStreamer:hover{opacity:1;filter:none}
   body.streamer #sairStreamer{display:block}
@@ -475,7 +481,7 @@ const controle = tc => {
   return inc ? `${min}+${inc}` : `${min} min`;
 };
 const cache = new Map();
-let ocupado = false, timer = null, tick = null, pagina = 1, jogosAtuais = [], nickAtual = '', aba = 'rapid';
+let ocupado = false, timer = null, tick = null, pagina = 1, jogosAtuais = [], nickAtual = '', aba = 'rapid', falhou = false;
 let estado = null;
 
 $('data').value = new Date().toISOString().slice(0,10);
@@ -494,6 +500,7 @@ let ovUltimaUrl = null, ovRatingInicio = null;
 function renderOverlay(){
   const on = document.body.classList.contains('streamer');
   $('overlay').hidden = !on;
+  document.body.classList.toggle('desatualizado', on && falhou);
   if (!on || !estado) return;
   const tipo = $('ovTipo').value; document.body.dataset.ov = tipo;
   document.documentElement.style.setProperty('--ovEscala', $('ovFonte').value);
@@ -620,9 +627,11 @@ async function getJSON(url, tentativa = 0){
   catch (e) { if (tentativa < 3) { await new Promise(x => setTimeout(x, 1000 * 2 ** tentativa)); return getJSON(url, tentativa + 1); } throw new Error('Sem conexão com a API do Chess.com.'); }
   if ((r.status === 429 || r.status >= 500) && tentativa < 3) { await new Promise(x => setTimeout(x, 1500 * 2 ** tentativa)); return getJSON(url, tentativa + 1); }
   if (r.status === 304 && c) return c.data;
-  if (r.status === 404) throw new Error('Nick não encontrado.');
-  if (r.status === 429) throw new Error('Muitas requisições. Aguarde e tente de novo.');
-  if (!r.ok) throw new Error(`Erro ${r.status} na API.`);
+  // o Chess.com responde 404 também quando bloqueia o navegador por excesso de requisições;
+  // quem chama distingue pelo status, já que só ele sabe se o nick já funcionou antes
+  if (!r.ok) throw Object.assign(new Error(
+    r.status === 404 ? 'Nick não encontrado.' :
+    r.status === 429 ? 'Muitas requisições. Aguarde e tente de novo.' : `Erro ${r.status} na API.`), {status: r.status});
   const data = await r.json();
   cache.set(url, {etag: r.headers.get('ETag'), data});
   return data;
@@ -1775,15 +1784,23 @@ async function buscar(atualizacao){
     abas.innerHTML = ['bullet','blitz','rapid','daily'].filter(tc => classes.includes(tc))
       .map(tc => `<button type="button" role="tab" aria-selected="${tc === aba}" data-tc="${tc}" class="${tc === aba ? 'ativa' : ''}">${TIPO[tc]} <small>${contagem[tc]}</small></button>`).join('');
     if (atualizacao !== true) pagina = 1;
+    falhou = false;
     render();
     salvarUltima();
   } catch (err) {
+    // 404 num nick que já funcionou antes é bloqueio da API, não nick inexistente
+    const conhecido = estado?.nick === nick || lerNicks().includes(nick);
+    const msg = err.status === 404 && conhecido
+      ? 'A API do Chess.com está recusando as requisições agora. Aguarde um minuto e tente de novo.'
+      : err.message;
+    falhou = true;
     status.className = 'error';
-    status.textContent = err.message;
-    if ($('placar').style.display !== 'block' && !atualizacao) { document.body.classList.add('inicio'); $('inicio').querySelector('.erro')?.remove(); $('inicio').insertAdjacentHTML('beforeend', `<p class="erro">${err.message}</p>`); }
+    status.textContent = msg;
+    if ($('placar').style.display !== 'block' && !atualizacao) { document.body.classList.add('inicio'); $('inicio').querySelector('.erro')?.remove(); $('inicio').insertAdjacentHTML('beforeend', `<p class="erro">${escHtml(msg)}</p>`); }
   } finally {
     ocupado = false;
     $('btn').disabled = false;
+    renderOverlay();
     agendar();
   }
 }
