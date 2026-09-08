@@ -1063,9 +1063,11 @@ let kpiData = null, abaKpi = 'Análise', iaTexto = '', iaErro = '', iaOcupado = 
 const lerLS = (k, d='') => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const gravarLS = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
+// o header dangerous-direct-browser-access libera CORS para chamadas feitas do navegador
+const cabAnthropic = chave => ({'x-api-key': chave, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'});
 const PROVEDORES = {
   gemini: {
-    nome: 'Gemini', link: 'https://aistudio.google.com/apikey',
+    nome: 'Gemini', link: 'https://aistudio.google.com/apikey', gratis: true,
     padrao: 'gemini-flash-latest',
     reserva: ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3-flash-preview'],
     filtro: m => /flash/i.test(m) && !/image|tts|live|audio|embedding/i.test(m),
@@ -1085,7 +1087,7 @@ const PROVEDORES = {
     }
   },
   groq: {
-    nome: 'Groq', link: 'https://console.groq.com/keys',
+    nome: 'Groq', link: 'https://console.groq.com/keys', gratis: true,
     padrao: 'openai/gpt-oss-120b',
     reserva: ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile'],
     filtro: m => !/whisper|guard|tts|safeguard|allam/i.test(m),
@@ -1099,6 +1101,49 @@ const PROVEDORES = {
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${chave}`},
         body: JSON.stringify({model: modelo, messages: [{role: 'user', content: prompt}], temperature: 0.4, max_tokens: 4096})
+      });
+      const d = await r.json().catch(() => ({}));
+      return {ok: r.ok, status: r.status, erro: d.error?.message, texto: d.choices?.[0]?.message?.content || ''};
+    }
+  },
+  anthropic: {
+    nome: 'Claude', link: 'https://console.anthropic.com/settings/keys',
+    padrao: 'claude-opus-5',
+    reserva: ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'],
+    filtro: m => /^claude/.test(m),
+    async listar(chave){
+      const r = await fetch('https://api.anthropic.com/v1/models?limit=100', {headers: cabAnthropic(chave)});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error?.message || `Erro ${r.status}`);
+      return (d.data || []).map(m => m.id);
+    },
+    // sem temperature nem thinking: os modelos atuais rejeitam sampling e o seletor aceita modelos de qualquer geração
+    async chamar(chave, modelo, prompt){
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', headers: {'Content-Type': 'application/json', ...cabAnthropic(chave)},
+        body: JSON.stringify({model: modelo, max_tokens: 16000, messages: [{role: 'user', content: prompt}]})
+      });
+      const d = await r.json().catch(() => ({}));
+      if (d.stop_reason === 'refusal') return {ok: false, status: r.status, erro: 'O modelo recusou a solicitação. Tente outro modelo.'};
+      return {ok: r.ok, status: r.status, erro: d.error?.message, texto: (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('')};
+    }
+  },
+  openai: {
+    nome: 'OpenAI', link: 'https://platform.openai.com/api-keys',
+    padrao: 'gpt-5.1',
+    reserva: ['gpt-5.1', 'gpt-5', 'gpt-5-mini', 'gpt-4.1'],
+    filtro: m => /^(gpt|o[1-9])/.test(m) && !/audio|realtime|image|tts|whisper|embedding|moderation|transcribe|search|codex|dall/i.test(m),
+    async listar(chave){
+      const r = await fetch('https://api.openai.com/v1/models', {headers: {'Authorization': `Bearer ${chave}`}});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error?.message || `Erro ${r.status}`);
+      return (d.data || []).map(m => m.id);
+    },
+    // max_completion_tokens e sem temperature: os modelos de raciocínio rejeitam max_tokens e sampling
+    async chamar(chave, modelo, prompt){
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${chave}`},
+        body: JSON.stringify({model: modelo, messages: [{role: 'user', content: prompt}], max_completion_tokens: 16000})
       });
       const d = await r.json().catch(() => ({}));
       return {ok: r.ok, status: r.status, erro: d.error?.message, texto: d.choices?.[0]?.message?.content || ''};
@@ -1125,7 +1170,7 @@ function blocoIA(){
       <button type="button" id="iaModelos" title="Buscar modelos disponíveis na sua chave" aria-label="Buscar modelos disponíveis" ${iaOcupado ? 'disabled' : ''}>↻</button>
       <button type="button" id="iaBtn" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar com IA'}</button>
       <button type="button" id="iaPdf" title="Abre a janela de impressão; escolha 'Salvar como PDF'">Exportar PDF</button>
-      <small><a href="${P.link}" target="_blank" rel="noopener">criar chave gratuita</a> · fica salva só neste navegador</small>
+      <small><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · fica salva só neste navegador</small>
     </div>
     ${iaErro ? `<p class="erro">${iaErro}</p>` : ''}
     <div class="texto">${iaTexto ? mdParaHtml(iaTexto) : '<small>Envia um resumo dos indicadores (não as partidas) e recebe um diagnóstico com plano de treino.</small>'}</div>

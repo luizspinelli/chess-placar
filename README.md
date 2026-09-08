@@ -11,7 +11,7 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 - **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
-- **Análise com IA**: opcional, usando a sua própria chave do Gemini ou do Groq (tier gratuito). Gera diagnóstico e plano de treino adaptados ao seu rating.
+- **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Gera diagnóstico e plano de treino adaptados ao seu rating.
 - **Exportar**: PDF da análise e CSV das partidas.
 - **Modo streamer**: só o placar em tela cheia, com fundo transparente ou chroma key, para usar como fonte de navegador no OBS — com meta de rating, ticker e cartão da última partida.
 
