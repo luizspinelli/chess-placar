@@ -3,7 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Placar Chess.com</title>
+<title>Placar Chess.com — estatísticas e análise de partidas</title>
+<meta name="description" content="Placar, evolução de rating e análise das suas partidas do Chess.com: aberturas, precisão, sessões, tilt e horários. Sem cadastro, direto no navegador, com overlay para OBS.">
+<meta name="theme-color" content="#0f1115">
+<link rel="canonical" href="https://chess-placar.vercel.app/">
+<meta property="og:url" content="https://chess-placar.vercel.app/">
+<meta property="og:title" content="Placar Chess.com">
+<meta property="og:description" content="Placar, evolução de rating e análise das suas partidas do Chess.com. Sem cadastro, direto no navegador, com overlay para OBS.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟️</text></svg>">
 <style>
   :root{
     --bg:#0f1115;--surface:#171a21;--surface2:#1d212a;--border:#272c38;--border2:#333a49;
@@ -258,14 +268,25 @@
   @media(max-width:1500px){#kpiGrid,#kpiGrid.analise{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:1280px){main{grid-template-columns:280px 1fr;grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);grid-template-areas:"form placar" "form kpis" "form lista"}}
   #filtrosToggle{display:none}
-  @media(max-width:820px){
+  /* tablet: coluna única rolável, filtros recolhíveis, form em várias colunas */
+  @media(max-width:1100px){
     html,body{overflow:auto}
-    main{display:flex;flex-direction:column;height:auto;padding:10px;gap:10px}
-    body:not(.inicio) #filtrosToggle{display:block;padding:10px;background:var(--surface);color:var(--text);border:1px solid var(--border);text-align:left;font-weight:600}
+    main{display:flex;flex-direction:column;height:auto;padding:12px;gap:12px}
+    body:not(.inicio):not(.streamer) #filtrosToggle{display:block;padding:10px;background:var(--surface);color:var(--text);border:1px solid var(--border);text-align:left;font-weight:600}
     body:not(.inicio):not(.filtrosAbertos) form{display:none!important}
-    form{max-height:none;overflow:visible}
+    form{max-height:none;overflow:visible;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px 16px;align-items:start}
     form h1{display:none}
+    form #ovOpcoes,form .acoes,form #status,form #prox{grid-column:1/-1}
     #placar{position:sticky;top:0;z-index:5}
+    #kpiGrid{overflow:visible}
+    #lista{max-height:none}
+    #resumoMini{grid-template-columns:repeat(4,minmax(0,1fr))}
+    body.streamer main{min-height:100vh}
+  }
+  /* celular */
+  @media(max-width:820px){
+    main{padding:10px;gap:10px}
+    form{grid-template-columns:1fr;gap:12px}
     .tally strong{font-size:1.9rem}
     .tally div{padding:10px 4px 8px}
     .tally span{font-size:.65rem}
@@ -273,9 +294,6 @@
     #perfil .hist{margin-left:0;width:100%;gap:12px}
     #perfil .hist b{font-size:.9rem}
     .resumo{font-size:.78rem;padding:6px 10px}
-    #kpiGrid{grid-template-columns:1fr;overflow:visible}
-    .kpi.span2{grid-column:auto}
-    #kpiGrid.analise{grid-template-columns:1fr}
     .grupoAbas{padding:6px 8px}
     .abasWrap{flex-wrap:wrap}
     #verMenos{margin:6px 10px}
@@ -284,7 +302,6 @@
     .mini{padding:10px}
     .ratingCard .cab{gap:8px}
     .ratingCard .stats{gap:8px;font-size:.78rem}
-    #lista{max-height:none}
     #lista li{grid-template-columns:12px 1fr;gap:6px 10px}
     .meta{grid-column:2;text-align:left}
     .pag{flex-wrap:wrap;gap:6px}
@@ -297,7 +314,11 @@
     .ia .cfg input{flex-basis:100%}
     #inicio{padding:28px 18px}
     #inicio .campo{flex-direction:column}
-    body.streamer main{min-height:100vh}
+  }
+  /* telas estreitas: KPIs em coluna única */
+  @media(max-width:600px){
+    #kpiGrid,#kpiGrid.analise{grid-template-columns:1fr}
+    .kpi.span2{grid-column:auto}
   }
 </style>
 </head>
@@ -435,6 +456,7 @@ const MOTIVO = {checkmated:'mate', resigned:'desistência', timeout:'tempo', aba
 const fmt = new Intl.DateTimeFormat('pt-BR', {dateStyle:'short', timeStyle:'short'});
 const hora = () => new Intl.DateTimeFormat('pt-BR', {timeStyle:'medium'}).format(new Date());
 const sinal = n => n > 0 ? `+${n}` : `${n}`;
+const escHtml = s => String(s).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const cls = n => n > 0 ? 'w' : n < 0 ? 'l' : '';
 const controle = tc => {
   if (tc.includes('/')) return `${Math.round(tc.split('/')[1] / 86400)} dia(s)/lance`;
@@ -697,13 +719,13 @@ function parsePGN(g){
   const corpo = fimCab >= 0 ? pgn.slice(fimCab) : pgn.replace(/\[\w+ "[^"]*"\]\s*/g, '');
   const clks = [...corpo.matchAll(/\[%clk (\d+):(\d+):(\d+(?:\.\d+)?)\]/g)].map(m => +m[1]*3600 + +m[2]*60 + +m[3]);
   const san = corpo.replace(/\{[^}]*\}/g, ' ').replace(/\d+\.(\.\.)?/g, ' ').replace(/(1-0|0-1|1\/2-1\/2|\*)\s*$/, '').trim().split(/\s+/).filter(Boolean);
-  const bruto = h.ECOUrl ? decodeURIComponent(h.ECOUrl.split('/').pop()) : '';
+  const bruto = h.ECOUrl ? decodeURIComponent(h.ECOUrl.split('/').pop()).replace(/[<>&"']/g, '') : '';
   const palavras = bruto.split('-').filter(Boolean);
   const corte = palavras.findIndex(w => /\d/.test(w));
   const variante = (corte > 0 ? palavras.slice(0, corte) : palavras).join(' ') || h.ECO || '?';
   const fim = palavras.findIndex(w => /^(Defense|Opening|Game|Attack|Gambit|System|Variation|Counter)$/i.test(w));
   const familia = (fim > 0 ? palavras.slice(0, Math.min(fim + 1, corte > 0 ? corte : Infinity)) : (corte > 0 ? palavras.slice(0, Math.min(3, corte)) : palavras.slice(0, 3))).join(' ') || h.ECO || '?';
-  return g._pgn = {h, eco: h.ECO || '', variante, familia, meias: san.length, lances: Math.ceil(san.length / 2), clks, primeiro: san[0] || '', resposta: san[1] || ''};
+  return g._pgn = {h, eco: (h.ECO || '').replace(/[<>&"]/g, ''), variante, familia, meias: san.length, lances: Math.ceil(san.length / 2), clks, primeiro: san[0] || '', resposta: san[1] || ''};
 }
 const seg = t => t == null ? '–' : t >= 3600 ? `${Math.floor(t/3600)}h${String(Math.floor(t%3600/60)).padStart(2,'0')}` : `${Math.floor(t/60)}:${String(Math.round(t%60)).padStart(2,'0')}`;
 
@@ -802,7 +824,7 @@ function kpis(jogos, nick){
   // ---- Ritmo
   const periodo = {}, dia = {}, ctrl = {}, timeoutTc = {};
   let seq = 0, seqTipo = '', maxW = 0, maxL = 0, runW = 0, runL = 0, posDerrota = {w:0,d:0,l:0}, pos2Derrotas = {w:0,d:0,l:0};
-  let a1 = null, a2 = null, somaHora = 0;
+  let a1 = null, a2 = null, somaSen = 0, somaCos = 0;
   const gaps = [];
   for (const x of L) {
     const h = x.dt.getHours();
@@ -816,11 +838,14 @@ function kpis(jogos, nick){
     runW = x.r === 'w' ? runW + 1 : 0; runL = x.r === 'l' ? runL + 1 : 0;
     maxW = Math.max(maxW, runW); maxL = Math.max(maxL, runL);
     if (x.r === seqTipo) seq++; else { seq = 1; seqTipo = x.r; }
-    somaHora += h + x.dt.getMinutes() / 60;
+    // média circular: 23h e 1h devem dar 0h, não 12h
+    const ang = (h + x.dt.getMinutes() / 60) / 24 * 2 * Math.PI;
+    somaSen += Math.sin(ang); somaCos += Math.cos(ang);
     if (x.gap !== null) gaps.push(x.gap / 60);
   }
   const nomeSeq = seq === 1 ? {w:'vitória', d:'empate', l:'derrota'}[seqTipo] : {w:'vitórias', d:'empates', l:'derrotas'}[seqTipo];
-  const hm = somaHora / L.length, horaMedia = `${String(Math.floor(hm)).padStart(2,'0')}:${String(Math.round((hm % 1) * 60)).padStart(2,'0')}`;
+  const hm = (Math.atan2(somaSen, somaCos) / (2 * Math.PI) * 24 + 24) % 24, hmMin = Math.round(hm * 60) % 1440;
+  const horaMedia = `${String(Math.floor(hmMin / 60)).padStart(2,'0')}:${String(hmMin % 60).padStart(2,'0')}`;
   const cardSequencias = card('Sequências', tabela(kv('Atual', `${seq} ${nomeSeq}`) + kv('Maior série de vitórias', maxW) + kv('Maior série de derrotas', maxL)));
   const cardControle = card('Controle de tempo', tabela(Object.entries(ctrl).sort((a,b) => (b[1].w+b[1].d+b[1].l)-(a[1].w+a[1].d+a[1].l)).map(([k,s]) => linha(k, s)).join('')));
   const cardTimeout = card('Derrotas por tempo', tabela(Object.entries(timeoutTc).map(([tc, o]) => kv(TIPO[tc] || tc, `${Math.round(o.t / o.n * 100)}% <small>${o.t} de ${o.n}</small>`)).join('') || vazio));
@@ -846,9 +871,9 @@ function kpis(jogos, nick){
   const datasOrd = [...new Set(L.map(x => x.dt.toDateString()))].map(d => new Date(d)).sort((a,b) => a-b);
   let maxRun = 0, run = 0;
   datasOrd.forEach((d, i) => { run = i && (d - datasOrd[i-1]) / 86400000 === 1 ? run + 1 : 1; maxRun = Math.max(maxRun, run); });
-  const top = (obj, f, desc=true) => Object.entries(obj).sort((a,b) => desc ? b[1]-a[1] : a[1]-b[1])[0];
-  const melhorSaldo = top(saldoDia, null), piorSaldo = top(saldoDia, null, false), melhorDelta = top(deltaDia, null), piorDelta = top(deltaDia, null, false);
-  const diaMais = top(porDia, null);
+  const top = (obj, desc=true) => Object.entries(obj).sort((a,b) => desc ? b[1]-a[1] : a[1]-b[1])[0];
+  const melhorSaldo = top(saldoDia), piorSaldo = top(saldoDia, false), melhorDelta = top(deltaDia), piorDelta = top(deltaDia, false);
+  const diaMais = top(porDia);
   const volume = [
     card('Partidas', tabela(kv('Total', L.length) + kv('Dias jogados', dias.length) + kv('Média por dia jogado', media(nDias)) + kv('Recorde em um dia', `${diaMais[1]} <small>${diaMais[0]}</small>`) + kv('Média por semana', media(Object.values(porSemana))) + kv('Maior sequência de dias seguidos', `${maxRun} dia${maxRun === 1 ? '' : 's'}`))),
     card('Melhor e pior dia', tabela(kv('Melhor saldo', `${sinal(melhorSaldo[1])} <small>${melhorSaldo[0]}</small>`) + kv('Pior saldo', `${sinal(piorSaldo[1])} <small>${piorSaldo[0]}</small>`) + kv('Maior ganho de rating', `${sinal(melhorDelta[1])} <small>${melhorDelta[0]}</small>`) + kv('Maior perda de rating', `${sinal(piorDelta[1])} <small>${piorDelta[0]}</small>`))),
@@ -1534,7 +1559,7 @@ function renderLista(){
 $('pagAnt').addEventListener('click', () => { pagina--; renderLista(); });
 $('csv').addEventListener('click', () => {
   if (!jogosAtuais.length) return;
-  const esc = v => { v = String(v ?? ''); return /[";\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
+  const esc = v => { v = String(v ?? ''); if (/^[=+@]|^-[^\d]/.test(v)) v = "'" + v; return /[";\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
   const cab = ['data','hora','modalidade','controle','cor','adversario','rating_adversario','resultado','motivo','meu_rating','variacao','precisao','precisao_adversario','abertura','eco','lances','url'];
   const linhas = [...jogosAtuais].reverse().map(g => {
     const branco = g.white.username.toLowerCase() === nickAtual, eu = branco ? g.white : g.black, adv = branco ? g.black : g.white;
@@ -1596,9 +1621,9 @@ function renderPerfil(){
     <span><b>${last?.rating ?? '–'}</b>rating atual</span>
     <span><b>${best ? `<a href="${best.game}" target="_blank" rel="noopener" title="ver a partida">${best.rating}</a>` : '–'}</b>${best?.rotulo || 'melhor'}${best ? ` · ${dataCurta(best.date)}` : ''}</span>
     <span><b>${rec ? `${rec.win}-${rec.draw}-${rec.loss}` : '–'}</b>histórico total${rec ? ` · ${Math.round((rec.win + rec.draw / 2) / (rec.win + rec.draw + rec.loss) * 100)}%` : ''}</span>` : `<span><small>sem histórico de ${TIPO[aba]}</small></span>`;
-  el.innerHTML = `${p.avatar ? `<img src="${p.avatar}" alt="">` : `<span class="avatarVazio">${(p.username || nick).slice(0, 1).toUpperCase()}</span>`}
-    <div class="quem"><span class="nome">${p.title ? `<span class="titulo">${p.title}</span>` : ''}${p.username || nick} ${bandeira(p.country)}</span>
-    <span class="sub">${p.name ? `${p.name} · ` : ''}membro desde ${dataCurta(p.joined)}${p.last_online ? ` · visto ${new Date(p.last_online * 1000).toLocaleDateString('pt-BR')}` : ''}${p.league ? ` · liga ${p.league}` : ''}</span></div>
+  el.innerHTML = `${p.avatar ? `<img src="${escHtml(p.avatar)}" alt="">` : `<span class="avatarVazio">${(p.username || nick).slice(0, 1).toUpperCase()}</span>`}
+    <div class="quem"><span class="nome">${p.title ? `<span class="titulo">${escHtml(p.title)}</span>` : ''}${p.username || nick} ${bandeira(p.country)}</span>
+    <span class="sub">${p.name ? `${escHtml(p.name)} · ` : ''}membro desde ${dataCurta(p.joined)}${p.last_online ? ` · visto ${new Date(p.last_online * 1000).toLocaleDateString('pt-BR')}` : ''}${p.league ? ` · liga ${escHtml(p.league)}` : ''}</span></div>
     <div class="hist">${hist}</div>`;
   el.hidden = false;
 }
