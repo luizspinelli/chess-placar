@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<style>
+  *{margin:0;box-sizing:border-box}
+  body{width:1470px;height:772px;overflow:hidden;background:radial-gradient(1400px 700px at 18% -10%,#1a2030 0%,#0f1115 60%);color:#e8eaf0;font:15px/1.4 Inter,system-ui,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;justify-content:space-between;padding:70px 84px 64px}
+  .topo{display:flex;align-items:center;gap:28px}
+  .peao{font-size:96px;line-height:1}
+  h1{font-size:74px;font-weight:800;letter-spacing:-.02em}
+  .sub{font-size:31px;color:#8b93a7;margin-top:10px}
+  .tally{display:grid;grid-template-columns:repeat(4,1fr);background:#171a21;border:2px solid #272c38;border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+  .tally div{padding:34px 12px 26px;text-align:center;border-right:2px solid #272c38}
+  .tally div:last-child{border-right:0;background:#1d212a}
+  .tally strong{display:block;font-size:88px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .tally span{color:#8b93a7;font-size:22px;text-transform:uppercase;letter-spacing:.1em}
+  .w{color:#5fbf7a}.l{color:#e0645b}.d{color:#8b93a7}.r{color:#5fbf7a}
+  .bar{display:flex;height:14px;border-radius:0 0 18px 18px;overflow:hidden;margin:-2px 2px 0}
+  .bar i{height:100%}
+  .rodape{display:flex;justify-content:space-between;align-items:center;color:#8b93a7;font-size:26px}
+  .chips{display:flex;gap:14px}
+  .chips span{padding:8px 22px;border:2px solid #333a49;border-radius:999px;background:#1d212a;font-size:24px}
+</style>
+</head>
+<body>
+  <div class="topo">
+    <div class="peao">♟️</div>
+    <div>
+      <h1>Placar Chess.com</h1>
+      <div class="sub">Placar, rating, aberturas, precisão e análise das suas partidas — sem cadastro</div>
+    </div>
+  </div>
+  <div>
+    <div class="tally">
+      <div><strong class="w">27</strong><span>vitórias</span></div>
+      <div><strong class="d">4</strong><span>empates</span></div>
+      <div><strong class="l">19</strong><span>derrotas</span></div>
+      <div><strong class="r">+86</strong><span>rating</span></div>
+    </div>
+    <div class="bar"><i style="flex:27;background:#5fbf7a"></i><i style="flex:4;background:#8b93a7"></i><i style="flex:19;background:#e0645b"></i></div>
+  </div>
+  <div class="rodape">
+    <div class="chips"><span>análise com IA</span><span>overlay para OBS</span><span>grátis</span></div>
+    <div>chess-placar.vercel.app</div>
+  </div>
+</body>
+</html>
