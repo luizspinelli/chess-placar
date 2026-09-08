@@ -55,7 +55,9 @@ https://chess-placar.vercel.app/?nick=SEUNICK&periodo=custom&data=2026-09-08&hor
 
 ## Privacidade
 
-Não há servidor próprio: o navegador fala direto com a API pública do Chess.com. A chave de IA fica salva só no seu navegador (localStorage) e as chamadas vão direto do navegador para o provedor. A análise com IA envia um **resumo agregado dos indicadores**, nunca as partidas — e omite adversários e linhas com poucas partidas.
+Não há servidor próprio: o navegador fala direto com a API pública do Chess.com. A análise com IA envia um **resumo agregado dos indicadores**, nunca as partidas — e omite adversários e linhas com poucas partidas.
+
+A chave de IA nunca passa por servidor deste projeto: vai direto do seu navegador para o provedor. Por padrão ela fica salva no `localStorage`; desmarque **lembrar chave** para que valha só na aba aberta. Como o app não carrega nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
 
 ## Publicar
 

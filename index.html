@@ -243,6 +243,8 @@
   .ia .cfg button{padding:7px 12px;font-size:.85rem}
   .ia .cfg #iaModelos,.ia .cfg #iaPdf{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
   .ia .cfg small a{color:var(--muted)}
+  .ia .cfg .lembrar{display:inline-flex;align-items:center;font-weight:500;color:var(--muted);font-size:.82rem;margin:0;white-space:nowrap;cursor:pointer}
+  .ia .cfg .lembrar:hover{color:var(--text)}
   .ia .texto{font-size:.9rem;line-height:1.55;color:#d5d9e2}
   .ia .texto h3{font-size:.95rem;margin:14px 0 4px;color:var(--text)}
   .ia .texto ul,.ia .texto ol{margin:4px 0 8px;padding-left:22px}
@@ -1159,9 +1161,17 @@ for (const p in PROVEDORES) {
 }
 if (lerLS('placar-chesscom:gemini')) { gravarLS(chaveLS('gemini'), lerLS('placar-chesscom:gemini')); try { localStorage.removeItem('placar-chesscom:gemini'); } catch {} }
 
+// com "lembrar" desmarcado a chave vive só nesta aba: some ao fechar, e não fica no
+// navegador de máquina compartilhada. Não protege contra XSS — nada no cliente protege.
+const chavesMemoria = {};
+const lembrarChave = () => lerLS('placar-chesscom:lembrarChave', '1') === '1';
+const lerChave = p => chavesMemoria[p] ?? lerLS(chaveLS(p));
+const gravarChave = (p, v) => { chavesMemoria[p] = v; if (lembrarChave()) gravarLS(chaveLS(p), v); };
+const esquecerChaves = () => { for (const p in PROVEDORES) try { localStorage.removeItem(chaveLS(p)); } catch {} };
+
 function blocoIA(){
   const p = provAtual(), P = PROVEDORES[p];
-  const chave = lerLS(chaveLS(p)), modelo = lerLS(modeloLS(p), P.padrao);
+  const chave = lerChave(p), modelo = lerLS(modeloLS(p), P.padrao);
   return `<div class="kpi box ia"><h2>Análise com IA</h2>
     <div class="cfg">
       <select id="iaProv" class="modelo">${Object.entries(PROVEDORES).map(([k, v]) => `<option value="${k}" ${k === p ? 'selected' : ''}>${v.nome}</option>`).join('')}</select>
@@ -1170,7 +1180,8 @@ function blocoIA(){
       <button type="button" id="iaModelos" title="Buscar modelos disponíveis na sua chave" aria-label="Buscar modelos disponíveis" ${iaOcupado ? 'disabled' : ''}>↻</button>
       <button type="button" id="iaBtn" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar com IA'}</button>
       <button type="button" id="iaPdf" title="Abre a janela de impressão; escolha 'Salvar como PDF'">Exportar PDF</button>
-      <small><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · fica salva só neste navegador</small>
+      <label class="lembrar" title="Desmarcado, a chave vale só nesta aba e não fica gravada no navegador"><input type="checkbox" id="iaLembrar" ${lembrarChave() ? 'checked' : ''}>lembrar chave</label>
+      <small><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · ${lembrarChave() ? 'fica salva só neste navegador' : 'não será gravada'}${P.gratis ? '' : ' · use uma chave dedicada com limite de gasto'}</small>
     </div>
     ${iaErro ? `<p class="erro">${iaErro}</p>` : ''}
     <div class="texto">${iaTexto ? mdParaHtml(iaTexto) : '<small>Envia um resumo dos indicadores (não as partidas) e recebe um diagnóstico com plano de treino.</small>'}</div>
@@ -1180,7 +1191,7 @@ function blocoIA(){
 async function carregarModelos(){
   const p = provAtual(), P = PROVEDORES[p], chave = $('iaChave').value.trim();
   if (!chave) { iaErro = 'Informe a chave para listar os modelos.'; renderKpis(); return; }
-  gravarLS(chaveLS(p), chave);
+  gravarChave(p, chave);
   iaOcupado = true; iaErro = 'Buscando modelos…'; renderKpis();
   try {
     const lista = (await P.listar(chave)).filter(P.filtro).sort((a, b) => b.localeCompare(a, undefined, {numeric: true}));
@@ -1251,7 +1262,7 @@ async function analisarIA(){
   const p = provAtual(), P = PROVEDORES[p];
   const chave = $('iaChave').value.trim(), escolhido = $('iaModelo').value;
   if (!chave) { iaErro = 'Informe a chave da API.'; renderKpis(); return; }
-  gravarLS(chaveLS(p), chave); gravarLS(modeloLS(p), escolhido);
+  gravarChave(p, chave); gravarLS(modeloLS(p), escolhido);
   iaOcupado = true; iaErro = ''; renderKpis();
   const jogosAba = estado.jogos.filter(g => g.time_class === aba);
   const dias = jogosAba.length ? Math.max(1, Math.round((jogosAba[jogosAba.length-1].end_time - jogosAba[0].end_time) / 86400) + 1) : 1;
@@ -1401,7 +1412,12 @@ function exportarPDF(){
 }
 $('kpiGrid').addEventListener('change', e => {
   if (e.target.id === 'iaModelo') gravarLS(modeloLS(provAtual()), e.target.value);
-  if (e.target.id === 'iaProv') { gravarLS(chaveLS(provAtual()), $('iaChave').value.trim()); gravarLS('placar-chesscom:provedor', e.target.value); iaErro = ''; renderKpis(); }
+  if (e.target.id === 'iaProv') { gravarChave(provAtual(), $('iaChave').value.trim()); gravarLS('placar-chesscom:provedor', e.target.value); iaErro = ''; renderKpis(); }
+  if (e.target.id === 'iaLembrar') {
+    gravarLS('placar-chesscom:lembrarChave', e.target.checked ? '1' : '0');
+    if (e.target.checked) gravarChave(provAtual(), $('iaChave').value.trim()); else esquecerChaves();
+    renderKpis();
+  }
 });
 
 $('abasKpi').addEventListener('click', e => {
