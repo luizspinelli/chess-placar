@@ -1,20 +1,23 @@
 # Placar Chess.com
 
+**No ar em [chess-placar.vercel.app](https://chess-placar.vercel.app/)** — experimente com um perfil público: [chess-placar.vercel.app?nick=hikaru](https://chess-placar.vercel.app/?nick=hikaru)
+
 Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra placar, evolução de rating, indicadores e análise das partidas de um jogador. Sem servidor, sem build, sem cadastro: tudo roda no navegador.
+
+## O que faz
+
+- **Modo simples**: placar, resumo em três frases, gráfico de rating, forma recente, brancas × pretas, sequência e ritmo.
+- **Modo avançado**: dez abas de indicadores (Análise, Resultados, Rating, Aberturas, Lances e relógio, Precisão, Adversários, Sessões, Horários, Volume), com achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas.
+- **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
+- **Análise com IA**: opcional, usando a sua própria chave do Gemini ou do Groq (tier gratuito). Gera diagnóstico e plano de treino adaptados ao seu rating.
+- **Exportar**: PDF da análise e CSV das partidas.
+- **Modo streamer**: só o placar em tela cheia, com fundo transparente ou chroma key, para usar como fonte de navegador no OBS — com meta de rating, ticker e cartão da última partida.
 
 ## Uso
 
-Abra `index.html` no navegador (ou publique em qualquer hospedagem estática) e informe o nick.
-
-- **Modo simples**: placar, resumo em três frases, gráfico de rating, forma recente, brancas × pretas, sequência e ritmo.
-- **Modo avançado**: dez abas de indicadores (Resultados, Rating, Aberturas, Lances e relógio, Precisão, Adversários, Sessões, Horários, Volume) e a aba Análise com achados automáticos.
-- **Análise com IA**: opcional, usando a sua própria chave do Gemini ou do Groq (tier gratuito). A chave fica salva só no seu navegador.
-- **Exportar**: PDF da análise e CSV das partidas.
-- **Modo streamer**: só o placar em tela cheia, com fundo transparente, para usar como fonte de navegador no OBS.
+Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para o OBS.
 
 ## Parâmetros de URL
-
-Tudo que está no formulário pode ir na URL. O botão **Copiar link** gera o endereço completo.
 
 | Parâmetro | Valores | Descrição |
 |---|---|---|
@@ -34,10 +37,10 @@ Tudo que está no formulário pode ir na URL. O botão **Copiar link** gera o en
 | `escala` | `0.8` a `2` | tamanho do overlay |
 | `ultima`, `seq` | `0` | esconde o cartão da última partida / a sequência |
 
-Exemplo para o OBS (ticker no rodapé, contando a partir das 20h de hoje):
+Exemplo para o OBS (ticker no rodapé, contando a partir das 20h de hoje, meta de +30 pontos):
 
 ```
-index.html?nick=SEUNICK&periodo=custom&data=2026-09-08&hora=20:00&tc=rapid&streamer=1&overlay=ticker&meta=%2B30
+https://chess-placar.vercel.app/?nick=SEUNICK&periodo=custom&data=2026-09-08&hora=20:00&tc=rapid&streamer=1&overlay=ticker&meta=%2B30
 ```
 
 ## Como funciona
@@ -47,6 +50,10 @@ index.html?nick=SEUNICK&periodo=custom&data=2026-09-08&hora=20:00&tc=rapid&strea
 - Aberturas, lances e relógio vêm do PGN de cada partida, interpretado no navegador.
 - A última busca fica salva no navegador (sem os PGNs) e reaparece na hora na próxima abertura, enquanto a API é consultada de novo.
 - Partidas contra bots, treinador ou não ranqueadas são ignoradas por padrão.
+
+## Privacidade
+
+Não há servidor próprio: o navegador fala direto com a API pública do Chess.com. A chave de IA fica salva só no seu navegador (localStorage) e as chamadas vão direto do navegador para o provedor. A análise com IA envia um **resumo agregado dos indicadores**, nunca as partidas — e omite adversários e linhas com poucas partidas.
 
 ## Publicar
 
