@@ -10,6 +10,7 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 - **Modo avançado**: dez abas de indicadores (Análise, Resultados, Rating, Aberturas, Lances e relógio, Precisão, Adversários, Sessões, Horários, Volume) — as aberturas vêm com a sequência de lances que as define nas suas partidas e link para a página da abertura no Chess.com, com achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas.
 - **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
+- **Tabuleiro da abertura**: clique no nome de uma abertura e veja a posição depois dos lances, do seu ponto de vista (invertida quando você joga de pretas).
 - **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o mesmo recorte deslocado para trás. A comparação também entra nos achados automáticos e no resumo enviado à IA.
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
 - **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Gera diagnóstico e plano de treino adaptados ao seu rating.
@@ -59,7 +60,7 @@ https://chess-placar.vercel.app/?nick=SEUNICK&periodo=custom&data=2026-09-08&hor
 
 Não há servidor próprio: o navegador fala direto com a API pública do Chess.com. A análise com IA envia um **resumo agregado dos indicadores**, nunca as partidas — e omite adversários e linhas com poucas partidas.
 
-A chave de IA nunca passa por servidor deste projeto: vai direto do seu navegador para o provedor. Por padrão ela fica salva no `localStorage`; desmarque **lembrar chave** para que valha só na aba aberta. Como o app não carrega nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
+A chave de IA nunca passa por servidor deste projeto: vai direto do seu navegador para o provedor. Por padrão ela fica salva no `localStorage`; desmarque **lembrar chave** para que valha só na aba aberta. O único recurso externo do app é a imagem do tabuleiro, buscada no Chess.com apenas quando você abre uma abertura. Como não há nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
 
 ## Publicar
 

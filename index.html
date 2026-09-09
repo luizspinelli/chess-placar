@@ -296,6 +296,18 @@
   a:hover{text-decoration:underline}
   ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:999px;border:2px solid var(--surface)}::-webkit-scrollbar-track{background:transparent}
 
+  #modalAb{display:none;position:fixed;inset:0;z-index:51;background:rgba(5,7,10,.7);backdrop-filter:blur(4px);padding:24px;align-items:center;justify-content:center}
+  #modalAb.aberto{display:flex}
+  #modalAb .janela{width:min(100%,440px);max-height:100%;overflow:auto;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--shadow)}
+  #modalAb .topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
+  #modalAb .topo h2{margin:0;font-size:.92rem;color:var(--text);text-transform:none;letter-spacing:0}
+  #modalAb .topo button{padding:4px 10px;background:var(--surface);color:var(--text);border:1px solid var(--border2)}
+  #modalAb .corpo{display:grid;gap:10px;justify-items:center;padding:12px}
+  #modalAb img{width:100%;max-width:380px;aspect-ratio:1;border-radius:8px;background:var(--surface2)}
+  #modalAb .lances{margin:0;font-size:.9rem;font-variant-numeric:tabular-nums;text-align:center}
+  #modalAb .aviso{margin:0;font-size:.82rem;color:var(--muted);text-align:center}
+  #modalAb .corpo a{font-size:.85rem;color:var(--accent);text-decoration:none}
+  #modalAb .corpo a:hover{text-decoration:underline}
   #modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.7);backdrop-filter:blur(4px);padding:24px}
   #modal.aberto{display:flex;flex-direction:column}
   #modal .janela{flex:1;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);min-height:0;box-shadow:var(--shadow);overflow:hidden}
@@ -487,6 +499,17 @@
         <span id="modalOpcoes" class="inline"><label>eixo</label><select name="eixo"><option value="partidas">por partida</option><option value="tempo">por tempo</option></select><label><input type="checkbox" name="media" checked>média móvel (10)</label><label><input type="checkbox" name="pontos" checked>pontos</label></span>
         <button type="button" class="fechar" id="modalFechar" aria-label="Fechar">✕</button></div>
       <div class="corpo" id="modalCorpo"><div class="tip" id="modalTip"></div></div>
+    </div>
+  </div>
+  <div id="modalAb">
+    <div class="janela">
+      <div class="topo"><h2 id="abNome"></h2><button type="button" id="abFechar" aria-label="Fechar">✕</button></div>
+      <div class="corpo">
+        <img id="abImg" alt="" hidden>
+        <p class="aviso" id="abAviso" hidden></p>
+        <p class="lances" id="abLances"></p>
+        <a id="abLink" target="_blank" rel="noopener">Ver a abertura no Chess.com →</a>
+      </div>
     </div>
   </div>
 </main>
@@ -799,6 +822,101 @@ function sparkline(vals, grande){
     <polyline points="${pts}" fill="none" stroke="${cor('--text')}" stroke-width="${grande ? 2 : 1.5}" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${rot}</svg>`;
 }
 
+// ---- posição a partir dos lances (só para desenhar o tabuleiro da abertura)
+// Não valida legalidade: quando o lance é ambíguo para nós (peça cravada, por exemplo)
+// devolve '' e o tabuleiro simplesmente não aparece — melhor nada que posição errada.
+const SALTOS = {N: [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]], K: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]};
+const RAIOS = {B: [[-1,-1],[-1,1],[1,-1],[1,1]], R: [[-1,0],[1,0],[0,-1],[0,1]]};
+RAIOS.Q = [...RAIOS.B, ...RAIOS.R];
+const casa = s => [8 - +s[1], s.charCodeAt(0) - 97];
+
+function fenDaAbertura(san){
+  const b = [...'rnbqkbnr', ...'pppppppp', ...Array(32).fill(''), ...'PPPPPPPP', ...'RNBQKBNR'];
+  const em = (r, c) => b[r * 8 + c];
+  const livre = ([r0,c0], [r1,c1]) => {
+    const dr = Math.sign(r1 - r0), dc = Math.sign(c1 - c0);
+    for (let r = r0 + dr, c = c0 + dc; r !== r1 || c !== c1; r += dr, c += dc) if (em(r, c)) return false;
+    return true;
+  };
+  let brancas = true;
+  for (let lance of san) {
+    lance = lance.replace(/[+#!?]/g, '');
+    const meu = p => brancas ? p.toUpperCase() : p.toLowerCase();
+    const roque = lance.match(/^[O0]-[O0](-[O0])?$/);
+    if (roque) {
+      const r = brancas ? 7 : 0, curto = !roque[1];
+      if (em(r, 4) !== meu('k') || em(r, curto ? 7 : 0) !== meu('r')) return '';
+      b[r*8 + 4] = ''; b[r*8 + (curto ? 7 : 0)] = '';
+      b[r*8 + (curto ? 6 : 2)] = meu('k'); b[r*8 + (curto ? 5 : 3)] = meu('r');
+      brancas = !brancas; continue;
+    }
+    const m = lance.match(/^([KQRBN])?([a-h])?([1-8])?(x)?([a-h][1-8])(?:=([QRBN]))?$/);
+    if (!m) return '';
+    const tipo = m[1] || 'P', [rd, cd] = casa(m[5]), captura = !!m[4], alvo = em(rd, cd);
+    if (alvo && alvo === meu(alvo)) return '';  // não se captura peça própria
+    const candidatos = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      if (em(r, c) !== meu(tipo)) continue;
+      if (m[2] && c !== m[2].charCodeAt(0) - 97) continue;
+      if (m[3] && r !== 8 - +m[3]) continue;
+      const dr = rd - r, dc = cd - c;
+      let ok = false;
+      if (tipo === 'P') {
+        // é o "x" do SAN que diz se o peão anda ou captura: sem ele, e7 nunca vai a d6
+        const frente = brancas ? -1 : 1, inicial = brancas ? 6 : 1;
+        ok = captura
+          ? Math.abs(dc) === 1 && dr === frente
+          : dc === 0 && !alvo && (dr === frente || (r === inicial && dr === 2 * frente && !em(r + frente, c)));
+      } else if (SALTOS[tipo]) ok = SALTOS[tipo].some(([a, z]) => a === dr && z === dc);
+      // deslizantes: (dr,dc) tem de ser um múltiplo positivo da direção, com o caminho livre
+      else ok = RAIOS[tipo].some(([a, z]) => { const k = a ? dr / a : dc / z; return k > 0 && Number.isInteger(k) && dr === a * k && dc === z * k; }) && livre([r, c], [rd, cd]);
+      if (ok) candidatos.push([r, c]);
+    }
+    if (candidatos.length !== 1) return '';
+    const [ro, co] = candidatos[0];
+    if (tipo === 'P' && co !== cd && !alvo) b[ro * 8 + cd] = '';  // en passant
+    b[ro * 8 + co] = '';
+    b[rd * 8 + cd] = m[6] ? meu(m[6]) : meu(tipo);
+    brancas = !brancas;
+  }
+  let fen = '';
+  for (let r = 0; r < 8; r++) {
+    let vazias = 0;
+    for (let c = 0; c < 8; c++) {
+      const p = em(r, c);
+      if (p) { if (vazias) { fen += vazias; vazias = 0; } fen += p; }
+      else vazias++;
+    }
+    if (vazias) fen += vazias;
+    if (r < 7) fen += '/';
+  }
+  return `${fen} ${brancas ? 'w' : 'b'} - - 0 1`;
+}
+
+// tabuleiro da abertura: o Chess.com desenha a partir do FEN (única requisição a terceiros do app)
+function abrirAbertura(el){
+  const lances = (el.dataset.lances || '').split(' ').filter(Boolean);
+  const fen = fenDaAbertura(lances);
+  const texto = lances.map((mv, i) => (i % 2 ? '' : `${i/2 + 1}.`) + mv).join(' ');
+  $('abNome').textContent = el.dataset.nome || '';
+  $('abLances').textContent = texto;
+  const img = $('abImg'), aviso = $('abAviso');
+  img.hidden = !fen; aviso.hidden = !!fen;
+  if (fen) {
+    img.alt = `Posição após ${texto}`;
+    img.src = `https://www.chess.com/dynboard?fen=${encodeURIComponent(fen)}&board=green&piece=neo&size=3${el.dataset.flip ? '&flip=1' : ''}`;
+  } else aviso.textContent = 'Não foi possível montar a posição a partir destes lances.';
+  const link = $('abLink'), href = el.getAttribute('href');
+  link.href = href || ''; link.hidden = !href;
+  $('modalAb').classList.add('aberto');
+}
+const fecharAbertura = () => $('modalAb').classList.remove('aberto');
+$('abImg').addEventListener('error', () => { $('abImg').hidden = true; const av = $('abAviso'); av.hidden = false; av.textContent = 'O tabuleiro não carregou.' + ($('abLink').hidden ? '' : ' Veja a abertura no Chess.com.'); });
+$('abFechar').addEventListener('click', fecharAbertura);
+$('modalAb').addEventListener('click', e => { if (e.target === $('modalAb')) fecharAbertura(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharAbertura(); });
+$('kpiGrid').addEventListener('click', e => { const a = e.target.closest('a.ab'); if (a) { e.preventDefault(); abrirAbertura(a); } });
+
 function parsePGN(g){
   if (g._pgn) return g._pgn;
   const pgn = g.pgn || '';
@@ -1038,14 +1156,18 @@ function kpis(jogos, nick){
   const n = s => s.w + s.d + s.l, ap = s => (s.w + s.d/2) / n(s);
   const topN = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(([k,s]) => linha(k, s)).join('') || vazio;
   const emLances = k => { const p = seqAb[k]; return p?.length >= 2 ? p.slice(0, 8).map((m, i) => (i % 2 ? '' : `${i/2 + 1}.`) + escHtml(m)).join(' ') + (p.length > 8 ? '…' : '') : ''; };
-  const comLink = k => { const m = urls[k], u = m && Object.entries(m).sort((a,b) => b[1] - a[1])[0][0]; return u ? `<a href="${escHtml(u)}" target="_blank" rel="noopener" title="Ver esta abertura no Chess.com">${k}</a>` : k; };
-  const linhaAb = ([k, s]) => linha(comLink(k), s, emLances(k));
-  const topAb = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(linhaAb).join('') || vazio;
-  const piores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(a[1]) - ap(b[1])).slice(0, 8).map(linhaAb).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
-  const melhores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(b[1]) - ap(a[1])).slice(0, 8).map(linhaAb).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
+  const comLink = (k, flip) => {
+    const m = urls[k], u = m && Object.entries(m).sort((a,b) => b[1] - a[1])[0][0], p = seqAb[k];
+    if (!p?.length) return u ? `<a href="${escHtml(u)}" target="_blank" rel="noopener">${k}</a>` : k;
+    return `<a class="ab" href="${escHtml(u || '')}" data-nome="${escHtml(k.replace(/<[^>]+>/g, '').trim())}" data-lances="${escHtml(p.join(' '))}"${flip ? ' data-flip="1"' : ''} title="Ver a posição no tabuleiro">${k}</a>`;
+  };
+  const linhaAb = (flip) => ([k, s]) => linha(comLink(k, flip), s, emLances(k));
+  const topAb = (obj, flip, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(linhaAb(flip)).join('') || vazio;
+  const piores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(a[1]) - ap(b[1])).slice(0, 8).map(linhaAb(false)).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
+  const melhores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(b[1]) - ap(a[1])).slice(0, 8).map(linhaAb(false)).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
   const aberturas = [
-    card('De brancas', tabela(topAb(abB)), 'span2'),
-    card('De pretas', tabela(topAb(abP)), 'span2'),
+    card('De brancas', tabela(topAb(abB, false)), 'span2'),
+    card('De pretas', tabela(topAb(abP, true)), 'span2'),
     card('Melhores variantes <small>(mín. 3 partidas)</small>', tabela(melhores), 'span2'),
     card('Piores variantes <small>(mín. 3 partidas)</small>', tabela(piores), 'span2'),
     card('Seu 1º lance de brancas', tabela(topN(meuPrimeiro, 5))),
