@@ -239,7 +239,7 @@
   .kpi table{width:100%;border-collapse:collapse;font-size:.85rem}
   .kpi td{padding:4px 0;border-top:1px solid var(--border);vertical-align:middle}
   .kpi tr:first-child td{border-top:0}
-  .kpi td+td{text-align:right;white-space:nowrap;padding-left:8px;font-variant-numeric:tabular-nums}
+  .kpi td+td{text-align:right;white-space:nowrap;padding-left:8px;font-variant-numeric:tabular-nums;vertical-align:top}
   .kpi td small,small{color:var(--muted)}
   .pct{display:inline-block;width:56px;height:6px;border-radius:999px;vertical-align:middle;margin-right:8px;background:var(--border2);overflow:hidden}
   .pct i{display:block;height:100%;background:var(--win);border-radius:999px}
@@ -1018,6 +1018,7 @@ function kpis(jogos, nick){
   const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, seqAb = {}, urls = {};
   // a sequência mostrada é o prefixo comum às partidas do grupo: o que de fato define a abertura nas SUAS partidas
   const prefixo = (k, san) => {
+    if (!san.length) return;
     const p = seqAb[k];
     if (!p) { seqAb[k] = san.slice(); return; }
     let i = 0; while (i < p.length && i < san.length && p[i] === san[i]) i++;
@@ -1036,7 +1037,7 @@ function kpis(jogos, nick){
   }
   const n = s => s.w + s.d + s.l, ap = s => (s.w + s.d/2) / n(s);
   const topN = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(([k,s]) => linha(k, s)).join('') || vazio;
-  const emLances = k => { const p = seqAb[k]; return p?.length ? p.slice(0, 8).map((m, i) => (i % 2 ? '' : `${i/2 + 1}.`) + escHtml(m)).join(' ') + (p.length > 8 ? '…' : '') : ''; };
+  const emLances = k => { const p = seqAb[k]; return p?.length >= 2 ? p.slice(0, 8).map((m, i) => (i % 2 ? '' : `${i/2 + 1}.`) + escHtml(m)).join(' ') + (p.length > 8 ? '…' : '') : ''; };
   const comLink = k => { const m = urls[k], u = m && Object.entries(m).sort((a,b) => b[1] - a[1])[0][0]; return u ? `<a href="${escHtml(u)}" target="_blank" rel="noopener" title="Ver esta abertura no Chess.com">${k}</a>` : k; };
   const linhaAb = ([k, s]) => linha(comLink(k), s, emLances(k));
   const topAb = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(linhaAb).join('') || vazio;
