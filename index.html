@@ -21,11 +21,11 @@
   :root{
     --bg:#0f1115;--surface:#171a21;--surface2:#1d212a;--border:#272c38;--border2:#333a49;
     --text:#e8eaf0;--muted:#8b93a7;--win:#5fbf7a;--loss:#e0645b;--draw:#8b93a7;--accent:#7aa2ff;--amber:#f0a35e;
-    --r:12px;--shadow:0 8px 24px rgba(0,0,0,.35)
+    --sobreAccent:#0b0e14;--r:12px;--shadow:0 8px 24px rgba(0,0,0,.35)
   }
   html[data-tema=claro]{
     --bg:#f3f4f8;--surface:#ffffff;--surface2:#f0f2f7;--border:#e2e5ee;--border2:#cfd4e0;
-    --text:#161a23;--muted:#6b7385;--win:#2f9e5a;--loss:#d0463c;--draw:#7b8497;--accent:#3b6fe8;--amber:#d9862c;
+    --text:#161a23;--muted:#6b7385;--win:#2f9e5a;--loss:#d0463c;--draw:#7b8497;--accent:#3b6fe8;--amber:#d9862c;--sobreAccent:#ffffff;
     --shadow:0 6px 20px rgba(20,30,60,.08)
   }
   *{box-sizing:border-box}
@@ -107,8 +107,21 @@
   input:not([type=checkbox]),select{width:100%;min-width:0;padding:8px 10px}
   input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
   select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 55%,calc(100% - 11px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
-  input[type=date],input[type=time]{color-scheme:dark}
-  input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);margin:0 6px 0 0;vertical-align:middle}
+  input::placeholder{color:var(--muted);opacity:1}
+  /* o ícone nativo do date/time vira alvo de clique transparente sobre o nosso */
+  input[type=date],input[type=time]{color-scheme:dark;position:relative;padding-right:28px;background-repeat:no-repeat;background-position:calc(100% - 9px) center;background-size:15px}
+  input[type=date]{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238b93a7' stroke-width='1.4' stroke-linecap='round'><rect x='2.2' y='3.4' width='11.6' height='10.4' rx='2.2'/><path d='M2.2 6.9h11.6M5.6 1.9v2.4M10.4 1.9v2.4'/></svg>")}
+  input[type=time]{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238b93a7' stroke-width='1.4' stroke-linecap='round'><circle cx='8' cy='8' r='5.9'/><path d='M8 4.5V8l2.5 1.7'/></svg>")}
+  html[data-tema=claro] input[type=date]{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236b7385' stroke-width='1.4' stroke-linecap='round'><rect x='2.2' y='3.4' width='11.6' height='10.4' rx='2.2'/><path d='M2.2 6.9h11.6M5.6 1.9v2.4M10.4 1.9v2.4'/></svg>")}
+  html[data-tema=claro] input[type=time]{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236b7385' stroke-width='1.4' stroke-linecap='round'><circle cx='8' cy='8' r='5.9'/><path d='M8 4.5V8l2.5 1.7'/></svg>")}
+  input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{position:absolute;right:0;top:0;width:28px;height:100%;margin:0;padding:0;opacity:0;cursor:pointer}
+  input[type=number]{appearance:textfield}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{appearance:none;margin:0}
+  input:-webkit-autofill{-webkit-text-fill-color:var(--text);-webkit-box-shadow:0 0 0 40px var(--surface2) inset;caret-color:var(--text)}
+  input[type=checkbox]{appearance:none;position:relative;flex:0 0 auto;width:16px;height:16px;margin:0 6px 0 0;vertical-align:middle;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);cursor:pointer}
+  input[type=checkbox]:hover{border-color:var(--accent)}
+  input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent)}
+  input[type=checkbox]:checked::after{content:'';position:absolute;left:4.5px;top:1.5px;width:4px;height:8px;border:solid var(--sobreAccent);border-width:0 2px 2px 0;transform:rotate(42deg)}
   .inline{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
   .inline label{font-weight:500;color:var(--text);margin:0;font-size:.85rem}
   .inline select{width:auto}
@@ -122,7 +135,7 @@
   .grade>div{display:grid;gap:4px;grid-template-columns:repeat(var(--cols,3),1fr)}
   .grade button{padding:5px 4px;font-size:.8rem;font-weight:500;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .grade button:hover{filter:none;border-color:var(--accent);color:var(--text)}
-  .grade button.ativa{background:var(--accent);border-color:var(--accent);color:#0b0e14;font-weight:600}
+  .grade button.ativa{background:var(--accent);border-color:var(--accent);color:var(--sobreAccent);font-weight:600}
   .livre{display:flex;gap:6px;margin-top:2px}
   .livre input{flex:1 1 0}
   .livre select{flex:0 0 108px;width:auto}
@@ -130,7 +143,7 @@
   #custom .inline{flex-wrap:nowrap}
   #custom input[type=time]{flex:0 0 100px}
   #custom input[type=date]{flex:1 1 0}
-  button{padding:10px 14px;font:inherit;font-weight:600;background:var(--accent);color:#0b0e14;border:0;border-radius:8px;cursor:pointer;transition:filter .15s,transform .05s}
+  button{padding:10px 14px;font:inherit;font-weight:600;background:var(--accent);color:var(--sobreAccent);border:0;border-radius:8px;cursor:pointer;transition:filter .15s,transform .05s}
   button:hover{filter:brightness(1.08)}
   button:active{transform:translateY(1px)}
   button:disabled{opacity:.45;cursor:default;filter:none}
