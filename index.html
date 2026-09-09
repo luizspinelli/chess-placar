@@ -198,6 +198,9 @@
   .bar i{height:100%}
   .bar .w{background:var(--win)}.bar .d{background:var(--draw)}.bar .l{background:var(--loss)}
   .resumo{padding:8px 14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:.85rem}
+  .kpi td .lancesAb{display:block;margin-top:2px;color:var(--muted);font-size:.72rem;font-variant-numeric:tabular-nums}
+  .kpi td a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--border2)}
+  .kpi td a:hover{color:var(--accent);border-bottom-color:var(--accent)}
   .resumo b,.kpi b{color:var(--text)}
   #comparativo{background:var(--surface2);font-size:.8rem;gap:4px 14px}
   #comparativo .cmpTitulo{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em}
@@ -737,9 +740,9 @@ $('btnAgora').addEventListener('click', () => {
   buscar(false);
 });
 
-const linha = (label, s) => {
+const linha = (label, s, seqTxt) => {
   const n = s.w + s.d + s.l, ap = n ? (s.w + s.d/2) / n * 100 : 0;
-  return `<tr><td>${label}</td><td><span class="pct"><i style="width:${ap}%"></i></span><b>${Math.round(ap)}%</b> <small>${s.w}-${s.d}-${s.l}</small></td></tr>`;
+  return `<tr><td>${label}${seqTxt ? `<small class="lancesAb">${seqTxt}</small>` : ''}</td><td><span class="pct"><i style="width:${ap}%"></i></span><b>${Math.round(ap)}%</b> <small>${s.w}-${s.d}-${s.l}</small></td></tr>`;
 };
 const conta = (obj, k, r) => { (obj[k] ??= {w:0,d:0,l:0})[r]++; };
 const GLOSSARIO = {
@@ -754,6 +757,10 @@ const GLOSSARIO = {
   'Relógio ao final': 'Tempo que sobrava no seu relógio e no do adversário quando a partida terminou. Perder com muito tempo sobrando costuma indicar decisões apressadas.',
   'Quem tinha mais tempo': 'Resultado das partidas separadas por quem terminou com mais tempo no relógio.',
   'Fase em que termina': 'Abertura: até o lance 15. Meio-jogo: 16 a 40. Final: 41 em diante.',
+  'De brancas': 'Os lances abaixo do nome são os que se repetem em todas as suas partidas daquela abertura — é por eles que dá para reconhecê-la sem saber o nome. Clique no nome para abrir a abertura no Chess.com, com tabuleiro e explicação.',
+  'De pretas': 'Os lances abaixo do nome são os que se repetem em todas as suas partidas daquela abertura — é por eles que dá para reconhecê-la sem saber o nome. Clique no nome para abrir a abertura no Chess.com, com tabuleiro e explicação.',
+  'Melhores variantes': 'Os lances abaixo do nome são os que se repetem em todas as suas partidas daquela abertura — é por eles que dá para reconhecê-la sem saber o nome. Clique no nome para abrir a abertura no Chess.com, com tabuleiro e explicação.',
+  'Piores variantes': 'Os lances abaixo do nome são os que se repetem em todas as suas partidas daquela abertura — é por eles que dá para reconhecê-la sem saber o nome. Clique no nome para abrir a abertura no Chess.com, com tabuleiro e explicação.',
   'Cor': 'Resultado quando você jogou de brancas e quando jogou de pretas.',
   'Mapa de calor': 'Cada célula é um dia da semana × hora. Verde = aproveitamento de 50% ou mais, vermelho = abaixo; quanto mais forte a cor, mais partidas naquele horário. Passe o mouse para os números.',
   'Como a sessão terminou': 'Qual foi o resultado da última partida antes de uma pausa. Parar muito após derrota costuma indicar "só mais uma para recuperar".',
@@ -807,7 +814,7 @@ function parsePGN(g){
   const variante = (corte > 0 ? palavras.slice(0, corte) : palavras).join(' ') || h.ECO || '?';
   const fim = palavras.findIndex(w => /^(Defense|Opening|Game|Attack|Gambit|System|Variation|Counter)$/i.test(w));
   const familia = (fim > 0 ? palavras.slice(0, Math.min(fim + 1, corte > 0 ? corte : Infinity)) : (corte > 0 ? palavras.slice(0, Math.min(3, corte)) : palavras.slice(0, 3))).join(' ') || h.ECO || '?';
-  return g._pgn = {h, eco: (h.ECO || '').replace(/[<>&"]/g, ''), variante, familia, meias: san.length, lances: Math.ceil(san.length / 2), clks, primeiro: san[0] || '', resposta: san[1] || ''};
+  return g._pgn = {h, eco: (h.ECO || '').replace(/[<>&"]/g, ''), variante, familia, meias: san.length, lances: Math.ceil(san.length / 2), clks, primeiro: san[0] || '', resposta: san[1] || '', san: san.slice(0, 12), url: /^https:\/\/www\.chess\.com\/openings\/[\w%.-]+$/.test(h.ECOUrl || '') ? h.ECOUrl : ''};
 }
 const seg = t => t == null ? '–' : t >= 3600 ? `${Math.floor(t/3600)}h${String(Math.floor(t%3600/60)).padStart(2,'0')}` : `${Math.floor(t/60)}:${String(Math.round(t%60)).padStart(2,'0')}`;
 
@@ -1008,21 +1015,36 @@ function kpis(jogos, nick){
   ].join('');
 
   // ---- Aberturas (PGN)
-  const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {};
+  const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, seqAb = {}, urls = {};
+  // a sequência mostrada é o prefixo comum às partidas do grupo: o que de fato define a abertura nas SUAS partidas
+  const prefixo = (k, san) => {
+    const p = seqAb[k];
+    if (!p) { seqAb[k] = san.slice(); return; }
+    let i = 0; while (i < p.length && i < san.length && p[i] === san[i]) i++;
+    p.length = i;
+  };
+  const contaUrl = (k, url) => { if (url) ((urls[k] ??= {})[url] = (urls[k][url] || 0) + 1); };
   for (const x of L) {
     const pg = parsePGN(x.g);
+    const chaveVar = `${pg.variante}${pg.eco ? ` <small>${pg.eco}</small>` : ''}`;
+    prefixo(pg.familia, pg.san); prefixo(chaveVar, pg.san);
+    contaUrl(pg.familia, pg.url); contaUrl(chaveVar, pg.url);
     conta(x.branco ? abB : abP, pg.familia, x.r);
-    conta(variantes, `${pg.variante}${pg.eco ? ` <small>${pg.eco}</small>` : ''}`, x.r);
+    conta(variantes, chaveVar, x.r);
     if (x.branco) { if (pg.primeiro) conta(meuPrimeiro, `1. ${pg.primeiro}`, x.r); }
     else if (pg.primeiro) { conta(primeiroAdv, `1. ${pg.primeiro}`, x.r); if (pg.resposta) conta(minhaResposta, `1. ${pg.primeiro} ${pg.resposta}`, x.r); }
   }
   const n = s => s.w + s.d + s.l, ap = s => (s.w + s.d/2) / n(s);
   const topN = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(([k,s]) => linha(k, s)).join('') || vazio;
-  const piores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(a[1]) - ap(b[1])).slice(0, 8).map(([k,s]) => linha(k, s)).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
-  const melhores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(b[1]) - ap(a[1])).slice(0, 8).map(([k,s]) => linha(k, s)).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
+  const emLances = k => { const p = seqAb[k]; return p?.length ? p.slice(0, 8).map((m, i) => (i % 2 ? '' : `${i/2 + 1}.`) + escHtml(m)).join(' ') + (p.length > 8 ? '…' : '') : ''; };
+  const comLink = k => { const m = urls[k], u = m && Object.entries(m).sort((a,b) => b[1] - a[1])[0][0]; return u ? `<a href="${escHtml(u)}" target="_blank" rel="noopener" title="Ver esta abertura no Chess.com">${k}</a>` : k; };
+  const linhaAb = ([k, s]) => linha(comLink(k), s, emLances(k));
+  const topAb = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(linhaAb).join('') || vazio;
+  const piores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(a[1]) - ap(b[1])).slice(0, 8).map(linhaAb).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
+  const melhores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(b[1]) - ap(a[1])).slice(0, 8).map(linhaAb).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
   const aberturas = [
-    card('De brancas', tabela(topN(abB)), 'span2'),
-    card('De pretas', tabela(topN(abP)), 'span2'),
+    card('De brancas', tabela(topAb(abB)), 'span2'),
+    card('De pretas', tabela(topAb(abP)), 'span2'),
     card('Melhores variantes <small>(mín. 3 partidas)</small>', tabela(melhores), 'span2'),
     card('Piores variantes <small>(mín. 3 partidas)</small>', tabela(piores), 'span2'),
     card('Seu 1º lance de brancas', tabela(topN(meuPrimeiro, 5))),
