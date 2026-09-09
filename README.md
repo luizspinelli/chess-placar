@@ -10,7 +10,7 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 - **Modo avançado**: dez abas de indicadores (Análise, Resultados, Rating, Aberturas, Lances e relógio, Precisão, Adversários, Sessões, Horários, Volume), com achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas.
 - **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
-- **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o mesmo recorte deslocado para trás (mês passado, ano passado, os N meses anteriores).
+- **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o mesmo recorte deslocado para trás. A comparação também entra nos achados automáticos e no resumo enviado à IA.
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
 - **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Gera diagnóstico e plano de treino adaptados ao seu rating.
 - **Exportar**: PDF da análise e CSV das partidas.

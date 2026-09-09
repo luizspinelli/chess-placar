@@ -1097,6 +1097,20 @@ function kpis(jogos, nick){
   if (sessoes.length >= 10 && parouApos.l > parouApos.w * 1.5) add('info', 'Fim de sessão', `Você encerra a sessão após uma derrota ${parouApos.l} vezes e após vitória ${parouApos.w}. Um hábito comum é "só mais uma para recuperar", que raramente ajuda.`);
   if (faixa['Mais fraco'] && n(faixa['Mais fraco']) >= 15 && ap(faixa['Mais fraco']) < 0.55) add('atencao', 'Contra mais fracos', `Contra adversários com 25+ pontos a menos você faz só ${pp(ap(faixa['Mais fraco']))}. Deveria ser o grupo mais lucrativo.`);
   if (maxL >= 5) add('info', 'Pior série', `Sua maior sequência de derrotas foi ${maxL}. Sequências assim costumam concentrar-se em uma única sessão.`);
+  const cmp = estado?.comp?.tc[aba];
+  if (cmp && total >= 15 && cmp.n >= 15) {
+    const antesRot = `no período anterior (${estado.comp.rotulo})`;
+    const dAp = Math.round((apGeral - ap(cmp)) * 100);
+    if (Math.abs(dAp) >= 8) add(dAp > 0 ? 'bom' : 'alerta', dAp > 0 ? 'Rendendo mais que antes' : 'Rendendo menos que antes', `Aproveitamento de ${pp(apGeral)} em ${total} partidas, contra ${pp(ap(cmp))} em ${cmp.n} ${antesRot}: ${sinal(dAp)} pontos percentuais.`);
+    const vAgora = estado.antes[aba] == null ? null : estado.depois[aba] - estado.antes[aba];
+    const vAntes = cmp.antes == null ? null : cmp.depois - cmp.antes;
+    if (vAgora !== null && vAntes !== null && Math.abs(vAgora - vAntes) >= 25) add(vAgora > vAntes ? 'bom' : 'atencao', 'Rating vs. período anterior', `${sinal(vAgora)} de rating no período, contra ${sinal(vAntes)} ${antesRot}.`);
+    if (A.length >= 10 && cmp.accN >= 10) {
+      const accAgora = A.reduce((t, x) => t + x.acc, 0) / A.length, accAntes = cmp.acc / cmp.accN;
+      if (Math.abs(accAgora - accAntes) >= 2) add(accAgora > accAntes ? 'bom' : 'atencao', 'Precisão vs. período anterior', `Precisão média de ${accAgora.toFixed(1)} agora, contra ${accAntes.toFixed(1)} ${antesRot}.`);
+    }
+    if (total >= cmp.n * 1.5 || cmp.n >= total * 1.5) add('info', 'Volume vs. período anterior', `${total} partidas no período, contra ${cmp.n} ${antesRot}. Com volumes tão diferentes, a comparação de aproveitamento é menos estável.`);
+  }
   if (!ach.length) add('info', 'Nada fora do padrão', 'Com os dados do período não há desvio relevante em cor, horário, sessão, aberturas ou relógio.');
   const ICONE = {alerta: '▲', atencao: '●', bom: '✔', info: 'ℹ'}, PRIO = {alerta: 0, atencao: 1, bom: 2, info: 3};
   ach.sort((a, b) => PRIO[a.tipo] - PRIO[b.tipo]);
@@ -1281,6 +1295,11 @@ function resumoParaIA(curto){
   const {rotulo, nick} = estado;
   linhas.push(`Jogador: ${nick}. Período: ${rotulo}. Modalidade: ${TIPO[aba]}.`);
   linhas.push(`Placar: ${$('nw').textContent} vitórias, ${$('nd').textContent} empates, ${$('nl').textContent} derrotas. ${$('rpct').textContent}. Rating: ${$('rating').textContent.trim()}.`);
+  const cmp = estado.comp?.tc[aba];
+  if (cmp && cmp.n >= MIN) {
+    const apCmp = Math.round((cmp.w + cmp.d/2) / cmp.n * 100);
+    linhas.push(`Período anterior equivalente (${estado.comp.rotulo}): ${cmp.n} partidas, aproveitamento ${apCmp}% (${cmp.w}V ${cmp.d}E ${cmp.l}D)${cmp.antes != null ? `, rating ${cmp.antes} → ${cmp.depois}` : ''}${cmp.accN >= MIN ? `, precisão média ${(cmp.acc / cmp.accN).toFixed(1)}` : ''}.`);
+  }
   for (const [tab, html] of Object.entries(kpiData)) {
     if (tab === 'Análise') continue;
     div.innerHTML = html;
@@ -1323,6 +1342,7 @@ async function analisarIA(){
     ? `PERÍODO MÉDIO (${dias} dias, ${nJogos} partidas). A amostra sustenta conclusões sobre cores, motivos de derrota, sessões, horários e as 3-4 aberturas mais jogadas; variantes com menos de 10 partidas continuam sendo hipóteses. Dê peso a tendências dentro do período (rating por mês, aproveitamento por mês). O plano de 2 semanas se aplica normalmente.`
     : `PERÍODO LONGO (${dias} dias, ${nJogos} partidas). A amostra é robusta: trate os padrões como traços do jogador, não como fase. O rating mudou muito ao longo do tempo, então separe o que é evolução (compare começo e fim do período pelas linhas de rating e aproveitamento por mês) do que é estrutural (persiste o período todo). Aberturas, horários e dias da semana são confiáveis. Aponte também o que já melhorou, e não gaste o plano de 2 semanas em algo que os dados mostram já resolvido. Onde fizer sentido, sugira o que acompanhar nos próximos 30 dias para confirmar a mudança.`;
 
+  const temCmp = (estado.comp?.tc[aba]?.n ?? 0) >= 10;
   const ratingRef = estado.depois[aba] ?? 0;
   const nivel = ratingRef >= 2400 ? 'nível de mestre (rating ' + ratingRef + '): trate como jogador profissional; as recomendações devem ser sobre preparação, gestão de energia, escolhas de repertório e tendências, não sobre fundamentos'
     : ratingRef >= 1800 ? 'jogador forte de clube (rating ' + ratingRef + '): fundamentos já resolvidos; foque em tática avançada, planos de meio-jogo, finais técnicos e rotina'
@@ -1341,7 +1361,8 @@ COMO LER OS DADOS
 - Aberturas: na tabela de BRANCAS, o nome da abertura (ex.: "Scandinavian Defense") é a defesa que o ADVERSÁRIO escolheu contra o 1º lance do jogador; o jogador não pode "trocar" essa abertura, só pode preparar melhor a resposta a ela. Na tabela de PRETAS, a defesa é escolha do próprio jogador e aí sim pode ser trocada.
 - "Precisão" é a métrica de análise do Chess.com (0-100), disponível só nas partidas analisadas.
 - "Relógio ao final" é o tempo que sobrou quando a partida terminou. Terminar derrotas com muito tempo sobrando indica decisões apressadas, não falta de tempo.
-- Os "achados automáticos" já apontam desvios estatísticos; use-os como ponto de partida, mas verifique se os números sustentam.
+${temCmp ? `- "Período anterior equivalente" é o mesmo recorte de calendário deslocado para trás (mês anterior, ano anterior ou a mesma janela de dias). Serve para dizer se o jogador evoluiu ou regrediu; só compare aproveitamento se as duas amostras tiverem tamanho parecido.
+` : ''}- Os "achados automáticos" já apontam desvios estatísticos; use-os como ponto de partida, mas verifique se os números sustentam.
 
 REGRAS
 - Cite o número que sustenta cada afirmação. Não invente dados nem estime o que não está no resumo.
@@ -1357,7 +1378,7 @@ ${escopo}
 
 ESTRUTURA (use exatamente estes títulos, em markdown "##", nesta ordem, sem acrescentar outros)
 ## Diagnóstico
-3-4 frases sobre o perfil do jogador e o que explica o resultado do período.
+3-4 frases sobre o perfil do jogador e o que explica o resultado do período${temCmp ? ', dizendo se ele evoluiu ou regrediu em relação ao período anterior e em quê' : ''}.
 ${longo ? `## O que mudou no período
 Compare começo e fim usando as linhas de rating, aproveitamento por mês e rating médio dos adversários por mês. Diga o que melhorou, o que piorou e o que ficou igual. Só depois disso trate padrões como estruturais.
 ` : ''}## Pontos fortes
