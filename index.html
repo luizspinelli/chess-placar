@@ -199,7 +199,7 @@
   .bar .w{background:var(--win)}.bar .d{background:var(--draw)}.bar .l{background:var(--loss)}
   .resumo{padding:8px 14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:.85rem}
   .kpi td .lancesAb{display:block;margin-top:2px;color:var(--muted);font-size:.72rem;font-variant-numeric:tabular-nums}
-  .kpi td a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--border2)}
+  .kpi td a{color:inherit;text-decoration:none;border-bottom:1px dotted var(--border2);cursor:pointer}
   .kpi td a:hover{color:var(--accent);border-bottom-color:var(--accent)}
   .resumo b,.kpi b{color:var(--text)}
   #comparativo{background:var(--surface2);font-size:.8rem;gap:4px 14px}
@@ -896,7 +896,7 @@ function fenDaAbertura(san){
 // tabuleiro da abertura: o Chess.com desenha a partir do FEN (única requisição a terceiros do app)
 function abrirAbertura(el){
   const lances = (el.dataset.lances || '').split(' ').filter(Boolean);
-  const fen = fenDaAbertura(lances);
+  const fen = lances.length ? fenDaAbertura(lances) : '';
   const texto = lances.map((mv, i) => (i % 2 ? '' : `${i/2 + 1}.`) + mv).join(' ');
   $('abNome').textContent = el.dataset.nome || '';
   $('abLances').textContent = texto;
@@ -905,7 +905,7 @@ function abrirAbertura(el){
   if (fen) {
     img.alt = `Posição após ${texto}`;
     img.src = `https://www.chess.com/dynboard?fen=${encodeURIComponent(fen)}&board=green&piece=neo&size=3${el.dataset.flip ? '&flip=1' : ''}`;
-  } else aviso.textContent = 'Não foi possível montar a posição a partir destes lances.';
+  } else aviso.textContent = lances.length ? 'Não foi possível montar a posição a partir destes lances.' : 'Suas partidas nesta abertura não têm lances em comum, então não há uma posição única para mostrar.';
   const link = $('abLink'), href = el.getAttribute('href');
   link.href = href || ''; link.hidden = !href;
   $('modalAb').classList.add('aberto');
@@ -1157,9 +1157,8 @@ function kpis(jogos, nick){
   const topN = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(([k,s]) => linha(k, s)).join('') || vazio;
   const emLances = k => { const p = seqAb[k]; return p?.length >= 2 ? p.slice(0, 8).map((m, i) => (i % 2 ? '' : `${i/2 + 1}.`) + escHtml(m)).join(' ') + (p.length > 8 ? '…' : '') : ''; };
   const comLink = (k, flip) => {
-    const m = urls[k], u = m && Object.entries(m).sort((a,b) => b[1] - a[1])[0][0], p = seqAb[k];
-    if (!p?.length) return u ? `<a href="${escHtml(u)}" target="_blank" rel="noopener">${k}</a>` : k;
-    return `<a class="ab" href="${escHtml(u || '')}" data-nome="${escHtml(k.replace(/<[^>]+>/g, '').trim())}" data-lances="${escHtml(p.join(' '))}"${flip ? ' data-flip="1"' : ''} title="Ver a posição no tabuleiro">${k}</a>`;
+    const m = urls[k], u = m && Object.entries(m).sort((a,b) => b[1] - a[1])[0][0], p = seqAb[k] || [];
+    return `<a class="ab"${u ? ` href="${escHtml(u)}"` : ''} data-nome="${escHtml(k.replace(/<[^>]+>/g, '').trim())}" data-lances="${escHtml(p.join(' '))}"${flip ? ' data-flip="1"' : ''} title="Ver a posição no tabuleiro">${k}</a>`;
   };
   const linhaAb = (flip) => ([k, s]) => linha(comLink(k, flip), s, emLances(k));
   const topAb = (obj, flip, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(linhaAb(flip)).join('') || vazio;
