@@ -117,6 +117,15 @@
   .chips span:hover{border-color:var(--accent)}
   .chips i{font-style:normal;color:var(--muted);padding:0 2px}
   .chips i:hover{color:var(--loss)}
+  #relativo{display:grid;gap:6px;margin-top:8px}
+  .grade>span{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted);margin-bottom:3px}
+  .grade>div{display:grid;gap:4px;grid-template-columns:repeat(var(--cols,3),1fr)}
+  .grade button{padding:5px 4px;font-size:.8rem;font-weight:500;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .grade button:hover{filter:none;border-color:var(--accent);color:var(--text)}
+  .grade button.ativa{background:var(--accent);border-color:var(--accent);color:#0b0e14;font-weight:600}
+  .livre{display:flex;gap:6px;margin-top:2px}
+  .livre input{flex:1 1 0}
+  .livre select{flex:0 0 108px;width:auto}
   #custom{display:grid;gap:10px}
   #custom .inline{flex-wrap:nowrap}
   #custom input[type=time]{flex:0 0 100px}
@@ -355,16 +364,15 @@
     <h1>Placar Chess.com</h1>
     <div><label for="nick">Nick</label><input id="nick" required autocomplete="off" spellcheck="false" list="nicks"><datalist id="nicks"></datalist>
       <div id="recentes" class="chips"></div></div>
-    <div><label for="periodo">Período</label>
-      <select id="periodo">
-        <option value="ano" selected>Este ano</option>
-        <option value="mes">Mês atual</option>
-        <option value="mes-1">Mês passado</option>
-        <option value="3m">Últimos 3 meses</option>
-        <option value="6m">Últimos 6 meses</option>
-        <option value="12m">Últimos 12 meses</option>
-        <option value="custom">Personalizado</option>
-      </select>
+    <div role="group" aria-labelledby="rotPeriodo"><label id="rotPeriodo">Período</label>
+      <input type="hidden" id="periodo" value="ano">
+      <div class="seg" id="periodoTipo"><button type="button" data-tipo="relativo">Relativo</button><button type="button" data-tipo="absoluto">Absoluto</button></div>
+      <div id="relativo">
+        <div class="grade"><span>Dias</span><div style="--cols:5"><button type="button" data-p="1d">1</button><button type="button" data-p="3d">3</button><button type="button" data-p="7d">7</button><button type="button" data-p="14d">14</button><button type="button" data-p="30d">30</button></div></div>
+        <div class="grade"><span>Meses</span><div><button type="button" data-p="3m">3</button><button type="button" data-p="6m">6</button><button type="button" data-p="12m">12</button></div></div>
+        <div class="grade"><span>Calendário</span><div><button type="button" data-p="mes" title="Do dia 1º deste mês até agora">Mês</button><button type="button" data-p="mes-1" title="Mês passado inteiro">Anterior</button><button type="button" data-p="ano" title="De 1º de janeiro até agora">Ano</button></div></div>
+        <div class="livre"><input id="pNum" type="number" min="1" max="999" placeholder="duração" aria-label="Duração"><select id="pUni" aria-label="Unidade de tempo"><option value="d">dias</option><option value="w">semanas</option><option value="m">meses</option></select></div>
+      </div>
     </div>
     <div id="custom" hidden>
       <div><label for="data">Início</label><div class="inline"><input id="data" type="date"><input id="hora" type="time" value="00:00"></div></div>
@@ -616,19 +624,43 @@ $('recentes').addEventListener('click', e => {
 });
 renderNicks();
 if (!$('nick').value && lerNicks()[0]) $('nick').value = lerNicks()[0];
-$('periodo').addEventListener('change', () => $('custom').hidden = $('periodo').value !== 'custom');
 
 function periodo(){
   const p = $('periodo').value, hoje = new Date(), y = hoje.getFullYear(), m = hoje.getMonth();
   if (p === 'mes') return [new Date(y, m, 1), null];
   if (p === 'mes-1') return [new Date(y, m-1, 1), new Date(y, m, 1, 0, 0, -1)];
   if (p === 'ano') return [new Date(y, 0, 1), null];
+  const dias = p.match(/^(\d+)([dw])$/);
+  if (dias) return [new Date(Date.now() - dias[1] * (dias[2] === 'w' ? 7 : 1) * 864e5), null];
   if (/^\d+m$/.test(p)) return [new Date(y, m - parseInt(p) + 1, 1), null];
   if (!$('data').value) return [NaN, null];
   const ini = new Date($('data').value + 'T' + ($('hora').value || '00:00'));
   const fim = $('dataFim').value ? new Date($('dataFim').value + 'T' + ($('horaFim').value || '23:59') + ':59') : null;
   return [ini, fim];
 }
+let ultimoRelativo = 'ano';
+// o período vive num input escondido: os atalhos só escrevem nele e o resto do app segue lendo $('periodo').value
+function aplicarPeriodo(v, sincronizar = true){
+  if (!v) return;
+  const custom = v === 'custom';
+  $('periodo').value = v;
+  if (!custom) ultimoRelativo = v;
+  $('custom').hidden = !custom;
+  $('relativo').hidden = custom;
+  $('periodoTipo').querySelectorAll('button').forEach(b => b.classList.toggle('ativa', (b.dataset.tipo === 'absoluto') === custom));
+  let atalho = false;
+  $('relativo').querySelectorAll('.grade button').forEach(b => { const on = b.dataset.p === v; atalho ||= on; b.classList.toggle('ativa', on); });
+  if (!sincronizar) return;
+  const m = custom ? null : v.match(/^(\d+)([dwm])$/);
+  $('pNum').value = m && !atalho ? m[1] : '';
+  if (m) $('pUni').value = m[2];
+}
+$('periodoTipo').addEventListener('click', e => { const b = e.target.closest('button'); if (b) aplicarPeriodo(b.dataset.tipo === 'absoluto' ? 'custom' : ultimoRelativo); });
+$('relativo').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b) aplicarPeriodo(b.dataset.p); });
+const periodoLivre = () => { const n = parseInt($('pNum').value); if (n > 0) aplicarPeriodo(n + $('pUni').value, false); };
+$('pNum').addEventListener('input', periodoLivre);
+$('pUni').addEventListener('change', periodoLivre);
+
 // recua n meses mantendo o dia (28 de fevereiro quando o dia não existe no mês de destino)
 const recuaMes = (d, n) => { const x = new Date(d), dia = x.getDate(); x.setDate(1); x.setMonth(x.getMonth() - n); x.setDate(Math.min(dia, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return x; };
 // período de comparação: o mesmo recorte de calendário deslocado para trás; no personalizado, a mesma duração imediatamente antes
@@ -1923,7 +1955,7 @@ async function buscar(atualizacao){
   let tema = q.get('tema'); try { tema = tema || localStorage.getItem('placar-chesscom:tema'); } catch {}
   aplicarTema(tema === 'claro' ? 'claro' : 'escuro');
   if (q.get('nick')) $('nick').value = q.get('nick');
-  if (q.get('periodo')) { $('periodo').value = q.get('periodo'); $('custom').hidden = $('periodo').value !== 'custom'; }
+  aplicarPeriodo(q.get('periodo') || 'ano');
   for (const k of ['data','hora','dataFim','horaFim']) if (q.get(k)) $(k).value = q.get(k);
   if (q.get('tc')) { const tcs = q.get('tc').split(','); document.querySelectorAll('input[name=tc]').forEach(i => i.checked = tcs.includes(i.value)); }
   if (q.get('intervalo')) $('intervalo').value = q.get('intervalo');

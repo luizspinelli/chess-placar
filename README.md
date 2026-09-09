@@ -18,14 +18,14 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 
 ## Uso
 
-Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para o OBS.
+Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para o OBS.
 
 ## Parâmetros de URL
 
 | Parâmetro | Valores | Descrição |
 |---|---|---|
 | `nick` | texto | nick no Chess.com (obrigatório para abrir já buscando) |
-| `periodo` | `ano` (padrão), `mes`, `mes-1`, `3m`, `6m`, `12m`, `custom` | período analisado |
+| `periodo` | `ano` (padrão), `mes`, `mes-1`, `Nd`, `Nw`, `Nm`, `custom` | período analisado: `7d` = últimos 7 dias, `2w` = 2 semanas, `3m` = 3 meses (a partir do dia 1º) |
 | `data`, `hora`, `dataFim`, `horaFim` | `YYYY-MM-DD`, `HH:MM` | intervalo do período `custom` (fim opcional) |
 | `tc` | `bullet,blitz,rapid,daily` | modalidades consideradas |
 | `bots` | `1` | inclui partidas contra bots e amistosas (por padrão ficam fora) |
