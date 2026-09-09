@@ -10,6 +10,7 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 - **Modo avançado**: dez abas de indicadores (Análise, Resultados, Rating, Aberturas, Lances e relógio, Precisão, Adversários, Sessões, Horários, Volume), com achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas.
 - **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
+- **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o mesmo recorte deslocado para trás (mês passado, ano passado, os N meses anteriores).
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
 - **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Gera diagnóstico e plano de treino adaptados ao seu rating.
 - **Exportar**: PDF da análise e CSV das partidas.
@@ -28,6 +29,7 @@ Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.ht
 | `data`, `hora`, `dataFim`, `horaFim` | `YYYY-MM-DD`, `HH:MM` | intervalo do período `custom` (fim opcional) |
 | `tc` | `bullet,blitz,rapid,daily` | modalidades consideradas |
 | `bots` | `1` | inclui partidas contra bots e amistosas (por padrão ficam fora) |
+| `comparar` | `1` | compara com o período anterior equivalente (dobra as requisições à API) |
 | `auto` | `1` | atualização automática |
 | `intervalo` | `30`, `60`, `120`, `300` | segundos entre atualizações |
 | `modo` | `avancado` | abre no modo avançado |

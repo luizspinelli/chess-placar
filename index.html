@@ -177,6 +177,10 @@
   .bar .w{background:var(--win)}.bar .d{background:var(--draw)}.bar .l{background:var(--loss)}
   .resumo{padding:8px 14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:.85rem}
   .resumo b,.kpi b{color:var(--text)}
+  #comparativo{background:var(--surface2);font-size:.8rem;gap:4px 14px}
+  #comparativo .cmpTitulo{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em}
+  #comparativo i{font-style:normal;font-variant-numeric:tabular-nums}
+  body.streamer #comparativo{display:none}
 
   #kpis{grid-area:kpis;display:none;min-height:0;flex-direction:column;overflow:hidden}
   #resumo{grid-area:kpis;overflow-y:auto;padding:16px 18px;min-height:0}
@@ -374,6 +378,7 @@
     </div>
     <div class="inline">
       <label title="Partidas contra bots, treinador (Coach) ou não ranqueadas ficam fora de tudo"><input type="checkbox" id="soHumanos" checked>Ignorar bots e amistosas</label>
+      <label title="Compara com o mesmo recorte imediatamente anterior. Dobra o número de requisições à API."><input type="checkbox" id="comparar">Comparar com período anterior</label>
     </div>
     <div class="inline">
       <label><input type="checkbox" id="auto">Atualizar a cada</label>
@@ -419,6 +424,7 @@
     <div class="bar"><i class="w"></i><i class="d"></i><i class="l"></i></div>
     <div class="resumo"><span id="rtotal"></span><span id="rpct"></span></div>
     <div class="resumo" id="rating"></div>
+    <div class="resumo" id="comparativo" hidden></div>
   </section>
 
   <section id="resumo" class="box" hidden>
@@ -471,6 +477,7 @@ const TIPO = {bullet:'bullet', blitz:'blitz', rapid:'rápida', daily:'diária'};
 const MOTIVO = {checkmated:'mate', resigned:'desistência', timeout:'tempo', abandoned:'abandono', lose:'derrota',
   agreed:'acordo', repetition:'repetição', stalemate:'afogamento', insufficient:'material insuficiente', '50move':'50 lances', timevsinsufficient:'tempo × material'};
 const fmt = new Intl.DateTimeFormat('pt-BR', {dateStyle:'short', timeStyle:'short'});
+const fmtDia = new Intl.DateTimeFormat('pt-BR', {dateStyle:'short'});
 const hora = () => new Intl.DateTimeFormat('pt-BR', {timeStyle:'medium'}).format(new Date());
 const sinal = n => n > 0 ? `+${n}` : `${n}`;
 const escHtml = s => String(s).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
@@ -570,6 +577,7 @@ function linkAtual(){
   q.set('tc', [...document.querySelectorAll('input[name=tc]:checked')].map(i => i.value).join(','));
   if ($('auto').checked) { q.set('auto', '1'); q.set('intervalo', $('intervalo').value); }
   if (!$('soHumanos').checked) q.set('bots', '1');
+  if ($('comparar').checked) q.set('comparar', '1');
   if (document.documentElement.dataset.tema === 'claro') q.set('tema', 'claro');
   if (!document.body.classList.contains('simples')) q.set('modo', 'avancado');
   if (document.body.classList.contains('streamer')) q.set('streamer', '1');
@@ -620,6 +628,14 @@ function periodo(){
   const ini = new Date($('data').value + 'T' + ($('hora').value || '00:00'));
   const fim = $('dataFim').value ? new Date($('dataFim').value + 'T' + ($('horaFim').value || '23:59') + ':59') : null;
   return [ini, fim];
+}
+// recua n meses mantendo o dia (28 de fevereiro quando o dia não existe no mês de destino)
+const recuaMes = (d, n) => { const x = new Date(d), dia = x.getDate(); x.setDate(1); x.setMonth(x.getMonth() - n); x.setDate(Math.min(dia, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return x; };
+// período de comparação: o mesmo recorte de calendário deslocado para trás; no personalizado, a mesma duração imediatamente antes
+function periodoAnterior(ini, fim){
+  const p = $('periodo').value, f = fim || new Date();
+  const meses = p === 'mes' || p === 'mes-1' ? 1 : p === 'ano' ? 12 : /^\d+m$/.test(p) ? parseInt(p) : 0;
+  return meses ? [recuaMes(ini, meses), recuaMes(f, meses)] : [new Date(ini.getTime() - (f - ini)), new Date(ini.getTime() - 1000)];
 }
 
 async function getJSON(url, tentativa = 0){
@@ -1690,7 +1706,7 @@ $('abas').addEventListener('click', e => {
 const bandeira = url => { const c = (url || '').split('/').pop(); return c && c.length === 2 ? String.fromCodePoint(...[...c.toUpperCase()].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65)) : ''; };
 const dataCurta = ts => ts ? new Date(ts * 1000).toLocaleDateString('pt-BR', {month: 'short', year: 'numeric'}) : '–';
 const CHAVE_ULTIMA = 'placar-chesscom:ultima';
-function chaveBusca(nick){ return JSON.stringify({nick, periodo: $('periodo').value, data: $('data').value, hora: $('hora').value, dataFim: $('dataFim').value, horaFim: $('horaFim').value, tc: [...document.querySelectorAll('input[name=tc]:checked')].map(i => i.value), bots: $('soHumanos').checked}); }
+function chaveBusca(nick){ return JSON.stringify({nick, periodo: $('periodo').value, data: $('data').value, hora: $('hora').value, dataFim: $('dataFim').value, horaFim: $('horaFim').value, tc: [...document.querySelectorAll('input[name=tc]:checked')].map(i => i.value), bots: $('soHumanos').checked, comparar: $('comparar').checked}); }
 function salvarUltima(){
   if (!estado) return;
   const compacto = estado.jogos.map(g => { parsePGN(g); const {pgn, tcn, initial_setup, fen, ...resto} = g; return resto; });
@@ -1756,6 +1772,7 @@ function render(){
     const a = antes[tc], d = depois[tc];
     return `<span>${TIPO[tc] || tc}: ${a ?? '?'} → ${d}${a === null ? '' : ` <b class="${cls(d-a)}">${sinal(d-a)}</b>`}</span>`;
   }).join('');
+  renderComparativo(jogos, c, total, varTotal);
   kpiData = total ? kpis(jogos, nick) : null;
   renderKpis();
   renderResumo(jogos, c, total, antes[aba], depois[aba]);
@@ -1765,6 +1782,26 @@ function render(){
   $('partidas').style.display = total ? 'flex' : 'none';
   $('status').textContent = monitorando ? `Verificado às ${hora()}` : '';
   renderOverlay();
+}
+
+function renderComparativo(jogos, c, total, varTotal){
+  const el = $('comparativo'), comp = estado.comp, ant = comp?.tc[aba];
+  el.hidden = !comp;
+  if (!comp) return;
+  const cab = `<span class="cmpTitulo">vs. ${comp.rotulo}</span>`;
+  if (!ant) { el.innerHTML = `${cab}<span>sem partidas de ${TIPO[aba] || aba} no período anterior</span>`; return; }
+  const num = (v, casas) => v.toFixed(casas).replace('.', ',');
+  const dif = (rot, agora, antes, {suf = '', sufD = suf, casas = 0, comSinal = false} = {}) => {
+    const d = +(agora - antes).toFixed(casas), mais = v => (v > 0 ? '+' : '') + num(v, casas);
+    return `<span>${rot} <b>${comSinal ? mais(agora) : num(agora, casas)}${suf}</b> <i class="${cls(d)}" title="período anterior: ${comSinal ? mais(antes) : num(antes, casas)}${suf}">${d ? `${d > 0 ? '▲' : '▼'} ${mais(d)}${sufD}` : '='}</i></span>`;
+  };
+  const ap = o => { const n = o.w + o.d + o.l; return n ? (o.w + o.d/2) / n * 100 : 0; };
+  const partes = [dif('partidas', total, ant.n), dif('aproveitamento', ap(c), ap(ant), {suf: '%', sufD: ' pp'})];
+  if (ant.antes != null) partes.push(dif('rating', varTotal, ant.depois - ant.antes, {comSinal: true}));
+  let soma = 0, n = 0;
+  for (const g of jogos) { const x = g.accuracies?.[g.white.username.toLowerCase() === estado.nick ? 'white' : 'black']; if (x != null) { soma += x; n++; } }
+  if (n >= 5 && ant.accN >= 5) partes.push(dif('precisão', soma/n, ant.acc/ant.accN, {casas: 1}));
+  el.innerHTML = cab + partes.join('');
 }
 
 async function buscar(atualizacao){
@@ -1779,6 +1816,10 @@ async function buscar(atualizacao){
   if (isNaN(inicio)) { status.className = 'error'; status.textContent = 'Informe a data de início.'; return; }
   if (fim && fim < inicio) { status.className = 'error'; status.textContent = 'A data de fim é anterior ao início.'; return; }
   if (!modalidades.size) { status.className = 'error'; status.textContent = 'Marque ao menos uma modalidade.'; return; }
+
+  const comparando = $('comparar').checked;
+  const [iniAnt, fimAnt] = comparando ? periodoAnterior(inicio, fim) : [];
+  const iniAntTs = comparando ? iniAnt.getTime() / 1000 : 0, fimAntTs = comparando ? fimAnt.getTime() / 1000 : 0;
 
   ocupado = true;
   document.body.classList.remove('inicio');
@@ -1796,7 +1837,8 @@ async function buscar(atualizacao){
 
   try {
     const {archives} = await getJSON(API + nick + '/games/archives');
-    const chave = inicio.getFullYear() * 100 + inicio.getMonth() + 1;
+    const base = comparando ? iniAnt : inicio;
+    const chave = base.getFullYear() * 100 + base.getMonth() + 1;
     const chaveFim = fim ? fim.getFullYear() * 100 + fim.getMonth() + 1 : Infinity;
     let meses = archives.filter(u => { const [y,m] = u.split('/').slice(-2).map(Number); return y*100 + m >= chave && y*100 + m <= chaveFim; });
     const idx = archives.indexOf(meses[0]);
@@ -1811,7 +1853,7 @@ async function buscar(atualizacao){
     }
     todos.sort((a,b) => a.end_time - b.end_time);
 
-    const antes = {}, depois = {}, ultimo = {}, jogos = [];
+    const antes = {}, depois = {}, ultimo = {}, jogos = [], compTc = comparando ? {} : null;
     const soHumanos = $('soHumanos').checked;
     let ignoradas = 0;
     for (const g of todos) {
@@ -1823,6 +1865,13 @@ async function buscar(atualizacao){
         g.delta = g.rated && tc in ultimo ? eu.rating - ultimo[tc] : null;
         if (g.rated) { if (!(tc in antes)) antes[tc] = ultimo[tc] ?? null; depois[tc] = eu.rating; }
         jogos.push(g);
+      } else if (compTc && g.end_time >= iniAntTs && g.end_time <= fimAntTs) {
+        // do período anterior guardamos só os agregados: o estado inteiro vai para o localStorage
+        const c = compTc[tc] ??= {n: 0, w: 0, d: 0, l: 0, acc: 0, accN: 0, antes: undefined, depois: null};
+        c.n++; c[eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l']++;
+        const ac = g.accuracies?.[eu === g.white ? 'white' : 'black'];
+        if (ac != null) { c.acc += ac; c.accN++; }
+        if (g.rated) { if (c.antes === undefined) c.antes = ultimo[tc] ?? null; c.depois = eu.rating; }
       }
       if (g.rated) ultimo[tc] = eu.rating;
     }
@@ -1835,7 +1884,8 @@ async function buscar(atualizacao){
       try { perfil = await getJSON(API + nick); } catch {}
       try { stats = await getJSON(API + nick + '/stats'); } catch {}
     } else { perfil = estado.perfil; stats = estado.stats; }
-    estado = {jogos, antes, depois, nick, rotulo, monitorando, ignoradas, perfil, stats};
+    const comp = compTc ? {rotulo: `${fmtDia.format(iniAnt)} a ${fmtDia.format(fimAnt)}`, tc: compTc} : null;
+    estado = {jogos, antes, depois, nick, rotulo, monitorando, ignoradas, perfil, stats, comp};
     const contagem = {};
     for (const g of jogos) contagem[g.time_class] = (contagem[g.time_class] || 0) + 1;
     const classes = ['bullet','blitz','rapid','daily'].filter(tc => contagem[tc] && modalidades.has(tc));
@@ -1878,6 +1928,7 @@ async function buscar(atualizacao){
   if (q.get('tc')) { const tcs = q.get('tc').split(','); document.querySelectorAll('input[name=tc]').forEach(i => i.checked = tcs.includes(i.value)); }
   if (q.get('intervalo')) $('intervalo').value = q.get('intervalo');
   if (q.get('bots') === '1') $('soHumanos').checked = false;
+  if (q.get('comparar') === '1') $('comparar').checked = true;
   if (q.get('overlay')) $('ovTipo').value = q.get('overlay');
   if (q.get('meta')) $('ovMeta').value = q.get('meta');
   if (q.get('fundo')) $('ovFundo').value = q.get('fundo');
