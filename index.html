@@ -507,7 +507,7 @@
         <img id="abImg" alt="" hidden>
         <p class="aviso" id="abAviso" hidden></p>
         <p class="lances" id="abLances"></p>
-        <p class="aviso" id="abLegenda" hidden>sua linha mais jogada nesta abertura</p>
+        <p class="aviso" id="abLegenda" hidden>a linha que você mais joga nesta abertura</p>
         <a id="abLink" target="_blank" rel="noopener">Ver a abertura no Chess.com →</a>
       </div>
     </div>
@@ -1176,11 +1176,19 @@ function kpis(jogos, nick){
     }
     return saida;
   };
+  // o slug do Chess.com termina nos lances que nomeiam a variante ("...-3...Qa5" = até o 3º das pretas),
+  // e é até aí que a posição ainda define a abertura. Sem esses números, 5 meias; teto de 8 para não virar meio-jogo.
+  const profundidade = url => {
+    const n = [...decodeURIComponent(url || '').matchAll(/(\d+)(\.\.\.|\.)/g)];
+    if (!n.length) return 5;
+    const u = n[n.length - 1];
+    return +u[1] * 2 - (u[2] === '.' ? 1 : 0);
+  };
   const melhorSeq = k => {
     const g = grupos[k];
     if (!g) return null;
     const [url, e] = Object.entries(g).sort((a, b) => b[1].n - a[1].n)[0];
-    return {url, san: linhaPrincipal(e.sans)};
+    return {url, san: linhaPrincipal(e.sans).slice(0, Math.min(profundidade(url), 8))};
   };
   for (const x of L) {
     const pg = parsePGN(x.g);
