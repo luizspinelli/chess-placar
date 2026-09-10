@@ -243,6 +243,9 @@
   .pct{display:inline-block;width:56px;height:6px;border-radius:999px;vertical-align:middle;margin-right:8px;background:var(--border2);overflow:hidden}
   .pct i{display:block;height:100%;background:var(--win);border-radius:999px}
   .kpi svg{width:100%;height:60px;display:block}
+  .distBar{display:flex;height:22px;margin-bottom:8px;border-radius:6px;overflow:hidden;background:var(--surface2)}
+  .distBar span{display:flex;align-items:center;justify-content:center;height:100%;min-width:3px;font-size:.7rem;font-weight:700;color:var(--bg)}
+  .distBar span+span{border-left:2px solid var(--surface)}
   .heatWrap{overflow-x:auto;margin-top:6px}
   .heat{display:grid;grid-template-columns:auto repeat(24,1fr);gap:2px;font-size:.62rem;color:var(--muted);align-items:center;min-width:430px}
   .heat span{text-align:center;white-space:nowrap;padding-right:3px}
@@ -784,6 +787,7 @@ const GLOSSARIO = {
   'De pretas': 'Clique no nome para ver a posição no tabuleiro: os lances mostrados são os que se repetem em todas as suas partidas daquela abertura, e é por eles que dá para reconhecê-la sem saber o nome.',
   'Melhores variantes': 'Clique no nome para ver a posição no tabuleiro: os lances mostrados são os que se repetem em todas as suas partidas daquela abertura, e é por eles que dá para reconhecê-la sem saber o nome.',
   'Piores variantes': 'Clique no nome para ver a posição no tabuleiro: os lances mostrados são os que se repetem em todas as suas partidas daquela abertura, e é por eles que dá para reconhecê-la sem saber o nome.',
+  'Distribuição por código ECO': 'ECO é a classificação padrão de aberturas (Encyclopaedia of Chess Openings), de A00 a E99. A = irregulares e de flanco, B = 1.e4 sem 1…e5, C = 1.e4 e5 e a Francesa, D = 1.d4 d5, E = Índias. Na barra a largura é o volume de partidas e a cor é o aproveitamento.',
   'Cor': 'Resultado quando você jogou de brancas e quando jogou de pretas.',
   'Mapa de calor': 'Cada célula é um dia da semana × hora. Verde = aproveitamento de 50% ou mais, vermelho = abaixo; quanto mais forte a cor, mais partidas naquele horário. Passe o mouse para os números.',
   'Como a sessão terminou': 'Qual foi o resultado da última partida antes de uma pausa. Parar muito após derrota costuma indicar "só mais uma para recuperar".',
@@ -1155,7 +1159,7 @@ function kpis(jogos, nick){
   ].join('');
 
   // ---- Aberturas (PGN)
-  const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, grupos = {};
+  const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, grupos = {}, faixaEco = {};
   const registra = (k, url, san) => {
     if (!san?.length) return;
     const e = ((grupos[k] ??= {})[url || ''] ??= {n: 0, sans: []});
@@ -1196,6 +1200,7 @@ function kpis(jogos, nick){
     registra(pg.familia, pg.url, pg.san); registra(chaveVar, pg.url, pg.san);
     conta(x.branco ? abB : abP, pg.familia, x.r);
     conta(variantes, chaveVar, x.r);
+    conta(faixaEco, /^[A-E]/.test(pg.eco) ? pg.eco[0] : '?', x.r);
     if (x.branco) { if (pg.primeiro) conta(meuPrimeiro, `1. ${pg.primeiro}`, x.r); }
     else if (pg.primeiro) { conta(primeiroAdv, `1. ${pg.primeiro}`, x.r); if (pg.resposta) conta(minhaResposta, `1. ${pg.primeiro} ${pg.resposta}`, x.r); }
   }
@@ -1209,11 +1214,24 @@ function kpis(jogos, nick){
   const topAb = (obj, flip, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(linhaAb(flip)).join('') || vazio;
   const piores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(a[1]) - ap(b[1])).slice(0, 8).map(linhaAb(false)).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
   const melhores = Object.entries(variantes).filter(([,s]) => n(s) >= 3).sort((a,b) => ap(b[1]) - ap(a[1])).slice(0, 8).map(linhaAb(false)).join('') || '<small>Precisa de ao menos 3 partidas por abertura</small>';
+  // largura = volume, cor = aproveitamento (mesma convenção do mapa de calor)
+  const ECO_FAIXA = {A: 'irregulares e de flanco', B: '1.e4 sem 1…e5', C: '1.e4 e5 e Francesa', D: '1.d4 d5', E: 'Índias com 1.d4 Cf6 2.c4 e6', '?': 'sem código'};
+  const faixasUsadas = ['A','B','C','D','E','?'].filter(k => faixaEco[k]);
+  const distEco = faixasUsadas.length < 2 ? '' :
+    (() => {
+      const totalEco = faixasUsadas.reduce((t, k) => t + n(faixaEco[k]), 0);
+      return `<div class="distBar">${faixasUsadas.map(k => {
+        const s = faixaEco[k], q = n(s), a = ap(s), alfa = (0.55 + 0.45 * Math.min(1, Math.abs(a - 0.5) * 4)).toFixed(2);
+        return `<span style="flex:${q};background:var(--${a >= 0.5 ? 'win' : 'loss'});opacity:${alfa}" title="${k} · ${q} partida${q > 1 ? 's' : ''} · ${Math.round(a * 100)}% de aproveitamento">${q / totalEco >= 0.06 ? k : ''}</span>`;
+      }).join('')}</div>`;
+    })() + tabela(faixasUsadas.map(k => linha(`${k} <small>${ECO_FAIXA[k]}</small>`, faixaEco[k])).join(''));
+
   const aberturas = [
     card('De brancas', tabela(topAb(abB, false)), 'span2'),
     card('De pretas', tabela(topAb(abP, true)), 'span2'),
     card('Melhores variantes <small>(mín. 3 partidas)</small>', tabela(melhores), 'span2'),
     card('Piores variantes <small>(mín. 3 partidas)</small>', tabela(piores), 'span2'),
+    distEco ? card('Distribuição por código ECO', distEco, 'span2') : '',
     card('Seu 1º lance de brancas', tabela(topN(meuPrimeiro, 5))),
     card('1º lance do adversário', tabela(topN(primeiroAdv, 5))),
     card('Sua resposta de pretas', tabela(topN(minhaResposta, 6)), 'span2'),

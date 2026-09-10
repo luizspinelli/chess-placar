@@ -9,6 +9,7 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 - **Modo simples**: placar, resumo em três frases, gráfico de rating, forma recente, brancas × pretas, sequência e ritmo.
 - **Modo avançado**: dez abas de indicadores (Análise, Resultados, Rating, Aberturas, Lances e relógio, Precisão, Adversários, Sessões, Horários, Volume), com achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas.
 - **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
+- **Distribuição por código ECO**: quanto do seu volume cai em cada família da classificação de aberturas (A a E), com o aproveitamento de cada uma.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
 - **Tabuleiro da abertura**: clique no nome de uma abertura e veja a posição depois dos lances, do seu ponto de vista (invertida quando você joga de pretas).
 - **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o mesmo recorte deslocado para trás. A comparação também entra nos achados automáticos e no resumo enviado à IA.
