@@ -1132,21 +1132,26 @@ function kpis(jogos, nick){
   ].join('');
 
   // ---- Aberturas (PGN)
-  const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, seqAb = {}, urls = {};
-  // a sequência mostrada é o prefixo comum às partidas do grupo: o que de fato define a abertura nas SUAS partidas
-  const prefixo = (k, san) => {
-    if (!san.length) return;
-    const p = seqAb[k];
-    if (!p) { seqAb[k] = san.slice(); return; }
-    let i = 0; while (i < p.length && i < san.length && p[i] === san[i]) i++;
-    p.length = i;
+  const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, grupos = {};
+  // a mesma abertura chega por ordens de lance diferentes (transposição), e aí o prefixo comum do grupo
+  // inteiro zera. Guardamos por variante e usamos a mais jogada, com a primeira sequência dela de reserva.
+  const registra = (k, url, san) => {
+    if (!san?.length) return;
+    const e = ((grupos[k] ??= {})[url || ''] ??= {n: 0, pre: san.slice(), primeira: san.slice()});
+    e.n++;
+    let i = 0; while (i < e.pre.length && i < san.length && e.pre[i] === san[i]) i++;
+    e.pre.length = i;
   };
-  const contaUrl = (k, url) => { if (url) ((urls[k] ??= {})[url] = (urls[k][url] || 0) + 1); };
+  const melhorSeq = k => {
+    const g = grupos[k];
+    if (!g) return null;
+    const [url, e] = Object.entries(g).sort((a, b) => b[1].n - a[1].n)[0];
+    return {url, san: e.pre.length ? e.pre : e.primeira};
+  };
   for (const x of L) {
     const pg = parsePGN(x.g);
     const chaveVar = `${pg.variante}${pg.eco ? ` <small>${pg.eco}</small>` : ''}`;
-    prefixo(pg.familia, pg.san); prefixo(chaveVar, pg.san);
-    contaUrl(pg.familia, pg.url); contaUrl(chaveVar, pg.url);
+    registra(pg.familia, pg.url, pg.san); registra(chaveVar, pg.url, pg.san);
     conta(x.branco ? abB : abP, pg.familia, x.r);
     conta(variantes, chaveVar, x.r);
     if (x.branco) { if (pg.primeiro) conta(meuPrimeiro, `1. ${pg.primeiro}`, x.r); }
@@ -1155,7 +1160,7 @@ function kpis(jogos, nick){
   const n = s => s.w + s.d + s.l, ap = s => (s.w + s.d/2) / n(s);
   const topN = (obj, k=8) => Object.entries(obj).sort((a,b) => n(b[1]) - n(a[1])).slice(0, k).map(([k,s]) => linha(k, s)).join('') || vazio;
   const comLink = (k, flip) => {
-    const m = urls[k], u = m && Object.entries(m).sort((a,b) => b[1] - a[1])[0][0], p = seqAb[k] || [];
+    const m = melhorSeq(k), u = m?.url || '', p = m?.san || [];
     return `<a class="ab"${u ? ` href="${escHtml(u)}"` : ''} data-nome="${escHtml(k.replace(/<[^>]+>/g, '').trim())}" data-lances="${escHtml(p.join(' '))}"${flip ? ' data-flip="1"' : ''} title="Ver a posição no tabuleiro">${k}</a>`;
   };
   const linhaAb = (flip) => ([k, s]) => linha(comLink(k, flip), s);
