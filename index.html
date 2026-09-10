@@ -507,6 +507,7 @@
         <img id="abImg" alt="" hidden>
         <p class="aviso" id="abAviso" hidden></p>
         <p class="lances" id="abLances"></p>
+        <p class="aviso" id="abLegenda" hidden>sua linha mais jogada nesta abertura</p>
         <a id="abLink" target="_blank" rel="noopener">Ver a abertura no Chess.com →</a>
       </div>
     </div>
@@ -822,8 +823,9 @@ function sparkline(vals, grande){
 }
 
 // ---- posição a partir dos lances (só para desenhar o tabuleiro da abertura)
-// Não valida legalidade: quando o lance é ambíguo para nós (peça cravada, por exemplo)
-// devolve '' e o tabuleiro simplesmente não aparece — melhor nada que posição errada.
+// Só resolve o necessário para saber QUEM se moveu: quando duas peças alcançam a casa,
+// descarta a que deixaria o próprio rei em xeque. Se ainda assim sobrar dúvida, devolve ''
+// e o tabuleiro não aparece — melhor nada que posição errada.
 const SALTOS = {N: [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]], K: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]};
 const RAIOS = {B: [[-1,-1],[-1,1],[1,-1],[1,1]], R: [[-1,0],[1,0],[0,-1],[0,1]]};
 RAIOS.Q = [...RAIOS.B, ...RAIOS.R];
@@ -836,6 +838,18 @@ function fenDaAbertura(san){
     const dr = Math.sign(r1 - r0), dc = Math.sign(c1 - c0);
     for (let r = r0 + dr, c = c0 + dc; r !== r1 || c !== c1; r += dr, c += dc) if (em(r, c)) return false;
     return true;
+  };
+  // uma peça cravada não pode sair: sem isso "Nf6" com dois cavalos candidatos ficaria ambíguo
+  const atacada = (r, c, porBrancas) => {
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+      const p = b[i * 8 + j];
+      if (!p || (p === p.toUpperCase()) !== porBrancas) continue;
+      const t = p.toUpperCase(), dr = r - i, dc = c - j;
+      if (t === 'P') { if (dr === (porBrancas ? -1 : 1) && Math.abs(dc) === 1) return true; continue; }
+      if (SALTOS[t]) { if (SALTOS[t].some(([a, z]) => a === dr && z === dc)) return true; continue; }
+      if (RAIOS[t].some(([a, z]) => { const k = a ? dr / a : dc / z; return k > 0 && Number.isInteger(k) && dr === a * k && dc === z * k; }) && livre([i, j], [r, c])) return true;
+    }
+    return false;
   };
   let brancas = true;
   for (let lance of san) {
@@ -871,8 +885,16 @@ function fenDaAbertura(san){
       else ok = RAIOS[tipo].some(([a, z]) => { const k = a ? dr / a : dc / z; return k > 0 && Number.isInteger(k) && dr === a * k && dc === z * k; }) && livre([r, c], [rd, cd]);
       if (ok) candidatos.push([r, c]);
     }
-    if (candidatos.length !== 1) return '';
-    const [ro, co] = candidatos[0];
+    const legais = candidatos.length < 2 ? candidatos : candidatos.filter(([r, c]) => {
+      const de = r * 8 + c, para = rd * 8 + cd, peca = b[de], antes = b[para];
+      b[para] = peca; b[de] = '';
+      const rei = b.indexOf(meu('k'));
+      const emXeque = rei >= 0 && atacada(Math.floor(rei / 8), rei % 8, !brancas);
+      b[de] = peca; b[para] = antes;
+      return !emXeque;
+    });
+    if (legais.length !== 1) return '';
+    const [ro, co] = legais[0];
     if (tipo === 'P' && co !== cd && !alvo) b[ro * 8 + cd] = '';  // en passant
     b[ro * 8 + co] = '';
     b[rd * 8 + cd] = m[6] ? meu(m[6]) : meu(tipo);
@@ -899,6 +921,7 @@ function abrirAbertura(el){
   const texto = lances.map((mv, i) => (i % 2 ? '' : `${i/2 + 1}.`) + mv).join(' ');
   $('abNome').textContent = el.dataset.nome || '';
   $('abLances').textContent = texto;
+  $('abLegenda').hidden = !texto;
   const img = $('abImg'), aviso = $('abAviso');
   img.hidden = !fen; aviso.hidden = !!fen;
   if (fen) {
@@ -1133,20 +1156,31 @@ function kpis(jogos, nick){
 
   // ---- Aberturas (PGN)
   const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, grupos = {};
-  // a mesma abertura chega por ordens de lance diferentes (transposição), e aí o prefixo comum do grupo
-  // inteiro zera. Guardamos por variante e usamos a mais jogada, com a primeira sequência dela de reserva.
   const registra = (k, url, san) => {
     if (!san?.length) return;
-    const e = ((grupos[k] ??= {})[url || ''] ??= {n: 0, pre: san.slice(), primeira: san.slice()});
-    e.n++;
-    let i = 0; while (i < e.pre.length && i < san.length && e.pre[i] === san[i]) i++;
-    e.pre.length = i;
+    const e = ((grupos[k] ??= {})[url || ''] ??= {n: 0, sans: []});
+    e.n++; e.sans.push(san);
+  };
+  // a linha mais jogada: a cada lance segue o mais frequente entre as partidas que chegaram até ali.
+  // Prefixo comum não serve — a mesma abertura chega por ordens diferentes (transposição) e colapsa em 1-2 lances.
+  const linhaPrincipal = sans => {
+    const saida = [];
+    let restantes = sans;
+    for (let i = 0; i < 12 && restantes.length; i++) {
+      const cont = {};
+      for (const a of restantes) if (a[i]) cont[a[i]] = (cont[a[i]] || 0) + 1;
+      const top = Object.entries(cont).sort((x, y) => y[1] - x[1])[0];
+      if (!top) break;
+      saida.push(top[0]);
+      restantes = restantes.filter(a => a[i] === top[0]);
+    }
+    return saida;
   };
   const melhorSeq = k => {
     const g = grupos[k];
     if (!g) return null;
     const [url, e] = Object.entries(g).sort((a, b) => b[1].n - a[1].n)[0];
-    return {url, san: e.pre.length ? e.pre : e.primeira};
+    return {url, san: linhaPrincipal(e.sans)};
   };
   for (const x of L) {
     const pg = parsePGN(x.g);
