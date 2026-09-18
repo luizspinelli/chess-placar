@@ -432,7 +432,7 @@
     </div>
     <div class="inline">
       <label title="Partidas contra bots, treinador (Coach) ou não ranqueadas ficam fora de tudo"><input type="checkbox" id="soHumanos" checked>Ignorar bots e amistosas</label>
-      <label title="Compara com o mesmo recorte imediatamente anterior. Dobra o número de requisições à API."><input type="checkbox" id="comparar">Comparar com período anterior</label>
+      <label title="Compara com o mesmo recorte imediatamente anterior. Vem ligada nos períodos relativos de até ~6 meses; dobra o número de requisições à API."><input type="checkbox" id="comparar">Comparar com período anterior</label>
     </div>
     <div class="inline">
       <label><input type="checkbox" id="auto">Atualizar a cada</label>
@@ -544,6 +544,7 @@ const MOTIVO = {checkmated:'mate', resigned:'desistência', timeout:'tempo', aba
   agreed:'acordo', repetition:'repetição', stalemate:'afogamento', insufficient:'material insuficiente', '50move':'50 lances', timevsinsufficient:'tempo × material'};
 const fmt = new Intl.DateTimeFormat('pt-BR', {dateStyle:'short', timeStyle:'short'});
 const fmtDia = new Intl.DateTimeFormat('pt-BR', {dateStyle:'short'});
+const fmtDiaMes = new Intl.DateTimeFormat('pt-BR', {day:'2-digit', month:'2-digit'});
 const hora = () => new Intl.DateTimeFormat('pt-BR', {timeStyle:'medium'}).format(new Date());
 const sinal = n => n > 0 ? `+${n}` : `${n}`;
 const escHtml = s => String(s).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
@@ -644,6 +645,7 @@ function linkAtual(){
   if ($('auto').checked) { q.set('auto', '1'); q.set('intervalo', $('intervalo').value); }
   if (!$('soHumanos').checked) q.set('bots', '1');
   if ($('comparar').checked) q.set('comparar', '1');
+  else if (comparaAuto($('periodo').value)) q.set('comparar', '0');
   if (document.documentElement.dataset.tema === 'claro') q.set('tema', 'claro');
   if (!document.body.classList.contains('simples')) q.set('modo', 'avancado');
   if (document.body.classList.contains('streamer')) q.set('streamer', '1');
@@ -696,7 +698,7 @@ function periodo(){
   const fim = $('dataFim').value ? new Date($('dataFim').value + 'T' + ($('horaFim').value || '23:59') + ':59') : null;
   return [ini, fim];
 }
-let ultimoRelativo = 'ano';
+let ultimoRelativo = 'ano', comparManual = false;
 // o período vive num input escondido: os atalhos só escrevem nele e o resto do app segue lendo $('periodo').value
 function aplicarPeriodo(v, sincronizar = true){
   if (!v) return;
@@ -706,6 +708,7 @@ function aplicarPeriodo(v, sincronizar = true){
   $('custom').hidden = !custom;
   $('relativo').hidden = custom;
   $('periodoTipo').querySelectorAll('button').forEach(b => b.classList.toggle('ativa', (b.dataset.tipo === 'absoluto') === custom));
+  if (!comparManual) $('comparar').checked = comparaAuto(v);
   let atalho = false;
   $('relativo').querySelectorAll('.grade button').forEach(b => { const on = b.dataset.p === v; atalho ||= on; b.classList.toggle('ativa', on); });
   if (!sincronizar) return;
@@ -713,6 +716,7 @@ function aplicarPeriodo(v, sincronizar = true){
   $('pNum').value = m && !atalho ? m[1] : '';
   if (m) $('pUni').value = m[2];
 }
+$('comparar').addEventListener('change', () => { comparManual = true; });
 $('periodoTipo').addEventListener('click', e => { const b = e.target.closest('button'); if (b) aplicarPeriodo(b.dataset.tipo === 'absoluto' ? 'custom' : ultimoRelativo); });
 $('relativo').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b) aplicarPeriodo(b.dataset.p); });
 const periodoLivre = () => { const n = parseInt($('pNum').value); if (n > 0) aplicarPeriodo(n + $('pUni').value, false); };
@@ -728,6 +732,33 @@ function periodoAnterior(ini, fim){
   const meses = p === 'mes' || p === 'mes-1' ? 1 : p === 'ano' ? 12 : /^\d+m$/.test(p) ? parseInt(p) : 0;
   return meses ? [recuaMes(ini, meses), new Date(ini.getTime() - 1000)] : [new Date(ini.getTime() - (f - ini)), new Date(ini.getTime() - 1000)];
 }
+// duração aproximada em dias, só para decidir se a comparação sai automática
+const duracaoEmDias = v => { const m = v.match(/^(\d+)([dwm])$/); return m ? m[1] * (m[2] === 'w' ? 7 : m[2] === 'm' ? 30 : 1) : v === 'mes' || v === 'mes-1' ? 30 : Infinity; };
+// em recorte relativo curto a comparação com o período anterior vem ligada; no ano inteiro não,
+// porque seriam 12 arquivos mensais a mais só para o comparativo
+const comparaAuto = v => duracaoEmDias(v) <= 190;
+// quebra o período nos blocos da própria unidade (4w → 4 semanas, 3m → 3 meses, 5d → 5 dias) para
+// mostrar a evolução dentro dele; acima de 12 blocos agrupa, senão a tabela vira ruído
+function evolucaoDoPeriodo(ini, fim){
+  const m = $('periodo').value.match(/^(\d+)([dwm])$/);
+  if (!m) return null;
+  const n = +m[1], uni = m[2];
+  if (n < 2) return null;
+  const passo = Math.ceil(n / 12), qtd = Math.ceil(n / passo), fimTs = (fim || new Date()).getTime(), blocos = [];
+  for (let i = 0; i < qtd; i++) {
+    const a = uni === 'm' ? new Date(ini.getFullYear(), ini.getMonth() + i * passo, 1) : new Date(ini.getTime() + i * passo * (uni === 'w' ? 7 : 1) * 864e5);
+    if (a.getTime() >= fimTs) break;
+    const z = uni === 'm' ? new Date(ini.getFullYear(), ini.getMonth() + (i + 1) * passo, 1) : new Date(a.getTime() + passo * (uni === 'w' ? 7 : 1) * 864e5);
+    const fecha = Math.min(z.getTime(), fimTs);
+    blocos.push({ini: a.getTime(), fim: fecha, rotulo: rotuloBloco(a, new Date(fecha - 1), uni, passo)});
+  }
+  const UNI = {d: ['dia a dia', 'dias'], w: ['semana a semana', 'semanas'], m: ['mês a mês', 'meses']};
+  return blocos.length > 1 ? {titulo: passo === 1 ? UNI[uni][0] : `a cada ${passo} ${UNI[uni][1]}`, blocos} : null;
+}
+// um bloco de calendário fechado é o próprio mês; nos rolling o corte cai no meio do dia, então vale o intervalo
+const rotuloBloco = (a, z, uni, passo) => uni === 'm'
+  ? (passo === 1 ? chaveMes(a) : `${chaveMes(a)} – ${chaveMes(z)}`)
+  : (fmtDiaMes.format(a) === fmtDiaMes.format(z) ? fmtDiaMes.format(a) : `${fmtDiaMes.format(a)} – ${fmtDiaMes.format(z)}`);
 
 async function getJSON(url, tentativa = 0){
   const c = cache.get(url);
@@ -806,6 +837,7 @@ const GLOSSARIO = {
   'Piores variantes': 'Clique no nome para ver a posição no tabuleiro: os lances mostrados são os que se repetem em todas as suas partidas daquela abertura, e é por eles que dá para reconhecê-la sem saber o nome.',
   'Distribuição por código ECO': 'ECO é a classificação padrão de aberturas (Encyclopaedia of Chess Openings), de A00 a E99. A = irregulares e de flanco, B = 1.e4 sem 1…e5, C = 1.e4 e5 e a Francesa, D = 1.d4 d5, E = Índias. Na barra a largura é o volume de partidas e a cor é o aproveitamento.',
   'Cor': 'Resultado quando você jogou de brancas e quando jogou de pretas.',
+  'Evolução': 'Quebra o período escolhido em blocos da mesma unidade — 4 semanas viram 4 semanas, 3 meses viram 3 meses, 5 dias viram 5 dias — com o aproveitamento e a variação de rating de cada um. Períodos longos agrupam os blocos para caber em até 12 linhas.',
   'Mapa de calor': 'Cada célula é um dia da semana × hora. Verde = aproveitamento de 50% ou mais, vermelho = abaixo; quanto mais forte a cor, mais partidas naquele horário. Passe o mouse para os números.',
   'Como a sessão terminou': 'Qual foi o resultado da última partida antes de uma pausa. Parar muito após derrota costuma indicar "só mais uma para recuperar".',
   'Sequências': 'Série atual e maiores séries de vitórias e derrotas seguidas no período.',
@@ -997,9 +1029,15 @@ function kpis(jogos, nick){
     prevTs = x.ts;
   }
 
+  // ---- Evolução dentro do período (blocos vindos do próprio atalho: 4 semanas, 3 meses, 5 dias…)
+  const evo = estado?.evolucao ? {titulo: estado.evolucao.titulo, blocos: estado.evolucao.blocos.map(b => ({...b, n: 0, w: 0, d: 0, l: 0, delta: 0, rated: 0}))} : null;
+  // o último bloco fica aberto: numa atualização automática chegam partidas depois do fim calculado na busca
+  const achaBloco = ts => { const t = ts * 1000, bs = evo.blocos; if (t < bs[0].ini) return null; return bs.find(b => t < b.fim) || bs[bs.length-1]; };
+
   // ---- Resultados
   const cor = {}, faixa = {}, ganhou = {}, perdeu = {}, empatou = {}, rated = {}, regras = {};
   for (const x of L) {
+    if (evo) { const b = achaBloco(x.ts); if (b) { b.n++; b[x.r]++; if (x.g.delta !== null) { b.delta += x.g.delta; b.rated++; } } }
     conta(cor, x.branco ? 'Brancas' : 'Pretas', x.r);
     const dif = x.adv.rating - x.eu.rating;
     conta(faixa, dif > 25 ? 'Mais forte' : dif < -25 ? 'Mais fraco' : 'Parelho', x.r);
@@ -1010,7 +1048,12 @@ function kpis(jogos, nick){
     conta(regras, x.g.rules, x.r);
   }
   const motivos = obj => Object.entries(obj).sort((a,b) => b[1]-a[1]).map(([k,v]) => kv(MOTIVO[k] || k, v)).join('') || kv('–', 0);
+  const linhaBloco = b => {
+    const ap = b.n ? (b.w + b.d/2) / b.n * 100 : 0;
+    return `<tr><td>${b.rotulo}</td><td>${b.n ? `<span class="pct"><i style="width:${ap}%"></i></span><b>${Math.round(ap)}%</b> <small>${b.w}-${b.d}-${b.l}</small>` : '<small>sem partidas</small>'}</td><td><b class="${cls(b.delta)}">${b.rated ? sinal(b.delta) : '–'}</b></td></tr>`;
+  };
   const resultados = [
+    evo ? card(`Evolução ${evo.titulo}`, tabela('<tr><td></td><td><small>aproveitamento</small></td><td><small>rating</small></td></tr>' + evo.blocos.map(linhaBloco).join('')), 'span2 evolucao') : '',
     card('Cor', tabela(ordem(cor, ['Brancas','Pretas']))),
     card('Adversário <small>(±25 de rating)</small>', tabela(ordem(faixa, ['Mais forte','Parelho','Mais fraco']))),
     card('Como terminaram', `<div class="motivos">
@@ -1546,6 +1589,7 @@ function resumoParaIA(curto){
       if (tab === 'Aberturas') titulo = {'De brancas': 'Partidas em que o jogador tinha as BRANCAS, por abertura (a defesa nomeada é escolha do adversário; o jogador só controla o 1º lance e a resposta)', 'De pretas': 'Partidas em que o jogador tinha as PRETAS, por abertura (aqui a defesa nomeada é escolha do jogador)'}[titulo] || titulo;
       const rows = [...c.querySelectorAll('tr')].map(tr => {
         const [a, b] = [...tr.children].map(td => td.textContent.replace(/\s+/g,' ').trim());
+        if (!a) return '';   // linha de cabeçalho de coluna não diz nada fora da tabela
         const m = b && b.match(/^(\d+)%\s+(\d+)-(\d+)-(\d+)$/);
         if (m && ABAS_SENSIVEIS.has(tab) && +m[2] + +m[3] + +m[4] < MIN) return '';
         return m ? `${a}: ${+m[2] + +m[3] + +m[4]} partidas, aproveitamento ${m[1]}% (${m[2]}V ${m[3]}E ${m[4]}D)` : `${a}: ${b}`;
@@ -2179,7 +2223,7 @@ async function buscar(atualizacao){
       try { stats = await getJSON(API + nick + '/stats'); } catch {}
     } else { perfil = estado.perfil; stats = estado.stats; }
     const comp = compTc ? {rotulo: `${fmtDia.format(iniAnt)} a ${fmtDia.format(fimAnt)}`, tc: compTc} : null;
-    estado = {jogos, antes, depois, nick, rotulo, monitorando, ignoradas, perfil, stats, comp};
+    estado = {jogos, antes, depois, nick, rotulo, monitorando, ignoradas, perfil, stats, comp, evolucao: evolucaoDoPeriodo(inicio, fim)};
     const contagem = {};
     for (const g of jogos) contagem[g.time_class] = (contagem[g.time_class] || 0) + 1;
     const classes = ['bullet','blitz','rapid','daily'].filter(tc => contagem[tc] && modalidades.has(tc));
@@ -2222,7 +2266,7 @@ async function buscar(atualizacao){
   if (q.get('tc')) { const tcs = q.get('tc').split(','); document.querySelectorAll('input[name=tc]').forEach(i => i.checked = tcs.includes(i.value)); }
   if (q.get('intervalo')) $('intervalo').value = q.get('intervalo');
   if (q.get('bots') === '1') $('soHumanos').checked = false;
-  if (q.get('comparar') === '1') $('comparar').checked = true;
+  if (q.has('comparar')) { $('comparar').checked = q.get('comparar') === '1'; comparManual = true; }
   if (q.get('overlay')) $('ovTipo').value = q.get('overlay');
   if (q.get('meta')) $('ovMeta').value = q.get('meta');
   if (q.get('fundo')) $('ovFundo').value = q.get('fundo');

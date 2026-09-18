@@ -12,7 +12,8 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 - **Distribuição por código ECO**: quanto do seu volume cai em cada família da classificação de aberturas (A a E), com o aproveitamento de cada uma.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
 - **Tabuleiro da abertura**: clique no nome de uma abertura e veja a posição depois dos lances, do seu ponto de vista (invertida quando você joga de pretas).
-- **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o bloco de calendário anterior completo — mês em curso × mês anterior inteiro, ano × ano anterior; nos períodos rolling e no personalizado, contra a mesma duração imediatamente antes. A comparação também entra nos achados automáticos e no resumo enviado à IA.
+- **Evolução dentro do período**: pedindo 4 semanas, 3 meses ou 5 dias, a aba *Resultados* abre com a quebra nos mesmos blocos — semana a semana, mês a mês, dia a dia — com aproveitamento e variação de rating de cada um. Acima de 12 blocos eles são agrupados (30 dias viram 10 blocos de 3 dias).
+- **Comparação de períodos**: já vem ligada nos períodos relativos de até ~6 meses (desmarcar vale para as buscas seguintes). O placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o bloco de calendário anterior completo — mês em curso × mês anterior inteiro, ano × ano anterior; nos períodos rolling e no personalizado, contra a mesma duração imediatamente antes. A comparação também entra nos achados automáticos e no resumo enviado à IA.
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
 - **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Gera diagnóstico e plano de treino adaptados ao seu rating.
 - **Exportar**: PDF da análise e CSV das partidas.
@@ -31,7 +32,7 @@ Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.ht
 | `data`, `hora`, `dataFim`, `horaFim` | `YYYY-MM-DD`, `HH:MM` | intervalo do período `custom` (fim opcional) |
 | `tc` | `bullet,blitz,rapid,daily` | modalidades consideradas |
 | `bots` | `1` | inclui partidas contra bots e amistosas (por padrão ficam fora) |
-| `comparar` | `1` | compara com o período anterior equivalente (dobra as requisições à API) |
+| `comparar` | `1`, `0` | compara com o período anterior equivalente (dobra as requisições à API); já vem ligado nos períodos relativos de até ~6 meses, e `0` desliga |
 | `auto` | `1` | atualização automática |
 | `intervalo` | `30`, `60`, `120`, `300` | segundos entre atualizações |
 | `modo` | `avancado` | abre no modo avançado |
