@@ -719,11 +719,12 @@ $('pUni').addEventListener('change', periodoLivre);
 
 // recua n meses mantendo o dia (28 de fevereiro quando o dia não existe no mês de destino)
 const recuaMes = (d, n) => { const x = new Date(d), dia = x.getDate(); x.setDate(1); x.setMonth(x.getMonth() - n); x.setDate(Math.min(dia, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return x; };
-// período de comparação: o mesmo recorte de calendário deslocado para trás; no personalizado, a mesma duração imediatamente antes
+// período de comparação: nos recortes de calendário, o bloco completo anterior (mês em curso vs. mês anterior
+// inteiro, não só o mesmo trecho dele); no personalizado e nos rolling, a mesma duração imediatamente antes
 function periodoAnterior(ini, fim){
   const p = $('periodo').value, f = fim || new Date();
   const meses = p === 'mes' || p === 'mes-1' ? 1 : p === 'ano' ? 12 : /^\d+m$/.test(p) ? parseInt(p) : 0;
-  return meses ? [recuaMes(ini, meses), recuaMes(f, meses)] : [new Date(ini.getTime() - (f - ini)), new Date(ini.getTime() - 1000)];
+  return meses ? [recuaMes(ini, meses), new Date(ini.getTime() - 1000)] : [new Date(ini.getTime() - (f - ini)), new Date(ini.getTime() - 1000)];
 }
 
 async function getJSON(url, tentativa = 0){
