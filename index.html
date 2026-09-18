@@ -329,10 +329,13 @@
   #filtrosToggle{display:none}
   /* tablet: coluna única rolável, filtros recolhíveis, form em várias colunas */
   @media(max-width:1100px){
-    html,body{overflow:auto}
+    html,body{height:auto;overflow:visible}
     main{display:flex;flex-direction:column;height:auto;padding:12px;gap:12px}
     body:not(.inicio):not(.streamer) #filtrosToggle{display:block;padding:10px;background:var(--surface);color:var(--text);border:1px solid var(--border);text-align:left;font-weight:600}
-    body:not(.inicio):not(.filtrosAbertos) form{display:none!important}
+    /* com os filtros fechados sobra só o status: sem ele a busca fica sem nenhum sinal */
+    body:not(.inicio):not(.filtrosAbertos) form{padding:0;gap:0;border:0;background:none;box-shadow:none}
+    body:not(.inicio):not(.filtrosAbertos) form>:not(#status):not(#prox){display:none!important}
+    body:not(.filtrosAbertos) #status:empty{display:none}
     form{max-height:none;overflow:visible;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px 16px;align-items:start}
     form h1{display:none}
     form #ovOpcoes,form .acoes,form #status,form #prox{grid-column:1/-1}
@@ -340,6 +343,8 @@
     #kpiGrid{overflow:visible}
     #lista{max-height:none}
     #resumoMini{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .abas{scrollbar-width:none}
+    .abas::-webkit-scrollbar{display:none}
     body.streamer main{min-height:100vh}
   }
   /* celular */
@@ -353,9 +358,17 @@
     #perfil .hist{margin-left:0;width:100%;gap:12px}
     #perfil .hist b{font-size:.9rem}
     .resumo{font-size:.78rem;padding:6px 10px}
-    .grupoAbas{padding:6px 8px}
-    .abasWrap{flex-wrap:wrap}
-    #verMenos{margin:6px 10px}
+    /* placar inteiro grudado come 400px de tela no celular */
+    #placar{position:static}
+    .abasWrap{flex-wrap:nowrap}
+    .grupoAbas{padding:4px 6px;border-right:0}
+    .grupoAbas .grupoAba{display:none}
+    #verMenos{margin:0 8px;flex:0 0 auto}
+    .abas button{padding:8px 12px}
+    .grade button{padding:9px 4px}
+    .chips span{padding:6px 12px}
+    /* abaixo de 16px o iOS dá zoom ao focar o campo */
+    form input,form select,.pag input,#inicio input{font-size:16px}
     #resumo{padding:12px}
     #resumoMini{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .mini{padding:10px}
@@ -366,8 +379,9 @@
     .pag{flex-wrap:wrap;gap:6px}
     #modal{padding:0}
     #modal .janela{border-radius:0;border:0}
-    #modal .topo{flex-wrap:wrap;gap:6px;padding:6px 8px}
+    #modal .topo{flex-wrap:wrap;gap:6px;padding:6px 44px 6px 8px;position:relative}
     #modal .topo .inline{margin-left:0;width:100%;justify-content:space-between}
+    #modal .topo button.fechar{position:absolute;top:6px;right:8px}
     #modal .corpo{padding:4px}
     #modal svg{min-height:55vh}
     .ia .cfg input{flex-basis:100%}
@@ -1789,7 +1803,10 @@ function desenharModal(){
   if (vista.t0 === null) { vista.t0 = T0; vista.t1 = T1; }
   const t0 = vista.t0, t1 = vista.t1, span = Math.max(porTempo ? 60 : 1, t1 - t0);
   const pts = todos.filter(p => K(p) >= t0 && K(p) <= t1);
-  const W = 1200, H = 560, ml = 56, mr = 24, mt = 26, mb = 44;
+  // viewBox proporcional ao corpo: com preserveAspectRatio=none, um W fixo esmaga os textos no celular
+  const H = 560, cx = corpo.getBoundingClientRect();
+  const W = Math.round(H * Math.max(.55, cx.width / Math.max(1, cx.height)));
+  const ml = 56, mr = 24, mt = 26, mb = 44;
   const base = pts.length ? pts : todos;
   const min = Math.min(...base.map(p => p.rating)), max = Math.max(...base.map(p => p.rating));
   const pad = Math.max(10, Math.round((max - min) * 0.1));
@@ -1798,7 +1815,7 @@ function desenharModal(){
   const passo = [10, 20, 25, 50, 100, 200].find(p => (y1 - y0) / p <= 8) || 500;
   let g = '';
   for (let v = Math.ceil(y0 / passo) * passo; v <= y1; v += passo) g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="${cor('--border')}"/><text x="${ml - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="13" fill="${cor('--muted')}">${v}</text>`;
-  const nT = Math.min(10, Math.max(2, porTempo ? Math.round(span / 86400 / 7) + 1 : Math.min(10, Math.round(span / 5) + 1)));
+  const nT = Math.min(W < 450 ? 2 : W < 700 ? 3 : 10, Math.max(2, porTempo ? Math.round(span / 86400 / 7) + 1 : Math.min(10, Math.round(span / 5) + 1)));
   const dias = porTempo ? span / 86400 : (todos[Math.min(todos.length-1, Math.round(t1))].ts - todos[Math.max(0, Math.round(t0))].ts) / 86400;
   const fmtEixo = new Intl.DateTimeFormat('pt-BR', dias > 120 ? {month: 'short', year: '2-digit'} : dias > 2 ? {day: '2-digit', month: '2-digit'} : {day: '2-digit', hour: '2-digit', minute: '2-digit'});
   for (let i = 0; i <= nT; i++) {
@@ -1830,9 +1847,10 @@ function desenharModal(){
     <g clip-path="url(#clip)"><path d="${area}" fill="${cor('--accent')}" opacity=".08"/><path d="${linha}" fill="none" stroke="${cor('--text')}" stroke-width="1.8"/>${mediaMovel}${pontos}</g>
     ${marca(pts[iMax], 'pico', -12)}${marca(pts[iMin], 'vale', 22)}
     <text x="${W - mr}" y="${mt - 8}" text-anchor="end" font-size="13" fill="${cor('--muted')}">${resumo}</text>
-    <text x="${ml}" y="${mt - 8}" font-size="12" fill="${cor('--muted')}">${t0 === T0 && t1 === T1 ? 'rolagem = zoom · arrastar = mover · clique no ponto = abrir partida' : 'duplo clique = ver tudo'}</text></svg>`);
+    ${W < 900 ? '' : `<text x="${ml}" y="${mt - 8}" font-size="12" fill="${cor('--muted')}">${t0 === T0 && t1 === T1 ? 'rolagem = zoom · arrastar = mover · clique no ponto = abrir partida' : 'duplo clique = ver tudo'}</text>`}</svg>`);
   modalGeo = {t0, t1, span, T0, T1, X, Y, K, pts, W, H, ml, mr, mt, mb, minZoom: porTempo ? 600 : 4};
 }
+addEventListener('resize', () => { if ($('modal').classList.contains('aberto')) desenharModal(); });
 let modalGeo = null, arrasto = null;
 {
   const corpo = $('modalCorpo'), tip = $('modalTip');
