@@ -12,7 +12,7 @@ Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra pl
 - **Distribuição por código ECO**: quanto do seu volume cai em cada família da classificação de aberturas (A a E), com o aproveitamento de cada uma.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
 - **Tabuleiro da abertura**: clique no nome de uma abertura e veja a posição depois dos lances, do seu ponto de vista (invertida quando você joga de pretas).
-- **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o mesmo recorte deslocado para trás. A comparação também entra nos achados automáticos e no resumo enviado à IA.
+- **Comparação de períodos**: marque *Comparar com período anterior* e o placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o bloco de calendário anterior completo — mês em curso × mês anterior inteiro, ano × ano anterior; nos períodos rolling e no personalizado, contra a mesma duração imediatamente antes. A comparação também entra nos achados automáticos e no resumo enviado à IA.
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
 - **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Gera diagnóstico e plano de treino adaptados ao seu rating.
 - **Exportar**: PDF da análise e CSV das partidas.
