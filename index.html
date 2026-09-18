@@ -360,10 +360,12 @@
     .resumo{font-size:.78rem;padding:6px 10px}
     /* placar inteiro grudado come 400px de tela no celular */
     #placar{position:static}
-    .abasWrap{flex-wrap:nowrap}
-    .grupoAbas{padding:4px 6px;border-right:0}
+    /* 10 abas num scroll horizontal ficam fora de alcance no celular: quebram em linhas */
+    .abasWrap{flex-wrap:wrap;align-items:center;padding:6px 8px 8px;gap:6px}
+    .abasWrap #abasKpi{order:2;flex:1 1 100%;flex-wrap:wrap;overflow-x:visible;justify-content:flex-start;gap:6px;padding:0}
+    .abasWrap #abasKpi .grupoAbas,.abasWrap #abasKpi .botoes{display:contents}
     .grupoAbas .grupoAba{display:none}
-    #verMenos{margin:0 8px;flex:0 0 auto}
+    #verMenos{order:1;margin:0 0 0 auto;flex:0 0 auto}
     .abas button{padding:8px 12px}
     .grade button{padding:9px 4px}
     .chips span{padding:6px 12px}
