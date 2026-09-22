@@ -10,6 +10,13 @@ Há exatamente **duas dependências, vendorizadas em `vendor/`** e servidas da m
 
 Acessórios: `og.png` é a imagem de preview de link (Open Graph) e `og-card.html` é o fonte dela — abrir no navegador, capturar 1470×772 e redimensionar para 1200×630.
 
+## Documentação como código
+
+- A documentação mora no repositório, em Markdown, em `docs/`, e muda no **mesmo commit** que o código que descreve. Feature sem doc atualizada é feature incompleta — vale para criar, alterar comportamento e remover.
+- Um arquivo por feature em `docs/features/`, seguindo o template e o índice de `docs/README.md` (Objetivo · Como usar · Como funciona · Decisões · Limites · Como testar). Feature nova = arquivo novo + linha no índice.
+- Papéis, sem duplicar: `README.md` é a vitrine para o usuário (o que faz, como usar, parâmetros, privacidade); `docs/features/` explica cada feature em profundidade, com regras, limiares e o **porquê** das decisões (e as alternativas descartadas — é o que evita a discussão recomeçar do zero); este `CLAUDE.md` é o mapa para quem mexe no código (arquitetura, arquivos, convenções, armadilhas). Um detalhe fica no lugar mais específico e os outros linkam.
+- Limiares, constantes e nomes de função citados na doc existem no código com o mesmo valor. Ao mudar um, `grep` em `docs/` antes de commitar.
+
 ## Arquivos e ordem de carga
 
 Os scripts compartilham o escopo global: `let`/`const` de topo de um arquivo são visíveis nos seguintes. A ordem só importa para o que **executa durante a carga** (listeners, `renderNicks()`, o bloco de bootstrap); chamadas em tempo de execução alcançam qualquer função de qualquer arquivo. Ao criar um arquivo, incluí-lo no `index.html` na posição certa e manter `app.js` por último.

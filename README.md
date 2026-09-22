@@ -96,7 +96,9 @@ vendor/chess.js/   chess.js 0.12.1 (BSD-2)
 og-card.html       fonte da imagem de preview (og.png)
 ```
 
-Sem build: os scripts são clássicos, carregados nessa ordem, e compartilham o escopo global. As duas dependências ficam em `vendor/`, servidas da mesma origem. Para rodar localmente basta abrir `index.html` no navegador. Convenções de código e detalhes de arquitetura estão em `CLAUDE.md`.
+Sem build: os scripts são clássicos, carregados nessa ordem, e compartilham o escopo global. As duas dependências ficam em `vendor/`, servidas da mesma origem.
+
+Cada feature tem um documento em [`docs/features/`](docs/README.md) — comportamento, regras, limiares e o porquê das decisões. Convenções de código e arquitetura estão em `CLAUDE.md`. Para rodar localmente basta abrir `index.html` no navegador. Convenções de código e detalhes de arquitetura estão em `CLAUDE.md`.
 
 ## Publicar
 
