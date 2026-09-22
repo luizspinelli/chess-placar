@@ -18,7 +18,7 @@ function errosDaPartida(g, nick){
     const antes = chance(i), depois = chance(i + 1);
     if (antes == null || depois == null) continue;
     const queda = antes - depois, grau = GRAUS.find(([min]) => queda >= min)?.[1];
-    if (grau) erros.push({ply: i, lance: Math.floor(i / 2) + 1, san: pg.san[i], grau, queda: Math.round(queda), antes: Math.round(antes), depois: Math.round(depois), relogio: pg.clks[i] ?? null, fase: FASE_PLY(i)});
+    if (grau) erros.push({ply: i, lance: Math.floor(i / 2) + 1, san: pg.san[i], melhor: c.m?.[i] || null, grau, queda: Math.round(queda), antes: Math.round(antes), depois: Math.round(depois), relogio: pg.clks[i] ?? null, fase: FASE_PLY(i)});
   }
   // decisivo: primeiro erro que deixou a chance abaixo de 30% sem ela voltar a passar de 45% até o fim
   let decisivo = null;
@@ -76,7 +76,7 @@ function cardsErros(res, total, nick){
     .map(([k, v]) => kv(escHtml(k), `${(v.graves / v.n).toFixed(1)} <small>graves/partida · ${v.n} partidas</small>`)).join('');
   const dec = res.decisivos.sort((a, b) => b.x.ts - a.x.ts).slice(0, 8).map(({x, er}) => {
     const quem = escHtml(x.adv?.username || '');
-    return `<tr><td>${x.g.url ? `<a href="${escHtml(x.g.url)}" target="_blank" rel="noopener">` : ''}${fmtDiaMes.format(x.dt)} vs ${quem}${x.g.url ? '</a>' : ''} <small>lance ${er.lance} ${escHtml(er.san)}</small></td><td><b class="l">−${er.queda} pp</b>${er.relogio != null ? ` <small>${seg(er.relogio)} no relógio</small>` : ''}</td></tr>`;
+    return `<tr><td>${x.g.url ? `<a href="${escHtml(x.g.url)}" target="_blank" rel="noopener">` : ''}${fmtDiaMes.format(x.dt)} vs ${quem}${x.g.url ? '</a>' : ''} <small>lance ${er.lance} ${escHtml(er.san)}${er.melhor ? ` · melhor ${escHtml(er.melhor)}` : ''}</small></td><td><b class="l">−${er.queda} pp</b>${er.relogio != null ? ` <small>${seg(er.relogio)} no relógio</small>` : ''}</td></tr>`;
   }).join('');
   return [
     card('Erros <small>(motor)</small>', tabela(geral)),

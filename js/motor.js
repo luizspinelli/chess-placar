@@ -26,41 +26,48 @@ const motorComando = (cmd, fim) => new Promise(ok => {
   w.onmessage = e => { const t = String(e.data); linhas.push(t); if (fim.test(t)) { w.onmessage = null; ok(linhas); } };
   w.postMessage(cmd);
 });
-// avalia a posição depois dos lances `uci`; devolve cp do ponto de vista das BRANCAS (o Stockfish responde do lado que move)
+// avalia a posição depois dos lances `uci`; devolve {cp, best}: cp do ponto de vista das BRANCAS (o Stockfish
+// responde do lado que move) e o melhor lance em UCI
 async function motorAvaliar(uci, profundidade, brancasMovem){
   motor.worker.postMessage('position startpos' + (uci.length ? ' moves ' + uci.join(' ') : ''));
   const linhas = await motorComando('go depth ' + profundidade, /^bestmove/);
   let info = null;
   for (const l of linhas) if (l.startsWith('info depth ') && l.includes(' score ') && !/ (upper|lower)bound/.test(l)) info = l;
-  const m = info?.match(/score (cp|mate) (-?\d+)/);
-  if (!m) return null;
+  const best = linhas[linhas.length - 1].split(' ')[1], m = info?.match(/score (cp|mate) (-?\d+)/);
+  const r = {cp: null, best: best && best !== '(none)' ? best : null};
+  if (!m) return r;
   const lado = brancasMovem ? 1 : -1, n = +m[2];
-  if (m[1] === 'cp') return n * lado;
-  if (n === 0) return -MATE_BASE * lado;             // "mate 0": quem move já está em mate
-  return (n > 0 ? 1 : -1) * lado * (MATE_BASE + Math.abs(n));
+  r.cp = m[1] === 'cp' ? n * lado : n === 0 ? -MATE_BASE * lado : (n > 0 ? 1 : -1) * lado * (MATE_BASE + Math.abs(n));   // "mate 0": quem move já está em mate
+  return r;
 }
-// evals[i] = avaliação DEPOIS do i-ésimo lance (evals[0] = posição inicial). null se cancelado no meio.
+// UCI → SAN na posição atual, sem deixar rastro (joga e desfaz)
+const uciParaSan = (ch, uci) => { if (!uci || uci.length < 4) return null; const mv = ch.move({from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4]}); if (!mv) return null; ch.undo(); return mv.san; };
+// {e, m}: e[i] = avaliação DEPOIS do i-ésimo lance (e[0] = posição inicial); m[i] = melhor lance na posição ANTES
+// do i-ésimo lance, em SAN — é o que deveria ter sido jogado no lugar dele. null se cancelado no meio.
 async function avaliarPartida(g, profundidade, aoAvancar){
   const san = parsePGN(g).san, ch = new Chess(), uci = [];
   motor.inicial[profundidade] ??= await motorAvaliar([], profundidade, true);
-  const evals = [motor.inicial[profundidade]];
+  const e = [motor.inicial[profundidade].cp], m = [];
+  let melhor = motor.inicial[profundidade].best;
   for (let i = 0; i < san.length; i++) {
+    m.push(uciParaSan(ch, melhor));   // antes de aplicar o lance: o SAN depende da posição em que o melhor seria jogado
     const mv = ch.move(san[i]);   // modo estrito: o "sloppy" do chess.js lê "bxa3" como lance de bispo e falha
     if (!mv) throw new Error(`lance ${Math.floor(i / 2) + 1} (${san[i]}) não é válido`);
     uci.push(mv.from + mv.to + (mv.promotion || ''));
     if (motor.cancelar) return null;
     // posição terminal não precisa de motor: mate é mate, afogamento é zero
-    evals.push(ch.in_checkmate() ? (ch.turn() === 'w' ? -MATE_BASE : MATE_BASE) : ch.game_over() ? 0 : await motorAvaliar(uci, profundidade, ch.turn() === 'w'));
+    const r = ch.in_checkmate() ? {cp: ch.turn() === 'w' ? -MATE_BASE : MATE_BASE, best: null} : ch.game_over() ? {cp: 0, best: null} : await motorAvaliar(uci, profundidade, ch.turn() === 'w');
+    e.push(r.cp); melhor = r.best;
     aoAvancar?.();
   }
-  return evals;
+  return {e, m};
 }
 
-// ---- cache: {url: {p: profundidade, t: quando, e: [cp...] | null (partida que o motor não conseguiu ler)}}
+// ---- cache: {url: {p: profundidade, t: quando, e: [cp...] | null (partida que o motor não conseguiu ler), m: [melhor lance em SAN...]}}
 let evalsCache = (() => { try { return JSON.parse(lerLS(CHAVE_EVALS, '{}')) || {}; } catch { return {}; } })();
 const evalsDe = g => { const c = evalsCache[g.url]; return c && c.e ? c : null; };
-function guardarEvals(g, p, e){
-  evalsCache[g.url] = {p, t: Date.now(), e};
+function guardarEvals(g, p, res){
+  evalsCache[g.url] = {p, t: Date.now(), e: res?.e ?? null, m: res?.m};
   const urls = Object.keys(evalsCache);
   if (urls.length > MAX_EVALS) for (const u of urls.sort((a, b) => evalsCache[a].t - evalsCache[b].t).slice(0, urls.length - MAX_EVALS)) delete evalsCache[u];
   gravarLS(CHAVE_EVALS, JSON.stringify(evalsCache));
@@ -84,12 +91,12 @@ async function motorAnalisar(){
     let ultimaTela = 0;
     for (const g of fila) {
       if (motor.cancelar) break;
-      let evals = null;
+      let res = null;
       try {
-        evals = await avaliarPartida(g, prof, () => { motor.progresso.pos++; motor.progresso.ms = performance.now() - t0; const agora = performance.now(); if (agora - ultimaTela > 500) { ultimaTela = agora; renderMotor(); } });
+        res = await avaliarPartida(g, prof, () => { motor.progresso.pos++; motor.progresso.ms = performance.now() - t0; const agora = performance.now(); if (agora - ultimaTela > 500) { ultimaTela = agora; renderMotor(); } });
       } catch (err) { guardarEvals(g, prof, null); motor.progresso.falhas++; motor.progresso.feitas++; continue; }
-      if (!evals) break;
-      guardarEvals(g, prof, evals);
+      if (!res) break;
+      guardarEvals(g, prof, res);
       motor.progresso.feitas++;
       // a aba Precisão mostra os erros: refaz os cards conforme as partidas chegam; nas outras abas só o cartão do motor
       if (abaKpi === 'Precisão') { kpiData = kpis(estado.jogos.filter(g => g.time_class === aba), nick); renderKpis(); } else renderMotor();

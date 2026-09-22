@@ -8,7 +8,7 @@ Dizer com fundamento **onde** as partidas escapam: quais lances foram erros, em 
 
 ## Como usar
 
-Aba **Análise**, cartão "Motor de análise": profundidade (10 rápida, 12 padrão, 14 profunda) e **Analisar N partidas** — as mesmas últimas 100 da modalidade que o dossiê da IA usa. Roda em segundo plano com barra de progresso e estimativa; **Parar** interrompe (o que já foi avaliado fica). Ao terminar, a aba **Precisão** ganha: erros por partida (graves, erros, imprecisões), viradas a favor/contra, erros por fase, **erros e relógio** (quantidade e taxa por 100 lances em cada faixa de tempo), erros graves por abertura e **onde as derrotas escaparam** (lance decisivo de cada derrota, com link). A aba Análise pode ganhar até quatro achados; o dossiê da IA ganha a linha `erros (motor)` por partida.
+Dois caminhos. O botão **Dossiê das últimas 100** do cartão da IA roda o motor nas partidas pendentes e em seguida chama a IA com tudo (`dossieCompleto`). O cartão **Motor de análise**, logo abaixo, dá o controle fino: profundidade (10 rápida, 12 padrão, 14 profunda) e **Analisar N partidas** só com o motor — as mesmas últimas 100 da modalidade que o dossiê usa. Roda em segundo plano com barra de progresso e estimativa; **Parar** interrompe (o que já foi avaliado fica). Ao terminar, a aba **Precisão** ganha: erros por partida (graves, erros, imprecisões), viradas a favor/contra, erros por fase, **erros e relógio** (quantidade e taxa por 100 lances em cada faixa de tempo), erros graves por abertura e **onde as derrotas escaparam** (lance decisivo de cada derrota, com link). A aba Análise pode ganhar até quatro achados; o dossiê da IA ganha a linha `erros (motor)` por partida.
 
 Só funciona com a página servida por http(s) — na versão publicada ou num servidor local. Aberta como arquivo, o cartão explica.
 
@@ -16,12 +16,12 @@ Só funciona com a página servida por http(s) — na versão publicada ou num s
 
 - **Motor**: Stockfish 19 *lite single-thread* (WASM, 1,8 MB) carregado como Web Worker (`new Worker(MOTOR_URL)`), falando UCI por `postMessage`. `motorIniciar` espera `uciok`; `motorComando` manda um comando e recolhe linhas até a que casa com um padrão (comandos sequenciais, um Worker).
 - **Lances**: o Stockfish não lê SAN. O chess.js (0.12.1, em **modo estrito** — o `sloppy` interpreta `bxa3` como lance de bispo e falha) replica a partida e converte cada lance para UCI (`e2e4`); `position startpos moves …` + `go depth N`. Foi validado comparando `ch.fen()` com a linha `Fen:` do comando `d` do Stockfish.
-- **Avaliação**: `evals[i]` = avaliação **depois** do i-ésimo lance, em centipawns do ponto de vista das **brancas** (o Stockfish responde do lado que move; `motorAvaliar` inverte). Mate codificado como `±(MATE_BASE + n)`, `MATE_BASE = 20000`; posições terminais (mate, afogamento) não vão ao motor. A posição inicial é avaliada uma vez por profundidade.
+- **Avaliação**: `e[i]` = avaliação **depois** do i-ésimo lance, em centipawns do ponto de vista das **brancas** (o Stockfish responde do lado que move; `motorAvaliar` inverte). `m[i]` = **melhor lance** na posição *antes* do i-ésimo lance, já em SAN (`uciParaSan` joga e desfaz no chess.js antes de aplicar o lance real) — é o que deveria ter sido jogado no lugar. Mate codificado como `±(MATE_BASE + n)`, `MATE_BASE = 20000`; posições terminais (mate, afogamento) não vão ao motor. A posição inicial é avaliada uma vez por profundidade.
 - **Ordem e progresso**: derrotas → empates → vitórias; barra por posições (não por partidas); estimativa depois de 20 posições; a tela é atualizada a cada 500 ms no cartão e, na aba Precisão, os cards são refeitos a cada partida concluída.
-- **Cache** (`placar-chesscom:evals`): `{url: {p: profundidade, t, e: [cp…] | null}}`, poda para as 600 partidas mais recentes. `e: null` marca partida que o motor não conseguiu ler (não tenta de novo). Profundidade maior refaz só o que está abaixo dela. Partidas de Chess960 e outras variantes são puladas.
+- **Cache** (`placar-chesscom:evals`): `{url: {p: profundidade, t, e: [cp…] | null, m: [san…]}}`, poda para as 600 partidas mais recentes. `e: null` marca partida que o motor não conseguiu ler (não tenta de novo). Profundidade maior refaz só o que está abaixo dela. Partidas de Chess960 e outras variantes são puladas.
 - **Classificação** (`erros.js`): critério do Lichess, pela **queda da chance de vitória** do lado que moveu — `chanceVitoria(cp) = 50 + 50·(2/(1+e^(−0,00368208·cp)) − 1)`; mate = 100/0. Queda ≥10 pp imprecisão, ≥20 erro, ≥30 **grave**. **Decisivo**: primeiro erro que deixa a chance abaixo de 30% sem ela voltar a passar de 45% até o fim. **Virada**: a chance cruza de <20% para >50% (a favor) ou de >80% para <50% (contra). O relógio de cada erro é `clks[i]` do PGN (tempo que sobrava ao concluir o lance); faixas: <30 s, 30 s–2 min, >2 min.
 - **Achados** (≥10 partidas avaliadas): erros sob pressão de tempo (taxa com <30 s ≥ 2× a do resto e ≥5 erros na faixa), erros concentrados numa fase (≥50% de ≥8), derrotas decididas no apuro (≥50% dos decisivos com <30 s, ≥4 derrotas), derrotas decididas na abertura (≥50% até o 15º lance).
-- **IA**: `dossiePartidas` acrescenta por partida `erros (motor, profundidade P): lance 23 Qxd2 (grave, chance 71% → 18%, 0:45 no relógio); … · decisivo: lance 23 · viradas: …` e um bloco de agregados no resumo; o prompt libera a IA para citar esses lances (e só esses).
+- **IA**: `dossiePartidas` acrescenta por partida `erros (motor, profundidade P): lance 23 Qxd2 (grave, chance 71% → 18%, melhor: Nf3, 0:45 no relógio); … · decisivo: lance 23 · viradas: …` e um bloco de agregados no resumo; o prompt libera a IA para citar esses lances (e só esses) e para citar o "melhor:" como fato — sem inventar a razão tática, que ela não vê.
 
 ## Decisões
 
@@ -31,6 +31,7 @@ Só funciona com a página servida por http(s) — na versão publicada ou num s
 - **Chance de vitória, não centipawns.** 300 cp perdidos numa posição já ganha não custam nada; 100 cp numa igual decidem. O critério do Lichess é conhecido e comparável.
 - **Processo em segundo plano com cache.** 100 partidas × ~80 posições em profundidade 12 são 5–8 min num desktop; a segunda vez só as partidas novas custam.
 - **Sem avaliação da posição inicial por partida.** É constante por profundidade; economiza 100 chamadas.
+- **Guardar o melhor lance, em SAN, só como fato.** Custa 4–6 caracteres por posição e permite ao card e à IA dizer "melhor era Nf3"; explicar *por quê* continua fora do alcance da IA sem tabuleiro, e o prompt diz isso.
 
 ## Limites
 
