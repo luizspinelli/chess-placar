@@ -2,7 +2,7 @@
 
 **No ar em [chess-placar.vercel.app](https://chess-placar.vercel.app/)** — experimente com um perfil público: [chess-placar.vercel.app?nick=hikaru](https://chess-placar.vercel.app/?nick=hikaru)
 
-Painel em um único arquivo HTML que lê a API pública do Chess.com e mostra placar, evolução de rating, indicadores e análise das partidas de um jogador. Sem servidor, sem build, sem cadastro: tudo roda no navegador.
+Painel estático (HTML, CSS e JS vanilla, sem build) que lê a API pública do Chess.com e mostra placar, evolução de rating, indicadores e análise das partidas de um jogador. Sem servidor, sem build, sem cadastro: tudo roda no navegador.
 
 ## O que faz
 
@@ -72,7 +72,7 @@ A chave de IA nunca passa por servidor deste projeto: vai direto do seu navegado
 npx vercel --prod
 ```
 
-No Amplify, Netlify, GitHub Pages ou qualquer hospedagem de arquivos estáticos, basta enviar o `index.html`.
+No Amplify, Netlify, GitHub Pages ou qualquer hospedagem de arquivos estáticos, basta enviar `index.html`, `css/` e `js/` (e `og.png`, se quiser o preview de link).
 
 ## Limites conhecidos
 
