@@ -308,6 +308,20 @@ a:hover{text-decoration:underline}
 
 @media(max-width:1500px){#kpiGrid,#kpiGrid.analise{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1280px){main{grid-template-columns:280px 1fr;grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);grid-template-areas:"form placar" "form kpis" "form lista"}}
+/* modo avançado no desktop: a página rola, a lista de partidas vai para baixo dos indicadores e o grid de cards
+   ganha a largura toda (3 colunas; 4 acima de 1700 px). O modo simples mantém a lista ao lado e a altura fixa. */
+@media(min-width:1101px){
+  html:has(body:not(.simples):not(.inicio):not(.streamer)){height:auto;overflow:auto}
+  body:not(.simples):not(.inicio):not(.streamer){height:auto;overflow:visible}
+  body:not(.simples):not(.inicio):not(.streamer) main{grid-template-columns:300px minmax(0,1fr);grid-template-rows:auto auto auto;grid-template-areas:"form placar" "form kpis" "form lista";height:auto;min-height:100vh;align-content:start}
+  body:not(.simples):not(.inicio):not(.streamer) form{position:sticky;top:16px;max-height:calc(100vh - 32px);align-self:start}
+  body:not(.simples):not(.inicio):not(.streamer) #kpis,body:not(.simples):not(.inicio):not(.streamer) #kpiGrid{overflow:visible}
+  body:not(.simples):not(.inicio):not(.streamer) .abasWrap{position:sticky;top:0;z-index:4;border-radius:var(--r) var(--r) 0 0}
+  body:not(.simples):not(.inicio):not(.streamer) #partidas{max-height:none;overflow:visible}
+  body:not(.simples):not(.inicio):not(.streamer) #lista{overflow:visible}
+  body:not(.simples):not(.inicio):not(.streamer) #kpiGrid,body:not(.simples):not(.inicio):not(.streamer) #kpiGrid.analise{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:1700px){body:not(.simples):not(.inicio):not(.streamer) #kpiGrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 #filtrosToggle{display:none}
 /* tablet: coluna única rolável, filtros recolhíveis, form em várias colunas */
 @media(max-width:1100px){
