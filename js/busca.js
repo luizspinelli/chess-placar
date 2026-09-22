@@ -69,33 +69,102 @@ function carregarUltima(nick){
     const u = JSON.parse(localStorage.getItem(CHAVE_ULTIMA) || 'null');
     if (!u || u.chave !== chaveBusca(nick)) return false;
     estado = u.estado; estado.monitorando = $('auto').checked;
-    const contagem = {}; for (const g of estado.jogos) contagem[g.time_class] = (contagem[g.time_class] || 0) + 1;
-    const classes = ['bullet','blitz','rapid','daily'].filter(tc => contagem[tc]);
-    if (!classes.includes(aba)) aba = classes.sort((a, b) => contagem[b] - contagem[a])[0] || aba;
-    $('abas').hidden = classes.length < 2;
-    $('abas').innerHTML = classes.map(tc => `<button type="button" role="tab" aria-selected="${tc === aba}" data-tc="${tc}" class="${tc === aba ? 'ativa' : ''}">${TIPO[tc]} <small>${contagem[tc]}</small></button>`).join('');
+    renderAbasModalidade(estado.jogos, null);
     render();
     $('status').className = ''; $('status').textContent = `Dados salvos ${new Date(u.quando).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'})} · atualizando…`;
     return true;
   } catch { return false; }
 }
 
-async function buscar(atualizacao){
-  if (ocupado) return;
+// buscar() em partes: lerFormulario() lê e valida; mesesDaJanela() escolhe os arquivos mensais; baixarMeses() baixa um por
+// vez; montarPartidas() é a parte pura (filtra, calcula delta, agrega) — sem DOM nem rede; renderAbasModalidade() monta as
+// abas de modalidade (também usada na restauração do cache). buscar() orquestra e cuida do estado da tela.
+
+// lê e valida o formulário; devolve null com a mensagem já no status quando não dá para buscar
+function lerFormulario(){
   const nick = $('nick').value.trim().toLowerCase();
   const [inicio, fim] = periodo();
-  const inicioTs = inicio.getTime() / 1000, fimTs = fim ? fim.getTime() / 1000 : Infinity;
   const modalidades = new Set([...document.querySelectorAll('input[name=tc]:checked')].map(i => i.value));
-  const monitorando = $('auto').checked;
   const status = $('status');
   status.className = '';
-  if (isNaN(inicio)) { status.className = 'error'; status.textContent = 'Informe a data de início.'; return; }
-  if (fim && fim < inicio) { status.className = 'error'; status.textContent = 'A data de fim é anterior ao início.'; return; }
-  if (!modalidades.size) { status.className = 'error'; status.textContent = 'Marque ao menos uma modalidade.'; return; }
-
+  const erro = msg => { status.className = 'error'; status.textContent = msg; return null; };
+  if (isNaN(inicio)) return erro('Informe a data de início.');
+  if (fim && fim < inicio) return erro('A data de fim é anterior ao início.');
+  if (!modalidades.size) return erro('Marque ao menos uma modalidade.');
   const comparando = $('comparar').checked;
   const [iniAnt, fimAnt] = comparando ? periodoAnterior(inicio, fim) : [];
-  const iniAntTs = comparando ? iniAnt.getTime() / 1000 : 0, fimAntTs = comparando ? fimAnt.getTime() / 1000 : 0;
+  return {nick, inicio, fim, inicioTs: inicio.getTime() / 1000, fimTs: fim ? fim.getTime() / 1000 : Infinity, modalidades, monitorando: $('auto').checked,
+    soHumanos: $('soHumanos').checked, comparando, iniAnt, fimAnt, iniAntTs: comparando ? iniAnt.getTime() / 1000 : 0, fimAntTs: comparando ? fimAnt.getTime() / 1000 : 0};
+}
+
+// arquivos mensais que cobrem a janela (do início — ou do período anterior, se comparando — até o fim), mais o mês
+// anterior ao primeiro: a variação de rating da primeira partida precisa da ranqueada anterior como referência
+function mesesDaJanela(archives, base, fim){
+  const chave = base.getFullYear() * 100 + base.getMonth() + 1;
+  const chaveFim = fim ? fim.getFullYear() * 100 + fim.getMonth() + 1 : Infinity;
+  let meses = archives.filter(u => { const [y,m] = u.split('/').slice(-2).map(Number); return y*100 + m >= chave && y*100 + m <= chaveFim; });
+  const idx = archives.indexOf(meses[0]);
+  if (idx > 0) meses.unshift(archives[idx-1]);
+  else if (!meses.length && archives.length) meses = archives.slice(-1);
+  return meses;
+}
+
+// um por vez: a API do Chess.com rejeita chamadas paralelas. Na atualização automática só o último mês é rebaixado
+async function baixarMeses(meses, atualizacao){
+  const todos = [];
+  for (let i = 0; i < meses.length; i++) {
+    const c = cache.get(meses[i]);
+    if (atualizacao === true && i < meses.length - 1 && c) { todos.push(...c.data.games); continue; }
+    todos.push(...(await getJSON(meses[i])).games);
+  }
+  return todos.sort((a,b) => a.end_time - b.end_time);
+}
+
+// a parte pura: filtra modalidade e bots/amistosas, calcula g.delta pela ranqueada anterior da mesma modalidade,
+// separa o período (jogos) do anterior (só agregados) e guarda o rating de antes/depois por modalidade
+function montarPartidas(todos, f){
+  const antes = {}, depois = {}, ultimo = {}, jogos = [], compTc = f.comparando ? {} : null;
+  let ignoradas = 0;
+  for (const g of todos) {
+    if (!f.modalidades.has(g.time_class)) continue;
+    if (f.soHumanos && (!g.rated || ehBot(g, f.nick))) { if (g.end_time >= f.inicioTs && g.end_time <= f.fimTs) ignoradas++; continue; }
+    const eu = g.white.username.toLowerCase() === f.nick ? g.white : g.black;
+    const tc = g.time_class;
+    if (g.end_time >= f.inicioTs && g.end_time <= f.fimTs) {
+      g.delta = g.rated && tc in ultimo ? eu.rating - ultimo[tc] : null;
+      if (g.rated) { if (!(tc in antes)) antes[tc] = ultimo[tc] ?? null; depois[tc] = eu.rating; }
+      jogos.push(g);
+    } else if (compTc && g.end_time >= f.iniAntTs && g.end_time <= f.fimAntTs) {
+      // do período anterior guardamos só os agregados: o estado inteiro vai para o localStorage
+      const c = compTc[tc] ??= {n: 0, w: 0, d: 0, l: 0, acc: 0, accN: 0, antes: undefined, depois: null};
+      c.n++; c[eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l']++;
+      const ac = g.accuracies?.[eu === g.white ? 'white' : 'black'];
+      if (ac != null) { c.acc += ac; c.accN++; }
+      if (g.rated) { if (c.antes === undefined) c.antes = ultimo[tc] ?? null; c.depois = eu.rating; }
+    }
+    if (g.rated) ultimo[tc] = eu.rating;
+  }
+  return {jogos, antes, depois, compTc, ignoradas};
+}
+
+// abas bullet/blitz/rápida/diária: só as que têm partidas (e, na busca, só as marcadas); a ativa continua se ainda existir,
+// senão vai para a de mais partidas. `modalidades` null = restauração do cache, sem formulário para consultar
+function renderAbasModalidade(jogos, modalidades){
+  const contagem = {};
+  for (const g of jogos) contagem[g.time_class] = (contagem[g.time_class] || 0) + 1;
+  const classes = ['bullet','blitz','rapid','daily'].filter(tc => contagem[tc] && (!modalidades || modalidades.has(tc)));
+  if (!classes.includes(aba)) aba = classes.sort((a, b) => contagem[b] - contagem[a])[0] || (modalidades ? [...modalidades][0] : aba);
+  const abas = $('abas');
+  abas.hidden = classes.length < 2;
+  abas.innerHTML = ['bullet','blitz','rapid','daily'].filter(tc => classes.includes(tc))
+    .map(tc => `<button type="button" role="tab" aria-selected="${tc === aba}" data-tc="${tc}" class="${tc === aba ? 'ativa' : ''}">${TIPO[tc]} <small>${contagem[tc]}</small></button>`).join('');
+}
+
+async function buscar(atualizacao){
+  if (ocupado) return;
+  const f = lerFormulario();
+  if (!f) return;
+  const {nick, inicio, fim, monitorando} = f, status = $('status');
 
   ocupado = true;
   document.body.classList.remove('inicio');
@@ -113,44 +182,8 @@ async function buscar(atualizacao){
 
   try {
     const {archives} = await getJSON(API + nick + '/games/archives');
-    const base = comparando ? iniAnt : inicio;
-    const chave = base.getFullYear() * 100 + base.getMonth() + 1;
-    const chaveFim = fim ? fim.getFullYear() * 100 + fim.getMonth() + 1 : Infinity;
-    let meses = archives.filter(u => { const [y,m] = u.split('/').slice(-2).map(Number); return y*100 + m >= chave && y*100 + m <= chaveFim; });
-    const idx = archives.indexOf(meses[0]);
-    if (idx > 0) meses.unshift(archives[idx-1]);
-    else if (!meses.length && archives.length) meses = archives.slice(-1);
-
-    const todos = [];
-    for (let i = 0; i < meses.length; i++) {
-      const c = cache.get(meses[i]);
-      if (atualizacao === true && i < meses.length - 1 && c) { todos.push(...c.data.games); continue; }
-      todos.push(...(await getJSON(meses[i])).games);
-    }
-    todos.sort((a,b) => a.end_time - b.end_time);
-
-    const antes = {}, depois = {}, ultimo = {}, jogos = [], compTc = comparando ? {} : null;
-    const soHumanos = $('soHumanos').checked;
-    let ignoradas = 0;
-    for (const g of todos) {
-      if (!modalidades.has(g.time_class)) continue;
-      if (soHumanos && (!g.rated || ehBot(g, nick))) { if (g.end_time >= inicioTs && g.end_time <= fimTs) ignoradas++; continue; }
-      const eu = g.white.username.toLowerCase() === nick ? g.white : g.black;
-      const tc = g.time_class;
-      if (g.end_time >= inicioTs && g.end_time <= fimTs) {
-        g.delta = g.rated && tc in ultimo ? eu.rating - ultimo[tc] : null;
-        if (g.rated) { if (!(tc in antes)) antes[tc] = ultimo[tc] ?? null; depois[tc] = eu.rating; }
-        jogos.push(g);
-      } else if (compTc && g.end_time >= iniAntTs && g.end_time <= fimAntTs) {
-        // do período anterior guardamos só os agregados: o estado inteiro vai para o localStorage
-        const c = compTc[tc] ??= {n: 0, w: 0, d: 0, l: 0, acc: 0, accN: 0, antes: undefined, depois: null};
-        c.n++; c[eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l']++;
-        const ac = g.accuracies?.[eu === g.white ? 'white' : 'black'];
-        if (ac != null) { c.acc += ac; c.accN++; }
-        if (g.rated) { if (c.antes === undefined) c.antes = ultimo[tc] ?? null; c.depois = eu.rating; }
-      }
-      if (g.rated) ultimo[tc] = eu.rating;
-    }
+    const todos = await baixarMeses(mesesDaJanela(archives, f.comparando ? f.iniAnt : inicio, fim), atualizacao);
+    const {jogos, antes, depois, compTc, ignoradas} = montarPartidas(todos, f);
     const rotulo = fim ? `de ${fmt.format(inicio)} a ${fmt.format(fim)}` : `desde ${fmt.format(inicio)}`;
     if (!jogos.length && !monitorando) throw new Error(`Nenhuma partida ${rotulo}.`);
 
@@ -160,16 +193,9 @@ async function buscar(atualizacao){
       try { perfil = await getJSON(API + nick); } catch {}
       try { stats = await getJSON(API + nick + '/stats'); } catch {}
     } else { perfil = estado.perfil; stats = estado.stats; }
-    const comp = compTc ? {rotulo: `${fmtDia.format(iniAnt)} a ${fmtDia.format(fimAnt)}`, tc: compTc} : null;
+    const comp = compTc ? {rotulo: `${fmtDia.format(f.iniAnt)} a ${fmtDia.format(f.fimAnt)}`, tc: compTc} : null;
     estado = {jogos, antes, depois, nick, rotulo, monitorando, ignoradas, perfil, stats, comp, evolucao: evolucaoDoPeriodo(inicio, fim)};
-    const contagem = {};
-    for (const g of jogos) contagem[g.time_class] = (contagem[g.time_class] || 0) + 1;
-    const classes = ['bullet','blitz','rapid','daily'].filter(tc => contagem[tc] && modalidades.has(tc));
-    if (!classes.includes(aba)) aba = classes.sort((a, b) => contagem[b] - contagem[a])[0] || [...modalidades][0];
-    const abas = $('abas');
-    abas.hidden = classes.length < 2;
-    abas.innerHTML = ['bullet','blitz','rapid','daily'].filter(tc => classes.includes(tc))
-      .map(tc => `<button type="button" role="tab" aria-selected="${tc === aba}" data-tc="${tc}" class="${tc === aba ? 'ativa' : ''}">${TIPO[tc]} <small>${contagem[tc]}</small></button>`).join('');
+    renderAbasModalidade(jogos, f.modalidades);
     if (atualizacao !== true) pagina = 1;
     falhou = false;
     render();
