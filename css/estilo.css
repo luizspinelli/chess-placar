@@ -13,7 +13,7 @@ html,body{height:100%;overflow:hidden}
 html[data-tema=claro] body{background:radial-gradient(1200px 600px at 20% -10%,#e6ebf7 0%,var(--bg) 60%)}
 html[data-tema=claro] input[type=date],html[data-tema=claro] input[type=time]{color-scheme:light}
 html[data-tema=claro] .achado p{color:#3b4150}
-html[data-tema=claro] .ia .texto{color:#2b3140}
+html[data-tema=claro] .relatorio{color:#2b3140}
 html[data-tema=claro] .kpi .spark:hover{background:rgba(0,0,0,.03)}
 html[data-tema=claro] .abas button:hover{background:rgba(0,0,0,.04)}
 html[data-tema=claro] #modal{background:rgba(20,26,40,.45)}
@@ -273,13 +273,27 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 .ia .status{margin:8px 0 0;font-size:.85rem;color:var(--muted)}
 .ia .barra{height:6px;border-radius:999px;background:var(--border2);overflow:hidden;margin:12px 0 0}
 .ia .barra i{display:block;height:100%;background:var(--accent);transition:width .4s}
-.ia .texto{font-size:.9rem;line-height:1.55;color:#d5d9e2;margin-top:14px;columns:28rem;column-gap:14px}
-/* cada seção da resposta (um título + seu conteúdo) é um cartão que não quebra entre colunas; a contagem de colunas sai da largura */
-.ia .texto section{display:inline-block;width:100%;box-sizing:border-box;break-inside:avoid;margin:0 0 14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)}
-.ia .texto h3{font-size:.95rem;margin:0 0 6px;color:var(--text)}
-.ia .texto section>:last-child{margin-bottom:0}
-.ia .texto ul,.ia .texto ol{margin:4px 0 8px;padding-left:22px}
-.ia .texto p{margin:4px 0}
+/* relatório de uma página (relatorioIA): cabeçalho com números, diagnóstico em destaque e as seções em duas fileiras de
+   três colunas — manter · parar · estudar, plano · regras · acompanhar. Seções fora do esperado caem em .resto, em colunas. */
+.relatorio{font-size:.86rem;line-height:1.45;color:#d5d9e2;margin-top:14px}
+.relatorio .cabecalho{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px 20px;padding-bottom:8px;border-bottom:2px solid var(--border2)}
+.relatorio .cabecalho h3{font-size:1.05rem;margin:0;color:var(--text)}
+.relatorio .cabecalho small{color:var(--muted)}
+.relatorio .numeros{display:flex;flex-wrap:wrap;gap:6px 18px;text-align:right}
+.relatorio .numeros b{display:block;font-size:1.15rem;line-height:1.1;color:var(--text)}
+.relatorio .numeros small{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.relatorio .lede{display:grid;gap:14px;margin:12px 0 0;padding:10px 14px;border-left:3px solid var(--accent);background:var(--surface2);border-radius:0 var(--r) var(--r) 0;font-size:.9rem}
+.relatorio .lede.comMudou{grid-template-columns:2fr 1fr}
+.relatorio .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.relatorio .tres section,.relatorio .resto section{padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-top:3px solid var(--border2);border-radius:var(--r)}
+.relatorio .manter{border-top-color:var(--win)!important}.relatorio .parar{border-top-color:var(--loss)!important}.relatorio .estudar{border-top-color:var(--accent)!important}
+.relatorio .resto{columns:28rem;column-gap:12px;margin-top:12px}
+.relatorio .resto section{display:inline-block;width:100%;box-sizing:border-box;break-inside:avoid;margin-bottom:12px}
+.relatorio section h3{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px}
+.relatorio p{margin:4px 0}
+.relatorio ol,.relatorio ul{margin:2px 0;padding-left:18px}
+.relatorio li{margin:3px 0}
+.relatorio section>:last-child{margin-bottom:0}
 .ia .erro{color:var(--amber);font-size:.85rem;margin:8px 0 0}
 
 #partidas{grid-area:lista;display:none;flex-direction:column;min-height:0;max-height:100%;overflow:hidden}
@@ -347,10 +361,11 @@ a:hover{text-decoration:underline}
   body:not(.simples):not(.inicio):not(.streamer) #kpiGrid .kpi.span2{grid-column:span 6}
   body:not(.simples):not(.inicio):not(.streamer) #kpiGrid .ia{grid-column:1/-1}
 }
-@media(min-width:1700px){body:not(.simples):not(.inicio):not(.streamer) #kpiGrid .kpi{grid-column:span 3}body:not(.simples):not(.inicio):not(.streamer) #kpiGrid .kpi.span2{grid-column:span 6}}
+@media(min-width:1700px){body:not(.simples):not(.inicio):not(.streamer) #kpiGrid .kpi{grid-column:span 3}body:not(.simples):not(.inicio):not(.streamer) #kpiGrid .kpi.span2{grid-column:span 6}body:not(.simples):not(.inicio):not(.streamer) #kpiGrid .ia{grid-column:1/-1}}
 #filtrosToggle{display:none}
 /* tablet: coluna única rolável, filtros recolhíveis, form em várias colunas */
 @media(max-width:1100px){
+  .relatorio .tres{grid-template-columns:repeat(2,minmax(0,1fr))} .relatorio .tres section:last-child:nth-child(odd){grid-column:1/-1}
   html,body{height:auto;overflow:visible}
   main{display:flex;flex-direction:column;height:auto;padding:12px;gap:12px}
   body.inicio main{min-height:100vh;justify-content:center}
@@ -373,6 +388,7 @@ a:hover{text-decoration:underline}
 }
 /* celular */
 @media(max-width:820px){
+  .relatorio .tres{grid-template-columns:1fr} .relatorio .tres section:last-child:nth-child(odd){grid-column:auto} .relatorio .lede.comMudou{grid-template-columns:1fr} .relatorio .numeros{text-align:left}
   main{padding:10px;gap:10px}
   form{grid-template-columns:1fr;gap:12px}
   .tally strong{font-size:1.9rem}

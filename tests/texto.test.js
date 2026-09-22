@@ -13,6 +13,14 @@ test('mdParaHtml(): títulos, listas, negrito — e HTML da IA sempre escapado',
   assert.equal(mdParaHtml('intro\n## A\ntexto'), '<section><p>intro</p></section><section><h3>A</h3><p>texto</p></section>', 'texto antes do primeiro título vira seção sem título');
 });
 
+test('secoesMd()/posicaoRelatorio(): seções por título e a posição de cada uma no relatório', () => {
+  const s = secoesMd('## Diagnóstico\nlede\n## O que manter\n1. a\n## O que parar de fazer\n- b\n## O que estudar\nc\n## Plano para 2 semanas\nd\n## Regras de rotina\ne\n## Como acompanhar\nf\n## Observações\ng');
+  assert.deepEqual(s.map(x => x.titulo), ['Diagnóstico','O que manter','O que parar de fazer','O que estudar','Plano para 2 semanas','Regras de rotina','Como acompanhar','Observações']);
+  assert.deepEqual(s.map(x => posicaoRelatorio(x.titulo)), ['diagnostico','manter','parar','estudar','plano','regras','acompanhar','resto']);
+  assert.equal(s[1].html, '<ol><li>a</li></ol>'); assert.equal(s[2].html, '<ul><li>b</li></ul>');
+  assert.equal(posicaoRelatorio('Ajustes imediatos'), 'plano'); assert.equal(posicaoRelatorio('O que mudou no período'), 'mudou'); assert.equal(posicaoRelatorio('Leitura geral'), 'diagnostico');
+});
+
 test('helpers de formatação', () => {
   assert.equal(escHtml('<a href="x">&'), '&lt;a href=&quot;x&quot;&gt;&amp;');
   assert.equal(sinal(5), '+5'); assert.equal(sinal(-3), '-3'); assert.equal(sinal(0), '0');

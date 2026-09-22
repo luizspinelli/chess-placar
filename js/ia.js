@@ -105,6 +105,7 @@ const esquecerChaves = () => { for (const p in PROVEDORES) try { localStorage.re
 
 // a aba Análise abre com uma barra de ação (Analisar · PDF · "Gemini · modelo · motor 65/65") e a configuração
 // recolhida; ela só vem aberta enquanto não há chave salva, ou quando o usuário clica em Configurar.
+let iaMeta = null;        // {modelo, quando} da última resposta, para o cabeçalho do relatório
 let iaCfgAberta = null;   // null = automático (aberta só sem chave); true/false depois que o usuário decide
 function blocoIA(){
   const p = provAtual(), P = PROVEDORES[p];
@@ -133,7 +134,7 @@ function blocoIA(){
     </div>
     <div id="motorStatus">${typeof motorStatus === 'function' ? motorStatus() : ''}</div>
     ${iaErro ? `<p class="erro">${iaErro}</p>` : ''}
-    ${iaTexto ? `<div class="texto">${mdParaHtml(iaTexto)}</div>` : ''}
+    ${iaTexto ? relatorioIA(iaTexto) : ''}
   </div>`;
 }
 
@@ -155,26 +156,79 @@ async function carregarModelos(){
   }
 }
 
-function mdParaHtml(md){
+// markdown da IA → [{titulo, html}], uma seção por título (o texto antes do primeiro título vira seção sem título).
+// É a base de mdParaHtml (seções em sequência) e de relatorioIA (seções em posições fixas). Sempre com HTML escapado.
+function secoesMd(md){
   const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const inline = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>');
-  // cada título abre uma <section>: é o bloco que o CSS distribui em colunas (break-inside: avoid) para a resposta
-  // ocupar a largura do painel sem virar uma linha de 200 caracteres
-  const out = []; let lista = null, secao = false;
-  const fechar = () => { if (lista) { out.push(`</${lista}>`); lista = null; } };
-  const abrirSecao = () => { if (!secao) { out.push('<section>'); secao = true; } };
+  const secoes = []; let atual = null, lista = null;
+  const fechar = () => { if (lista) { atual.html += `</${lista}>`; lista = null; } };
+  const abrir = titulo => { fechar(); atual = {titulo, html: ''}; secoes.push(atual); };
   for (const l of md.split('\n')) {
     const t = l.trim();
     if (!t) { fechar(); continue; }
     let m;
-    if ((m = t.match(/^#{1,6}\s+(.*)/))) { fechar(); if (secao) out.push('</section>'); out.push(`<section><h3>${inline(m[1])}</h3>`); secao = true; continue; }
-    abrirSecao();
-    if ((m = t.match(/^[-*•]\s+(.*)/))) { if (lista !== 'ul') { fechar(); out.push('<ul>'); lista = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); }
-    else if ((m = t.match(/^\d+[.)]\s+(.*)/))) { if (lista !== 'ol') { fechar(); out.push('<ol>'); lista = 'ol'; } out.push(`<li>${inline(m[1])}</li>`); }
-    else { fechar(); out.push(`<p>${inline(t)}</p>`); }
+    if ((m = t.match(/^#{1,6}\s+(.*)/))) { abrir(inline(m[1])); continue; }
+    if (!atual) abrir('');
+    if ((m = t.match(/^[-*•]\s+(.*)/))) { if (lista !== 'ul') { fechar(); atual.html += '<ul>'; lista = 'ul'; } atual.html += `<li>${inline(m[1])}</li>`; }
+    else if ((m = t.match(/^\d+[.)]\s+(.*)/))) { if (lista !== 'ol') { fechar(); atual.html += '<ol>'; lista = 'ol'; } atual.html += `<li>${inline(m[1])}</li>`; }
+    else { fechar(); atual.html += `<p>${inline(t)}</p>`; }
   }
-  fechar(); if (secao) out.push('</section>');
-  return out.join('');
+  fechar();
+  return secoes;
+}
+function mdParaHtml(md){ return secoesMd(md).map(s => `<section>${s.titulo ? `<h3>${s.titulo}</h3>` : ''}${s.html}</section>`).join(''); }
+
+// em que posição do relatório cada seção entra, pelo título que o prompt pede (e sinônimos que os modelos usam)
+const POSICOES_RELATORIO = [
+  ['diagnostico', /diagn[oó]stico|leitura geral|vis[aã]o geral|resumo/i],
+  ['mudou', /mudou|evolu[cç][aã]o|tend[eê]ncia/i],
+  ['manter', /manter|pontos? fortes?|continuar/i],
+  ['parar', /parar|evitar|pontos? fracos?|erros? recorrentes?/i],
+  ['estudar', /estudar|estudo|treinar|prioridades?/i],
+  ['plano', /plano|ajustes/i],
+  ['regras', /regras|rotina|h[aá]bitos/i],
+  ['acompanhar', /acompanhar|metas?|indicadores|m[eé]tricas/i],
+];
+const posicaoRelatorio = titulo => (POSICOES_RELATORIO.find(([, re]) => re.test(titulo)) || ['resto'])[0];
+
+// números do cabeçalho do relatório, a partir do estado (só a modalidade da aba)
+function numerosRelatorio(){
+  const nick = estado.nick, jogos = estado.jogos.filter(g => g.time_class === aba);
+  const c = {w: 0, d: 0, l: 0}, itens = [], acc = [];
+  for (const g of jogos) {
+    const branco = g.white.username.toLowerCase() === nick, eu = branco ? g.white : g.black;
+    const r = eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l'; c[r]++; itens.push({g, r});
+    const a = g.accuracies?.[branco ? 'white' : 'black']; if (a != null) acc.push(a);
+  }
+  const n = jogos.length, a = estado.antes?.[aba], d = estado.depois?.[aba];
+  const nums = [
+    {v: n, k: `partida${n === 1 ? '' : 's'}`},
+    {v: n ? `${Math.round((c.w + c.d / 2) / n * 100)}%` : '–', k: `${c.w}-${c.d}-${c.l}`},
+  ];
+  if (a != null && d != null) nums.push({v: `${estado.aprox?.[aba] ? '≈' : ''}${a} → ${d}`, k: `rating <b class="${cls(d - a)}">${sinal(d - a)}</b>`});
+  if (acc.length) nums.push({v: (acc.reduce((t, v) => t + v, 0) / acc.length).toFixed(1), k: `precisão · ${acc.length} partida${acc.length === 1 ? '' : 's'}`});
+  const res = typeof resumoErros === 'function' ? resumoErros(itens, nick) : null;
+  if (res) nums.push({v: (res.cont.grave / res.n).toFixed(1), k: `graves/partida · motor em ${res.n}`});
+  return nums;
+}
+
+// a resposta da IA como relatório de uma página: cabeçalho com os números do período, diagnóstico como abertura,
+// depois três colunas (manter · parar · estudar) e três (plano · regras · acompanhar). Seções com título fora do
+// esperado vão para o fim, em colunas. Mesmo HTML no painel e no PDF; só o CSS muda.
+function relatorioIA(md){
+  const por = {}; for (const sec of secoesMd(md)) (por[posicaoRelatorio(sec.titulo)] ??= []).push(sec);
+  const bloco = (chave, classe = chave) => (por[chave] || []).map(s => `<section class="${classe}">${s.titulo ? `<h3>${s.titulo}</h3>` : ''}${s.html}</section>`).join('');
+  const nums = numerosRelatorio().map(x => `<div><b>${x.v}</b><small>${x.k}</small></div>`).join('');
+  const quando = iaMeta ? new Date(iaMeta.quando).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'}) : '';
+  const tres = chaves => { const h = chaves.map(([k, cl]) => bloco(k, cl)).join(''); return h ? `<div class="tres">${h}</div>` : ''; };
+  return `<div class="relatorio">
+    <div class="cabecalho"><div><h3>Análise · ${TIPO[aba] || aba}</h3><small>${escHtml(estado.nick)} · ${escHtml(estado.rotulo)}${quando ? ` · ${quando}` : ''}${iaMeta?.modelo ? ` · ${escHtml(iaMeta.modelo)}` : ''}</small></div><div class="numeros">${nums}</div></div>
+    ${por.diagnostico || por.mudou ? `<div class="lede${por.mudou ? ' comMudou' : ''}">${bloco('diagnostico')}${bloco('mudou')}</div>` : ''}
+    ${tres([['manter', 'manter'], ['parar', 'parar'], ['estudar', 'estudar']])}
+    ${tres([['plano', 'plano'], ['regras', 'regras'], ['acompanhar', 'acompanhar']])}
+    ${por.resto ? `<div class="resto">${bloco('resto')}</div>` : ''}
+  </div>`;
 }
 
 function resumoParaIA(curto){
@@ -425,6 +479,7 @@ async function executarIA(montarPrompt){
         const res = await P.chamar(chave, m, prompt);
         if (res.ok) {
           iaTexto = res.texto || 'Resposta vazia.';
+          iaMeta = {modelo: m, quando: Date.now()};
           iaErro = [m !== escolhido ? `Respondido por ${m} (o modelo escolhido estava indisponível); ele passou a ser o padrão.` : '', iaAviso].filter(Boolean).join(' ');
           gravarLS(modeloLS(p), m);
           return;
@@ -473,13 +528,20 @@ function exportarPDF(){
     h4{font-size:10.5pt;margin:8px 0 2px}
     ul,ol{margin:4px 0 8px;padding-left:20px} li{margin:2px 0}
     .mini{font-size:9.5pt;columns:1;margin:0 0 6px} .cols{columns:2;column-gap:24px} .cols h4{break-after:avoid}
-    .ia p{margin:4px 0} .ia h3{text-transform:none;letter-spacing:0;color:#1c1a17;font-size:12pt;margin:12px 0 4px}
+    /* relatório de uma página: a mesma estrutura do painel (relatorioIA), em tinta */
+    .relatorio{font-size:10pt;line-height:1.4;break-after:page} .relatorio .rodapePdf{margin-top:10px;font-size:8pt;color:#6b655b} .relatorio .cabecalho{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1.5px solid #1c1a17;padding-bottom:6px}
+    .relatorio .cabecalho h3{font-size:14pt;margin:0;color:#1c1a17;text-transform:none;letter-spacing:0} .relatorio .cabecalho small{color:#6b655b;font-size:9pt}
+    .relatorio .numeros{display:flex;gap:14px;text-align:right} .relatorio .numeros b{display:block;font-size:13pt;line-height:1.1} .relatorio .numeros small{font-size:8pt;color:#6b655b}
+    .relatorio .lede{border-left:3px solid #1c1a17;padding:6px 12px;margin:10px 0;display:grid;gap:12px} .relatorio .lede.comMudou{grid-template-columns:2fr 1fr}
+    .relatorio .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px} .relatorio .resto{columns:2;column-gap:14px;margin-top:10px}
+    .relatorio section{border:1px solid #d9d2c2;border-top:3px solid #6b655b;padding:6px 10px;break-inside:avoid} .relatorio .manter{border-top-color:#2f9e5a} .relatorio .parar{border-top-color:#d0463c} .relatorio .estudar{border-top-color:#3b6fe8}
+    .relatorio section h3{font-size:8.5pt;text-transform:uppercase;letter-spacing:.08em;color:#6b655b;margin:0 0 4px} .relatorio p{margin:3px 0} .relatorio ol,.relatorio ul{margin:0;padding-left:16px} .relatorio li{margin:2px 0}
     .rodape{margin-top:24px;font-size:9pt;color:#6b655b;border-top:1px solid #d9d2c2;padding-top:6px}
     @page{margin:14mm} @media print{.cols{columns:2}}
   </style></head><body>
-  <h1>Análise de xadrez — ${esc(nick)}</h1>
-  <p class="sub">Chess.com · ${esc(rotulo)} · modalidade: ${TIPO[aba]}</p>
-  <div class="placar">
+  ${iaTexto ? relatorioIA(iaTexto) : `<h1>Análise de xadrez — ${esc(nick)}</h1>
+  <p class="sub">Chess.com · ${esc(rotulo)} · modalidade: ${TIPO[aba]}</p>`}
+  <div class="placar" ${iaTexto ? 'hidden' : ''}>
     <div><b>${$('nw').textContent}</b><span>vitórias</span></div>
     <div><b>${$('nd').textContent}</b><span>empates</span></div>
     <div><b>${$('nl').textContent}</b><span>derrotas</span></div>
@@ -487,7 +549,6 @@ function exportarPDF(){
     <div><b>${esc($('rpct').textContent.replace(' de aproveitamento','') || '–')}</b><span>aproveitamento</span></div>
     <div style="align-self:center;color:#6b655b;font-size:10pt">${esc($('rating').textContent.trim())}</div>
   </div>
-  ${iaTexto ? `<h2>Análise</h2><div class="ia">${mdParaHtml(iaTexto)}</div>` : ''}
   ${achados ? `<h2>Achados automáticos</h2><ul>${achados}</ul>` : ''}
   <h2>Indicadores</h2>${secoes}
   <p class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} a partir da API pública do Chess.com.</p>
