@@ -455,7 +455,7 @@ function renderKpis(){
   if (!kpiData) return;
   const GRUPOS = [['Visão geral', ['Análise','Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Erros e precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
   $('abasKpi').innerHTML = GRUPOS.map(([nome, abas]) => `<div class="grupoAbas"><span class="grupoAba">${nome}</span><div class="botoes">${abas.filter(k => kpiData[k] !== undefined).map(k => `<button type="button" role="tab" aria-selected="${k === abaKpi}" data-aba="${k}" class="${k === abaKpi ? 'ativa' : ''}">${k}</button>`).join('')}</div></div>`).join('');
-  $('kpiGrid').innerHTML = (abaKpi === 'Análise' ? blocoIA() + blocoMotor() : '') + kpiData[abaKpi];
+  $('kpiGrid').innerHTML = (abaKpi === 'Análise' ? blocoIA() : '') + kpiData[abaKpi];
   $('kpiGrid').classList.toggle('analise', abaKpi === 'Análise');
   $('kpiGrid').scrollTop = 0;
 }

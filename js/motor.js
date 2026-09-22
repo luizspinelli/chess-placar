@@ -110,33 +110,45 @@ async function motorAnalisar(){
 }
 function motorParar(){ motor.cancelar = true; motor.worker?.postMessage('stop'); }
 
-// ---- cartão na aba Análise
-function blocoMotor(){
-  if (!estado) return '';
+// ---- pedaços do cartão da IA: os controles vivem dentro de "configurar", o status logo abaixo da barra de ação
+const motorContagem = () => {
   const jogos = estado.jogos.filter(g => g.time_class === aba), todas = partidasParaMotor(jogos), prof = motorProf();
-  const prontas = todas.filter(g => evalsDe(g)).length, pendentes = pendentesMotor(jogos, prof).length;
-  const p = motor.progresso, celular = /Mobi|Android/i.test(navigator.userAgent);
-  let corpo;
-  if (!motorDisponivel()) corpo = `<small>${location.protocol === 'file:' ? 'O motor precisa que a página venha de um servidor (http ou https): aberta como arquivo local, o navegador bloqueia o Worker e o WASM. Use a versão publicada ou sirva a pasta com um servidor estático.' : 'Este navegador não tem Web Worker ou WebAssembly; o motor não roda aqui.'}</small>`;
-  else {
-    const pct = p && p.posTotal ? Math.round(p.pos / p.posTotal * 100) : 0;
-    const resta = p && p.pos > 20 ? seg(Math.round((p.posTotal - p.pos) * (p.ms / p.pos) / 1000)) : null;
-    const status = motor.rodando
-      ? `Analisando ${p.feitas + 1}/${p.total} partidas · posição ${p.pos}/${p.posTotal}${resta ? ` · ~${resta} restantes` : ''}`
-      : p ? `Concluído: ${p.feitas - p.falhas} partida${p.feitas - p.falhas === 1 ? '' : 's'} analisada${p.feitas - p.falhas === 1 ? '' : 's'} em ${seg(Math.round(p.ms / 1000))}${p.falhas ? ` · ${p.falhas} que o motor não conseguiu ler` : ''}${motor.cancelar ? ' · interrompido' : ''}. Os erros estão na aba Erros e precisão.`
-      : !todas.length ? 'Esta busca veio do cache, que não guarda os lances: clique em Buscar para baixá-los e o motor fica disponível.'
-      : `${prontas} de ${todas.length} partidas já analisadas${pendentes ? ` · ${pendentes} a analisar em profundidade ${prof}${prontas + pendentes > todas.length ? ' (as já feitas estão em profundidade menor)' : ''}` : ''}.`;
-    corpo = `<div class="cfg">
-      <select id="motorProf" class="modelo" ${motor.rodando ? 'disabled' : ''}>${Object.entries(PROFUNDIDADES).map(([k, v]) => `<option value="${k}" ${+k === prof ? 'selected' : ''}>profundidade ${k} (${v})</option>`).join('')}</select>
-      ${motor.rodando ? '<button type="button" id="motorParar">Parar</button>' : `<button type="button" id="motorBtn" class="secundario" title="Só o motor, sem chamar a IA: gera os cards de erros da aba Precisão e não precisa de chave" ${pendentes ? '' : 'disabled'}>Só o motor · ${pendentes || todas.length} partida${(pendentes || todas.length) === 1 ? '' : 's'}</button>`}
-      <small>Stockfish 19 rodando no seu navegador; nada sai da máquina. O botão <b>Analisar</b> da IA já roda o motor antes; este aqui é para rodar só o motor (sem chave) ou trocar a profundidade. Profundidade 12 leva uns 5 s por partida no computador${celular ? '; no celular é mais lento e gasta bateria' : ''}.</small>
-    </div>
-    ${motor.rodando ? `<div class="barra"><i style="width:${pct}%"></i></div>` : ''}
-    <p class="status">${status}</p>${motor.erro ? `<p class="erro">${escHtml(motor.erro)}</p>` : ''}`;
-  }
-  return `<div class="kpi box motor span2" id="cardMotor"><h2>Motor de análise</h2>${corpo}</div>`;
+  return {todas, prof, prontas: todas.filter(g => evalsDe(g)).length, pendentes: pendentesMotor(jogos, prof).length};
+};
+// resumo curto para a barra de ação: "motor 65/65 · profundidade 10"
+function motorResumo(){
+  if (!estado || !motorDisponivel()) return '';
+  const {todas, prontas, prof} = motorContagem();
+  return todas.length ? `motor ${prontas}/${todas.length} em profundidade ${prof}` : '';
 }
-// troca só o cartão, sem refazer a aba: refazer apagaria o que o usuário está digitando no cartão da IA ao lado
-function renderMotor(){ const el = $('cardMotor'); if (el) el.outerHTML = blocoMotor(); }
+function motorControles(){
+  if (!estado) return '';
+  if (!motorDisponivel()) return `<small class="explica">Motor de análise indisponível: ${location.protocol === 'file:' ? 'a página precisa vir de um servidor (http ou https) — aberta como arquivo local, o navegador bloqueia o Worker e o WASM.' : 'este navegador não tem Web Worker ou WebAssembly.'} A análise da IA segue sem os erros do Stockfish.</small>`;
+  const {todas, pendentes, prof} = motorContagem(), celular = /Mobi|Android/i.test(navigator.userAgent);
+  const n = pendentes || todas.length;
+  return `<div class="motorCfg"><span class="rotulo">Motor</span>
+    <select id="motorProf" class="modelo" ${motor.rodando ? 'disabled' : ''}>${Object.entries(PROFUNDIDADES).map(([k, v]) => `<option value="${k}" ${+k === prof ? 'selected' : ''}>profundidade ${k} (${v})</option>`).join('')}</select>
+    <button type="button" id="motorBtn" class="secundario" title="Só o motor, sem chamar a IA: gera os cards de erros da aba Erros e precisão e não precisa de chave" ${pendentes && !motor.rodando ? '' : 'disabled'}>Só o motor · ${n} partida${n === 1 ? '' : 's'}</button>
+    <small class="explica">Stockfish 19 rodando no seu navegador; nada sai da máquina. Profundidade 12 leva uns 5 s por partida no computador${celular ? '; no celular é mais lento e gasta bateria' : ''}. Subir a profundidade refaz só o que está abaixo dela.</small></div>`;
+}
+// barra de progresso e linha de status; vazio no estado normal (o resumo já está na barra de ação)
+function motorStatus(){
+  if (!estado || !motorDisponivel()) return '';
+  const p = motor.progresso;
+  if (motor.rodando) {
+    const pct = p.posTotal ? Math.round(p.pos / p.posTotal * 100) : 0, resta = p.pos > 20 ? seg(Math.round((p.posTotal - p.pos) * (p.ms / p.pos) / 1000)) : null;
+    return `<div class="barra"><i style="width:${pct}%"></i></div><p class="status">Motor: partida ${p.feitas + 1}/${p.total} · posição ${p.pos}/${p.posTotal}${resta ? ` · ~${resta} restantes` : ''} · <button type="button" id="motorParar" class="link">parar</button></p>`;
+  }
+  if (p) return `<p class="status">Motor: ${p.feitas - p.falhas} partida${p.feitas - p.falhas === 1 ? '' : 's'} avaliada${p.feitas - p.falhas === 1 ? '' : 's'} em ${seg(Math.round(p.ms / 1000))}${p.falhas ? ` · ${p.falhas} que o motor não conseguiu ler` : ''}${motor.cancelar ? ' · interrompido' : ''}. Os erros estão na aba Erros e precisão.</p>${motor.erro ? `<p class="erro">${escHtml(motor.erro)}</p>` : ''}`;
+  if (!motorContagem().todas.length) return '<p class="status">Esta busca veio do cache, que não guarda os lances: clique em Buscar para baixá-los e o motor fica disponível.</p>';
+  return '';
+}
+// atualiza só os pedaços do motor, sem refazer o cartão: refazer apagaria a chave que o usuário está digitando
+function renderMotor(){
+  const st = $('motorStatus'), ct = $('motorControles'), rs = document.querySelector('#cardIA .resumoCfg');
+  if (st) st.innerHTML = motorStatus();
+  if (ct) ct.innerHTML = motorControles();
+  if (rs) rs.textContent = [`${PROVEDORES[provAtual()].nome} · ${lerLS(modeloLS(provAtual()), PROVEDORES[provAtual()].padrao)}`, motorResumo()].filter(Boolean).join(' · ');
+}
 $('kpiGrid').addEventListener('click', e => { if (e.target.id === 'motorBtn') motorAnalisar(); if (e.target.id === 'motorParar') motorParar(); });
 $('kpiGrid').addEventListener('change', e => { if (e.target.id === 'motorProf') { gravarLS('placar-chesscom:motorProf', e.target.value); renderMotor(); } });

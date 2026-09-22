@@ -249,19 +249,32 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 .achado.alerta{border-left-color:var(--loss)}.achado.atencao{border-left-color:var(--amber)}.achado.bom{border-left-color:var(--win)}
 .achado .icone{display:inline-block;width:1.2em}
 .ia{grid-column:1/-1;border-left:3px solid var(--accent)}
-.ia .cfg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
-.ia .cfg input{width:auto;flex:1 1 200px;padding:6px 10px;font-size:.85rem}
-.ia .cfg select.modelo{width:auto;flex:0 1 auto;max-width:240px;padding:6px 28px 6px 10px;font-size:.85rem}
-.ia .cfg button{padding:7px 12px;font-size:.85rem}
-.ia .cfg #iaModelos,.ia .cfg #iaPdf{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
-.ia .cfg small a{color:var(--muted)}
+/* barra de ação: botão, PDF, resumo da configuração e o link que abre/fecha o painel */
+.ia .acao{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.ia .acao .resumoCfg{color:var(--muted);font-size:.82rem}
+.ia .acao button,.ia .cfg button{padding:7px 12px;font-size:.85rem}
+.ia button.secundario{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+.ia button.link{background:none;border:0;color:var(--accent);padding:0;font-size:.82rem;font-weight:600;cursor:pointer}
+.ia button.link:hover{filter:none;text-decoration:underline}
+/* painel de configuração: provedor, chave, modelo, lembrar, motor e a explicação — recolhido quando já há chave */
+.ia .cfg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px;padding:12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface2)}
+.ia .cfg input{width:auto;flex:1 1 200px;padding:6px 10px;font-size:.85rem;background:var(--surface)}
+.ia .cfg select.modelo{width:auto;flex:0 1 auto;max-width:240px;padding:6px 28px 6px 10px;font-size:.85rem;background:var(--surface)}
+.ia .cfg .explica{flex-basis:100%;color:var(--muted);line-height:1.45}
+.ia .cfg .explica a{color:var(--muted)}
 .ia .cfg .lembrar{display:inline-flex;align-items:center;font-weight:500;color:var(--muted);font-size:.82rem;margin:0;white-space:nowrap;cursor:pointer}
 .ia .cfg .lembrar:hover{color:var(--text)}
-.ia .texto{font-size:.9rem;line-height:1.55;color:#d5d9e2}
+.ia .cfg #motorControles{flex-basis:100%}
+.ia .cfg .motorCfg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:10px;border-top:1px solid var(--border)}
+.ia .cfg .rotulo{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.ia .status{margin:8px 0 0;font-size:.85rem;color:var(--muted)}
+.ia .barra{height:6px;border-radius:999px;background:var(--border2);overflow:hidden;margin:12px 0 0}
+.ia .barra i{display:block;height:100%;background:var(--accent);transition:width .4s}
+.ia .texto{font-size:.9rem;line-height:1.55;color:#d5d9e2;max-width:78ch;margin-top:14px}
 .ia .texto h3{font-size:.95rem;margin:14px 0 4px;color:var(--text)}
 .ia .texto ul,.ia .texto ol{margin:4px 0 8px;padding-left:22px}
 .ia .texto p{margin:4px 0}
-.ia .erro{color:var(--amber);font-size:.85rem}
+.ia .erro{color:var(--amber);font-size:.85rem;margin:8px 0 0}
 
 #partidas{grid-area:lista;display:none;flex-direction:column;min-height:0;max-height:100%;overflow:hidden}
 .pag{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:.82rem;color:var(--muted);flex:0 0 auto}
@@ -393,13 +406,3 @@ a:hover{text-decoration:underline}
   .kpi.span2{grid-column:auto}
 }
 
-/* cartão do motor (aba Análise): mesmo visual do cartão da IA */
-.motor .cfg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
-.motor .cfg select.modelo{width:auto;flex:0 1 auto;max-width:260px;padding:6px 28px 6px 10px;font-size:.85rem}
-.motor .cfg button{padding:7px 12px;font-size:.85rem}
-.motor .cfg #motorParar,.motor .cfg .secundario{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
-.motor .cfg small{flex-basis:100%;color:var(--muted)}
-.motor .barra{height:6px;border-radius:999px;background:var(--border2);overflow:hidden;margin:8px 0 6px}
-.motor .barra i{display:block;height:100%;background:var(--accent);transition:width .4s}
-.motor .status{margin:6px 0 0;font-size:.85rem;color:var(--muted)}
-.motor .erro{margin:6px 0 0;font-size:.85rem;color:var(--loss)}

@@ -103,22 +103,34 @@ const lerChave = p => chavesMemoria[p] ?? lerLS(chaveLS(p));
 const gravarChave = (p, v) => { chavesMemoria[p] = v; if (lembrarChave()) gravarLS(chaveLS(p), v); };
 const esquecerChaves = () => { for (const p in PROVEDORES) try { localStorage.removeItem(chaveLS(p)); } catch {} };
 
+// a aba Análise abre com uma barra de ação (Analisar · PDF · "Gemini · modelo · motor 65/65") e a configuração
+// recolhida; ela só vem aberta enquanto não há chave salva, ou quando o usuário clica em Configurar.
+let iaCfgAberta = null;   // null = automático (aberta só sem chave); true/false depois que o usuário decide
 function blocoIA(){
   const p = provAtual(), P = PROVEDORES[p];
   const chave = lerChave(p), modelo = lerLS(modeloLS(p), P.padrao);
-  return `<div class="kpi box ia"><h2>Análise com IA</h2>
-    <div class="cfg">
+  const aberta = iaCfgAberta ?? !chave;
+  const resumoCfg = [`${P.nome} · ${modelo}`, typeof motorResumo === 'function' ? motorResumo() : ''].filter(Boolean).join(' · ');
+  return `<div class="kpi box ia" id="cardIA">
+    <div class="acao">
+      <button type="button" id="iaAnalisar" title="Avalia as partidas pendentes com o motor (quando disponível) e envia à IA os indicadores do período e o dossiê das últimas ${N_DOSSIE} partidas" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar'}</button>
+      <button type="button" id="iaPdf" class="secundario" title="Abre a janela de impressão; escolha 'Salvar como PDF'">Exportar PDF</button>
+      <span class="resumoCfg">${escHtml(resumoCfg)}</span>
+      <button type="button" id="iaCfgToggle" class="link" aria-expanded="${aberta}" aria-controls="iaCfg">${aberta ? 'ocultar configuração' : 'configurar'}</button>
+    </div>
+    <div class="cfg" id="iaCfg" ${aberta ? '' : 'hidden'}>
       <select id="iaProv" class="modelo">${Object.entries(PROVEDORES).map(([k, v]) => `<option value="${k}" ${k === p ? 'selected' : ''}>${v.nome}</option>`).join('')}</select>
       <input id="iaChave" type="password" placeholder="Chave da API (${P.nome})" value="${chave.replace(/"/g,'&quot;')}" autocomplete="off">
       <select id="iaModelo" class="modelo">${[...new Set([modelo, ...modelosIA[p]])].map(m => `<option value="${m}" ${m === modelo ? 'selected' : ''}>${m}</option>`).join('')}</select>
-      <button type="button" id="iaModelos" title="Buscar modelos disponíveis na sua chave" aria-label="Buscar modelos disponíveis" ${iaOcupado ? 'disabled' : ''}>↻</button>
-      <button type="button" id="iaAnalisar" title="Avalia as partidas pendentes com o motor (quando disponível) e envia à IA os indicadores do período e o dossiê das últimas ${N_DOSSIE} partidas" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar'}</button>
-      <button type="button" id="iaPdf" title="Abre a janela de impressão; escolha 'Salvar como PDF'">Exportar PDF</button>
+      <button type="button" id="iaModelos" class="secundario" title="Buscar modelos disponíveis na sua chave" aria-label="Buscar modelos disponíveis" ${iaOcupado ? 'disabled' : ''}>↻</button>
       <label class="lembrar" title="Desmarcado, a chave vale só nesta aba e não fica gravada no navegador"><input type="checkbox" id="iaLembrar" ${lembrarChave() ? 'checked' : ''}>lembrar chave</label>
-      <small><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · ${lembrarChave() ? 'fica salva só neste navegador' : 'não será gravada'}${P.gratis ? '' : ' · use uma chave dedicada com limite de gasto'}</small>
+      <small class="explica"><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · ${lembrarChave() ? 'fica salva só neste navegador' : 'não será gravada'}${P.gratis ? '' : ' · use uma chave dedicada com limite de gasto'}</small>
+      <div id="motorControles">${typeof motorControles === 'function' ? motorControles() : ''}</div>
+      <small class="explica"><b>Analisar</b> roda o motor nas partidas ainda não avaliadas e envia à IA os indicadores do período mais o dossiê das últimas ${N_DOSSIE} partidas desta modalidade (primeiros lances, relógio, marcos e erros do Stockfish). Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano e regras de rotina. Nenhuma partida sai do navegador além do que vai para o provedor de IA escolhido.</small>
     </div>
+    <div id="motorStatus">${typeof motorStatus === 'function' ? motorStatus() : ''}</div>
     ${iaErro ? `<p class="erro">${iaErro}</p>` : ''}
-    <div class="texto">${iaTexto ? mdParaHtml(iaTexto) : `<small>Roda o motor nas partidas ainda não avaliadas e envia à IA os indicadores do período mais o dossiê das últimas ${N_DOSSIE} partidas desta modalidade (primeiros lances, relógio, marcos e erros do Stockfish). Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano e regras de rotina.</small>`}</div>
+    ${iaTexto ? `<div class="texto">${mdParaHtml(iaTexto)}</div>` : ''}
   </div>`;
 }
 
@@ -374,7 +386,7 @@ async function analisarTudo(){
   if (typeof motorDisponivel === 'function' && motorDisponivel() && !motor.rodando) {
     const pend = pendentesMotor(estado.jogos.filter(g => g.time_class === aba), motorProf()).length;
     if (pend) {
-      iaOcupado = true; iaErro = `Avaliando ${pend} partida${pend === 1 ? '' : 's'} com o motor antes de chamar a IA — o progresso está no cartão do motor, logo abaixo.`; renderKpis();
+      iaOcupado = true; iaErro = `Avaliando ${pend} partida${pend === 1 ? '' : 's'} com o motor antes de chamar a IA.`; renderKpis();
       await motorAnalisar();
       iaOcupado = false;
       if (motor.cancelar) { iaErro = 'Motor interrompido; a IA não foi chamada. Clique de novo para continuar de onde parou.'; renderKpis(); return; }
@@ -420,7 +432,9 @@ async function executarIA(montarPrompt){
     iaOcupado = false; renderKpis();
   }
 }
-$('kpiGrid').addEventListener('click', e => { if (e.target.id === 'iaAnalisar') analisarTudo(); if (e.target.id === 'iaModelos') carregarModelos(); if (e.target.id === 'iaPdf') exportarPDF(); });
+$('kpiGrid').addEventListener('click', e => {
+  if (e.target.id === 'iaCfgToggle') { const digitada = $('iaChave')?.value.trim(); if (digitada) gravarChave(provAtual(), digitada); iaCfgAberta = $('iaCfg').hidden; renderKpis(); }
+  if (e.target.id === 'iaAnalisar') analisarTudo(); if (e.target.id === 'iaModelos') carregarModelos(); if (e.target.id === 'iaPdf') exportarPDF(); });
 
 function exportarPDF(){
   if (!estado || !kpiData) return;

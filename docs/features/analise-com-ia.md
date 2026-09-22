@@ -8,7 +8,7 @@ Fazer um treinador ler os números e dizer, em português, o que fazer: diagnós
 
 ## Como usar
 
-Aba **Análise**, cartão "Análise com IA": provedor (Gemini, Groq — tier gratuito; Claude, OpenAI — cobrados), chave, modelo (↻ lista os disponíveis na chave), **lembrar chave** (desmarcado, a chave vive só na aba). Um botão, **Analisar**, que faz tudo em sequência:
+A aba **Análise** abre com uma **barra de ação**: **Analisar**, **Exportar PDF** e um resumo da configuração ("Gemini · gemini-flash-latest · motor 65/100 em profundidade 12") com o link **configurar**. O painel de configuração — provedor (Gemini, Groq — tier gratuito; Claude, OpenAI — cobrados), chave, modelo (↻ lista os disponíveis na chave), **lembrar chave** (desmarcado, a chave vive só na aba), profundidade do motor, **Só o motor** e a explicação do que é enviado — vem **aberto só enquanto não há chave salva**; depois fica recolhido e os achados automáticos aparecem logo abaixo da barra. Abrir/fechar é decisão do usuário e vale até recarregar. O resultado da IA aparece no mesmo cartão, acima dos achados. O botão Analisar faz tudo em sequência:
 
 1. roda o [motor](motor-de-analise.md) nas partidas ainda não avaliadas (quando a página vem de um servidor; interrompido, a IA não é chamada);
 2. envia à IA, numa chamada só, os **indicadores agregados** do período e o **dossiê** das últimas 100 partidas (15 primeiros lances, marcos, relógio e os erros apontados pelo Stockfish, com o melhor lance);
@@ -31,7 +31,8 @@ Sem lances na busca (restauração do cache) a análise sai só com os indicador
 
 ## Decisões
 
-- **Um botão só.** Duas análises separadas (indicadores e lances) confundiam e produziam dois textos que se sobrepunham; uma chamada com as duas fontes deixa a IA cruzá-las — e o cruzamento é o que vale. O motor continua com botão próprio, secundário, porque roda sem chave e sem custo.
+- **Um botão só.** Duas análises separadas (indicadores e lances) confundiam e produziam dois textos que se sobrepunham; uma chamada com as duas fontes deixa a IA cruzá-las — e o cruzamento é o que vale. O motor continua com botão próprio, secundário e dentro da configuração, porque roda sem chave e sem custo.
+- **Configuração recolhida.** Chave, provedor e modelo se escolhem uma vez; deixá-los sempre à vista empurrava os achados (o conteúdo da aba) para duas telas abaixo no celular e fazia o texto da IA nascer embaixo de selects. O painel abre sozinho só na primeira vez (sem chave) e a barra resume o que está escolhido.
 - **Chave do usuário, no navegador.** O autor não paga inferência de ninguém e nenhuma partida passa por servidor do projeto. Custo: cada usuário cria a própria chave.
 - **Dados estruturados, não PGN cru.** PGN de 100 partidas com relógio são 50–100k tokens e pior resultado; extrair marcos em JS deixa para o modelo o que ele faz bem (sintetizar padrões) e tira o que faz mal (reproduzir a partida mentalmente).
 - **Proibir lance específico sem motor.** LLMs apontam blunders inexistentes com convicção; o jogador confiaria. A proibição é a regra mais importante do prompt.
