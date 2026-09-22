@@ -180,8 +180,10 @@ function resumoParaIA(curto){
       let titulo = c.querySelector('h2')?.textContent.replace(/\s+/g,' ').trim();
       if (tab === 'Aberturas') titulo = {'De brancas': 'Partidas em que o jogador tinha as BRANCAS, por abertura (a defesa nomeada é escolha do adversário; o jogador só controla o 1º lance e a resposta)', 'De pretas': 'Partidas em que o jogador tinha as PRETAS, por abertura (aqui a defesa nomeada é escolha do jogador)'}[titulo] || titulo;
       const rows = [...c.querySelectorAll('tr')].map(tr => {
-        const [a, b] = [...tr.children].map(td => td.textContent.replace(/\s+/g,' ').trim());
+        let [a, b] = [...tr.children].map(td => td.textContent.replace(/\s+/g,' ').trim());
         if (!a) return '';   // linha de cabeçalho de coluna não diz nada fora da tabela
+        const grupo = tr.closest('.motivos > div')?.querySelector('h3')?.textContent.trim();
+        if (grupo) a = `${grupo} · ${a}`;
         const m = b && b.match(/^(\d+)%\s+(\d+)-(\d+)-(\d+)$/);
         if (m && ABAS_SENSIVEIS.has(tab) && +m[2] + +m[3] + +m[4] < MIN) return '';
         return m ? `${a}: ${+m[2] + +m[3] + +m[4]} partidas, aproveitamento ${m[1]}% (${m[2]}V ${m[3]}E ${m[4]}D)` : `${a}: ${b}`;
@@ -232,7 +234,8 @@ COMO LER OS INDICADORES
 - Formato das linhas: "rótulo: N partidas, aproveitamento X% (V E D)". Aproveitamento conta empate como meio ponto. N é a quantidade de partidas daquela linha; X% é o rendimento nelas, NÃO a proporção sobre o total.
 - "Sessão" é um bloco de partidas com menos de 30 minutos entre uma e outra. "Posição na sessão" é a ordem da partida dentro desse bloco.
 - "Tilt" mede o rendimento nas partidas jogadas logo após uma ou duas derrotas seguidas.
-- "Mais forte / parelho / mais fraco" compara o rating do adversário com o do jogador (±25 pontos). Como o Chess.com pareia quase sempre dentro dessa faixa, amostras pequenas nos extremos são normais.
+- "Mais forte / parelho / mais fraco" compara o rating do adversário com o do jogador ANTES da partida (±25 pontos). Como o Chess.com pareia quase sempre dentro dessa faixa, amostras pequenas nos extremos são normais.
+- "Como terminaram" tem três grupos: "Vitórias · mate" é como o ADVERSÁRIO perdeu (o jogador deu mate); "Derrotas · desistência" é como o JOGADOR perdeu (ele desistiu).
 - "Por rating do adversário" usa faixas absolutas. Como o rating do jogador mudou ao longo do período (veja a linha Rating), as faixas baixas correspondem ao começo do período, quando ele próprio tinha esse rating — não são "adversários fracos de hoje".
 - Aberturas: na tabela de BRANCAS, o nome da abertura (ex.: "Scandinavian Defense") é a defesa que o ADVERSÁRIO escolheu contra o 1º lance do jogador; o jogador não pode "trocar" essa abertura, só pode preparar melhor a resposta a ela. Na tabela de PRETAS, a defesa é escolha do próprio jogador e aí sim pode ser trocada.
 - "Precisão" é a métrica de análise do Chess.com (0-100), disponível só nas partidas analisadas.
@@ -430,7 +433,7 @@ function exportarPDF(){
     div.innerHTML = kpiData[tab];
     const cards = [...div.querySelectorAll('.kpi')].map(c => {
       const t = c.querySelector('h2')?.textContent.replace(/\s+/g, ' ').trim();
-      const rows = [...c.querySelectorAll('tr')].map(tr => [...tr.children].map(td => td.textContent.replace(/\s+/g, ' ').trim()).join(': ')).filter(Boolean);
+      const rows = [...c.querySelectorAll('tr')].map(tr => { const g = tr.closest('.motivos > div')?.querySelector('h3')?.textContent.trim(); return (g ? `${g} · ` : '') + [...tr.children].map(td => td.textContent.replace(/\s+/g, ' ').trim()).join(': '); }).filter(Boolean);
       return rows.length ? `<h4>${esc(t)}</h4><ul class="mini">${rows.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '';
     }).join('');
     return cards ? `<h3>${tab}</h3><div class="cols">${cards}</div>` : '';

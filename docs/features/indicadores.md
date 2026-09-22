@@ -16,12 +16,12 @@ No modo avançado, dez abas agrupadas em **Visão geral** (Análise, Resultados,
 
 | Aba | Cards | Regras e limiares |
 |---|---|---|
-| Resultados | [Evolução no período](evolucao-no-periodo.md), cor, adversário, como terminaram, ranqueadas × amistosas, variantes | "Mais forte / parelho / mais fraco" = rating do adversário ±25 do seu na hora da partida |
+| Resultados | [Evolução no período](evolucao-no-periodo.md), cor, adversário, como terminaram, ranqueadas × amistosas, variantes | "Mais forte / parelho / mais fraco" = rating do adversário ±25 do seu **antes** da partida. A API devolve o rating **depois**; comparar com ele embute o resultado (perdeu → o adversário parece mais forte; num caso real deu 0-0-94 contra "mais fortes" e 115-0-1 contra "mais fracos"). O de antes é estimado: meu − minha variação; do adversário + minha variação. Sem variação conhecida, a partida fica fora da faixa |
 | Rating | curva por modalidade, maior ganho/perda, alta e queda acumuladas, marcos | queda = maior descida a partir de um pico (drawdown); marco = primeira vez que cruzou cada múltiplo de 50 |
 | Aberturas | ver [aberturas.md](aberturas.md) | |
 | Lances e relógio | lances, fase em que termina, por duração, relógio ao final, quem tinha mais tempo, controle, derrotas por tempo | fase: ≤15 lances abertura, 16–40 meio-jogo, 41+ final; relógio vem do `[%clk]` do PGN, ignorado em partidas diárias |
 | Precisão | média, por cor, por período do dia, por posição na sessão, você × adversário, e os cards do [motor](motor-de-analise.md) | precisão é a métrica do Chess.com, só nas partidas analisadas no site |
-| Adversários | mais enfrentados (10), por faixa de 50 de rating, rating médio por mês | as faixas baixas costumam ser o começo do período, quando o próprio jogador tinha aquele rating |
+| Adversários | mais enfrentados (10), por faixa de 50 de rating, rating médio por mês | faixas e médias usam o rating estimado de antes da partida; as faixas baixas costumam ser o começo do período, quando o próprio jogador tinha aquele rating |
 | Sessões | sessões, posição na sessão, como terminou, tilt, sequências | **sessão** = partidas com menos de 30 min entre uma e outra (`SESSAO`); posições 1ª, 2ª, 3ª–5ª, 6ª+; **tilt** = rendimento após uma e após duas derrotas seguidas |
 | Horários | período do dia, dia da semana, mapa de calor, horários | madrugada <6h, manhã <12h, tarde <18h, noite; **hora média** é circular (23h e 1h dão 0h, não 12h); mapa de calor: cor = aproveitamento ≥50% verde, intensidade = volume |
 | Volume | partidas, melhor e pior dia, aproveitamento por mês, partidas por semana | semana começa na segunda |

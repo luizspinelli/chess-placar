@@ -1,6 +1,6 @@
 // kpis(): uma passada pelas partidas gera o HTML de todas as abas e os achados automáticos. Glossário e sparkline.
 const GLOSSARIO = {
-  'Adversário': 'Compara o rating do adversário com o seu na hora da partida: mais forte = 25+ pontos acima, mais fraco = 25+ abaixo. O Chess.com pareia quase sempre dentro de ±25, então os extremos têm poucas partidas.',
+  'Adversário': 'Compara o rating do adversário com o seu ANTES da partida (a API informa o de depois; o de antes é estimado pela variação, senão o resultado contaminaria a comparação): mais forte = 25+ pontos acima, mais fraco = 25+ abaixo. O Chess.com pareia quase sempre dentro de ±25, então os extremos têm poucas partidas.',
   'Sessões': 'Sessão é um bloco de partidas com menos de 30 minutos de intervalo entre uma e outra. Serve para ver se você rende diferente no começo e no fim de uma sequência de jogos.',
   'Posição na sessão': 'Ordem da partida dentro da sessão: 1ª = a primeira depois de uma pausa de 30 min ou mais.',
   'Tilt': 'Rendimento nas partidas jogadas logo após uma ou duas derrotas seguidas. Se cair muito abaixo da sua média, as derrotas estão afetando as próximas partidas.',
@@ -49,7 +49,10 @@ function kpis(jogos, nick){
     const branco = g.white.username.toLowerCase() === nick;
     const eu = branco ? g.white : g.black, adv = branco ? g.black : g.white;
     const dt = new Date(g.end_time * 1000);
-    return {g, eu, adv, branco, r: eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l', dt, ts: g.end_time, tc: g.time_class,
+    // a API devolve o rating DEPOIS da partida: comparar com ele embute o resultado (perdeu → adversário parece mais forte).
+    // Antes ≈ meu rating − minha variação; o do adversário ≈ dele + minha variação (a troca é quase simétrica)
+    const d = g.delta, euPre = d == null ? eu.rating : eu.rating - d, advPre = d == null ? adv.rating : adv.rating + d;
+    return {g, eu, adv, branco, euPre, advPre, r: eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l', dt, ts: g.end_time, tc: g.time_class,
       acc: g.accuracies?.[branco ? 'white' : 'black'] ?? null, accAdv: g.accuracies?.[branco ? 'black' : 'white'] ?? null};
   });
   // sessões
@@ -72,8 +75,8 @@ function kpis(jogos, nick){
   for (const x of L) {
     if (evo) { const b = achaBloco(x.ts); if (b) { b.n++; b[x.r]++; if (x.g.delta !== null) { b.delta += x.g.delta; b.rated++; } } }
     conta(cor, x.branco ? 'Brancas' : 'Pretas', x.r);
-    const dif = x.adv.rating - x.eu.rating;
-    conta(faixa, dif > 25 ? 'Mais forte' : dif < -25 ? 'Mais fraco' : 'Parelho', x.r);
+    // sem a variação conhecida (1ª ranqueada do período, amistosa) não dá para estimar o rating de antes: fica fora da faixa
+    if (x.g.delta != null) { const dif = x.advPre - x.euPre; conta(faixa, dif > 25 ? 'Mais forte' : dif < -25 ? 'Mais fraco' : 'Parelho', x.r); }
     const obj = x.r === 'w' ? ganhou : x.r === 'l' ? perdeu : empatou;
     const k = x.r === 'w' ? x.adv.result : x.eu.result;
     obj[k] = (obj[k] || 0) + 1;
@@ -242,15 +245,15 @@ function kpis(jogos, nick){
   const advs = {}, faixaAbs = {}, advMes = {};
   for (const x of L) {
     const a = (advs[x.adv.username] ??= {w:0,d:0,l:0, rating: x.adv.rating}); a[x.r]++; a.rating = x.adv.rating;
-    const b = Math.floor(x.adv.rating / 50) * 50;
+    const b = Math.floor(x.advPre / 50) * 50;
     conta(faixaAbs, `${b}–${b+49}`, x.r);
-    (advMes[chaveMes(x.dt)] ??= []).push(x.adv.rating);
+    (advMes[chaveMes(x.dt)] ??= []).push(x.advPre);
   }
   const topAdv = Object.entries(advs).sort((a,b) => (b[1].w+b[1].d+b[1].l)-(a[1].w+a[1].d+a[1].l)).slice(0, 10);
   const adversarios = [
     card('Mais enfrentados', tabela(topAdv.map(([k, s]) => linha(`${k} <small>(${s.rating})</small>`, s)).join('')), 'span2'),
     card('Por rating do adversário', tabela(Object.keys(faixaAbs).sort().map(k => linha(k, faixaAbs[k])).join(''))),
-    card('Rating médio dos adversários', tabela(kv('No período', media(L.map(x => x.adv.rating))) + Object.entries(advMes).map(([k, v]) => kv(k, media(v))).join(''))),
+    card('Rating médio dos adversários', tabela(kv('No período', media(L.map(x => x.advPre))) + Object.entries(advMes).map(([k, v]) => kv(k, media(v))).join(''))),
   ].join('');
 
   // ---- Aberturas (PGN)
