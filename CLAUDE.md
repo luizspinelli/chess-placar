@@ -27,11 +27,11 @@ Os scripts compartilham o escopo global: `let`/`const` de topo de um arquivo sã
 | `js/periodo.js` | `periodo()`, `aplicarPeriodo`, `periodoAnterior`, `comparaAuto`, `evolucaoDoPeriodo` |
 | `js/aberturas.js` | `parsePGN`, `fenDaAbertura` e o modal do tabuleiro (`abrirAbertura`) |
 | `vendor/chess.js/chess.js` | Gerador de lances completo (SAN → UCI, legalidade) para o motor |
-| `js/motor.js` | Stockfish num Worker: `motorIniciar`, fila UCI, `avaliarPartida`, cache `placar-chesscom:evals`, `motorAnalisar`, cartão `blocoMotor` |
+| `js/motor.js` | Stockfish num Worker: `motorIniciar`, fila UCI, `avaliarPartida`, cache `placar-chesscom:evals`, `motorAnalisar`, `motorControles`/`motorStatus`/`motorResumo` (pedaços do cartão da IA) |
 | `js/erros.js` | Classificação de erros pela chance de vitória (`errosDaPartida`), agregados (`resumoErros`), cards e achados |
 | `js/indicadores.js` | `kpis()`, `GLOSSARIO`, `sparkline`, `renderKpis` e as abas de KPI |
 | `js/grafico.js` | Modal do gráfico de rating ampliado (`desenharModal`, zoom/pan em SVG, `vista`) |
-| `js/ia.js` | `PROVEDORES`, chaves, `blocoIA`, `resumoParaIA`, `dossiePartidas`, os dois prompts, `executarIA`, `mdParaHtml`, `exportarPDF` |
+| `js/ia.js` | `PROVEDORES`, chaves, `blocoIA` (barra de ação + configuração recolhível + resultado), `resumoParaIA`, `dossiePartidas`, `promptCompleto`, `analisarTudo`, `executarIA`, `mdParaHtml`, `exportarPDF` |
 | `js/partidas.js` | Lista de partidas: `renderLista`, paginação, filtro por adversário, CSV |
 | `js/overlay.js` | Modo streamer/OBS: `renderOverlay`, `modoStreamer` |
 | `js/placar.js` | `render()`, `renderResumo`, `renderPerfil`, `renderComparativo`, abas de modalidade |
@@ -72,9 +72,9 @@ Onde algo novo entra: helper usado por dois ou mais domínios vai para `base.js`
 
 - **Pipeline**: `motorAnalisar` pega as mesmas partidas do dossiê da IA (`partidasParaMotor`: últimas `N_DOSSIE` com lances, só `rules === 'chess'`), ordena derrotas → empates → vitórias e, para cada uma, `avaliarPartida` replica os lances no chess.js (**modo estrito** — o `sloppy` lê `bxa3` como lance de bispo e falha), manda `position startpos moves …` + `go depth N` e guarda `evals[i]` = avaliação **depois** do i-ésimo lance, em centipawns do ponto de vista das **brancas** (o Stockfish responde do lado que move; `motorAvaliar` inverte). Mate é codificado como `±(MATE_BASE + n)`; posições terminais não vão ao motor. Um único Worker, comandos sequenciais.
 - **Cache** (`placar-chesscom:evals`): `{url: {p: profundidade, t, e: [cp…] | null, m: [melhor lance em SAN…]}}`, poda para as 600 mais recentes. `e: null` marca partida que o motor não conseguiu ler, para não tentar de novo. Pedir profundidade maior refaz só o que está abaixo dela. `m[i]` é o melhor lance na posição **antes** do i-ésimo lance, convertido com `uciParaSan` antes de aplicar o lance real.
-- **Custo**: ~50 ms por posição em profundidade 12 num desktop (≈5 s por partida); 14 é ~4× mais lento. Por isso é um processo em segundo plano com barra de progresso, botão Parar e atualização da tela a cada partida — na aba Erros e precisão refaz os cards, nas outras só troca o cartão do motor (`renderMotor`, via `outerHTML`, para não apagar o que o usuário digita no cartão da IA).
+- **Custo**: ~50 ms por posição em profundidade 12 num desktop (≈5 s por partida); 14 é ~4× mais lento. Por isso é um processo em segundo plano com barra de progresso, link parar e atualização da tela a cada partida — na aba Erros e precisão refaz os cards; nas outras `renderMotor` troca só `#motorStatus`, `#motorControles` e o resumo da barra, nunca o cartão da IA inteiro (apagaria a chave que o usuário está digitando).
 - **Classificação** (`erros.js`): critério do Lichess, pela **queda de chance de vitória** do lado que moveu (`chanceVitoria` = curva logística sobre cp): ≥10 pp imprecisão, ≥20 erro, ≥30 grave. Não usar centipawns brutos. "Decisivo" = primeiro erro que deixa a chance abaixo de 30% sem voltar a 45%; "virada" = cruzar <20% → >50% ou >80% → <50%. O relógio de cada erro vem de `clks[i]` do PGN (tempo que sobrava ao concluir o lance).
-- **Onde aparece**: cards na aba Erros e precisão (`cardsErros`), achados automáticos (`achadosErros`, exigem 10+ partidas avaliadas), linha `erros (motor)` por partida no dossiê da IA e um bloco no resumo dele — e é **só nessas partidas** que o prompt libera a IA para citar lance específico (bloco "EXCEÇÃO" em `promptPartidas`). Manter essa distinção ao mexer no prompt.
+- **Onde aparece**: cards na aba Erros e precisão (`cardsErros`), achados automáticos (`achadosErros`, exigem 10+ partidas avaliadas), linha `erros (motor)` por partida no dossiê da IA e um bloco no resumo dele — e é **só nessas partidas** que o prompt libera a IA para citar lance específico (bloco "EXCEÇÃO" em `promptCompleto`). Manter essa distinção ao mexer no prompt.
 
 ### Análise com IA (`js/ia.js`)
 
