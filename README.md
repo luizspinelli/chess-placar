@@ -2,20 +2,22 @@
 
 **No ar em [chess-placar.vercel.app](https://chess-placar.vercel.app/)** — experimente com um perfil público: [chess-placar.vercel.app?nick=hikaru](https://chess-placar.vercel.app/?nick=hikaru)
 
-Painel estático (HTML, CSS e JS vanilla, sem build) que lê a API pública do Chess.com e mostra placar, evolução de rating, indicadores e análise das partidas de um jogador. Sem servidor, sem build, sem cadastro: tudo roda no navegador.
+Painel que lê a API pública do Chess.com e mostra placar, evolução de rating, indicadores e análise das partidas de um jogador. Site estático em HTML, CSS e JS vanilla: sem servidor, sem build, sem cadastro — tudo roda no navegador.
 
 ## O que faz
 
 - **Modo simples**: placar, resumo em três frases, gráfico de rating, forma recente, brancas × pretas, sequência e ritmo.
 - **Modo avançado**: dez abas de indicadores (Análise, Resultados, Rating, Aberturas, Lances e relógio, Precisão, Adversários, Sessões, Horários, Volume), com achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas.
+- **Evolução dentro do período**: pedindo 4 semanas, 3 meses ou 5 dias, a aba *Resultados* abre com a quebra nos mesmos blocos — semana a semana, mês a mês, dia a dia — com aproveitamento e variação de rating de cada um. Acima de 12 blocos eles são agrupados (30 dias viram 10 blocos de 3 dias).
+- **Comparação de períodos**: faixa no placar com partidas, aproveitamento, rating e precisão contra o período anterior — mês em curso × mês anterior inteiro, ano × ano anterior; nos períodos rolling e no personalizado, a mesma duração imediatamente antes. Vem ligada nos períodos relativos de até ~6 meses (desmarcar vale para as buscas seguintes) e entra também nos achados automáticos e na análise com IA.
 - **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
 - **Distribuição por código ECO**: quanto do seu volume cai em cada família da classificação de aberturas (A a E), com o aproveitamento de cada uma.
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
 - **Tabuleiro da abertura**: clique no nome de uma abertura e veja a posição depois dos lances, do seu ponto de vista (invertida quando você joga de pretas).
-- **Evolução dentro do período**: pedindo 4 semanas, 3 meses ou 5 dias, a aba *Resultados* abre com a quebra nos mesmos blocos — semana a semana, mês a mês, dia a dia — com aproveitamento e variação de rating de cada um. Acima de 12 blocos eles são agrupados (30 dias viram 10 blocos de 3 dias).
-- **Comparação de períodos**: já vem ligada nos períodos relativos de até ~6 meses (desmarcar vale para as buscas seguintes). O placar ganha uma faixa com partidas, aproveitamento, rating e precisão contra o bloco de calendário anterior completo — mês em curso × mês anterior inteiro, ano × ano anterior; nos períodos rolling e no personalizado, contra a mesma duração imediatamente antes. A comparação também entra nos achados automáticos e no resumo enviado à IA.
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
-- **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Duas leituras: *Analisar indicadores* manda um resumo das abas e devolve diagnóstico com plano de treino; *Analisar lances* manda os 15 primeiros lances, o relógio e marcos (roque, primeira captura, dama cedo, xeques) das últimas 100 partidas da modalidade e devolve o que manter, o que parar de fazer e o que estudar. Nenhuma das duas tem motor: o prompt proíbe a IA de apontar erro em lance específico, que sem tabuleiro seria chute. Ambas adaptadas ao seu rating.
+- **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Duas leituras, ambas adaptadas ao seu rating:
+  - *Analisar indicadores* envia um resumo agregado das abas e devolve diagnóstico, pontos fortes, o que mais custa rating e um plano de duas semanas.
+  - *Analisar lances* envia os 15 primeiros lances, o relógio e marcos (roque, primeira captura, dama cedo, xeques) das últimas 100 partidas da modalidade e devolve o que manter, o que parar de fazer e o que estudar. Não há motor de análise: o prompt proíbe a IA de apontar erro em lance específico, porque sem tabuleiro isso seria chute — ela fala de repertório, ritmo e relógio, que os dados sustentam.
 - **Exportar**: PDF da análise e CSV das partidas.
 - **Modo streamer**: só o placar em tela cheia, com fundo transparente ou chroma key, para usar como fonte de navegador no OBS — com meta de rating, ticker e cartão da última partida.
 
@@ -54,15 +56,41 @@ https://chess-placar.vercel.app/?nick=SEUNICK&periodo=custom&data=2026-09-08&hor
 
 - Lê `https://api.chess.com/pub/player/{nick}/games/archives` e os arquivos mensais do período, um por vez (a API não aceita chamadas paralelas), com cache por ETag.
 - A variação de rating é calculada pela diferença entre partidas ranqueadas consecutivas da mesma modalidade; o mês anterior ao início é lido para dar referência à primeira partida.
-- Aberturas, lances e relógio vêm do PGN de cada partida, interpretado no navegador.
-- A última busca fica salva no navegador (sem os PGNs) e reaparece na hora na próxima abertura, enquanto a API é consultada de novo.
+- Aberturas, lances e relógio vêm do PGN de cada partida, interpretado no navegador. A posição do tabuleiro é calculada localmente a partir dos lances; só a imagem é buscada no Chess.com.
+- A última busca fica salva no navegador **sem os PGNs** (a cota do `localStorage` não comporta) e reaparece na hora na próxima abertura, enquanto a API é consultada de novo. Por isso *Analisar lances* só funciona depois de uma busca real — restaurando do cache, ele pede para buscar de novo.
 - Partidas contra bots, treinador ou não ranqueadas são ignoradas por padrão.
 
 ## Privacidade
 
-Não há servidor próprio: o navegador fala direto com a API pública do Chess.com. A análise com IA envia um **resumo agregado dos indicadores**, nunca as partidas — e omite adversários e linhas com poucas partidas.
+Não há servidor próprio: o navegador fala direto com a API pública do Chess.com. A chave de IA vai direto do seu navegador para o provedor; por padrão fica salva no `localStorage`, e desmarcando **lembrar chave** ela vale só na aba aberta.
 
-A chave de IA nunca passa por servidor deste projeto: vai direto do seu navegador para o provedor. Por padrão ela fica salva no `localStorage`; desmarque **lembrar chave** para que valha só na aba aberta. O único recurso externo do app é a imagem do tabuleiro, buscada no Chess.com apenas quando você abre uma abertura. Como não há nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
+O que a análise com IA envia ao provedor:
+
+- *Analisar indicadores*: um resumo agregado das abas — sem partidas individuais, sem nicks de adversários, e omitindo linhas com poucas partidas.
+- *Analisar lances*: para cada uma das últimas 100 partidas, data, cor, resultado, ratings dos dois lados, abertura, os 15 primeiros lances, marcos e tempos de relógio. **Não envia o nick dos adversários** nem os lances além do 15º.
+
+O único recurso externo do app é a imagem do tabuleiro, buscada no Chess.com apenas quando você abre uma abertura. Como não há nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
+
+## Estrutura do projeto
+
+```
+index.html         marcação
+css/estilo.css     estilos (temas claro/escuro, celular, streamer)
+js/base.js         constantes, helpers, acesso à API, estado global
+js/periodo.js      período, comparação automática, blocos de evolução
+js/aberturas.js    PGN, posição a partir dos lances, modal do tabuleiro
+js/indicadores.js  kpis(): as dez abas e os achados automáticos
+js/grafico.js      gráfico de rating ampliado (zoom, pan)
+js/ia.js           provedores, prompts, análise com IA, PDF
+js/partidas.js     lista de partidas, filtro, CSV
+js/overlay.js      modo streamer/OBS
+js/placar.js       renderização do placar, resumo, perfil, comparativo
+js/busca.js        busca na API, atualização automática, cache
+js/app.js          tema, modo, link e parâmetros de URL (carrega por último)
+og-card.html       fonte da imagem de preview (og.png)
+```
+
+Sem build e sem dependências: os scripts são clássicos, carregados nessa ordem, e compartilham o escopo global. Para rodar localmente basta abrir `index.html` no navegador. Convenções de código e detalhes de arquitetura estão em `CLAUDE.md`.
 
 ## Publicar
 
@@ -79,3 +107,4 @@ No Amplify, Netlify, GitHub Pages ou qualquer hospedagem de arquivos estáticos,
 - A API do Chess.com atualiza o arquivo mensal com alguns instantes de atraso após o fim da partida.
 - O "melhor rating" do perfil pode ser o rating provisório do cadastro; quando for, o painel mostra o melhor do período no lugar.
 - Os modelos gratuitos do Gemini e do Groq mudam com frequência; o botão ↻ ao lado do modelo lista os disponíveis na sua chave.
+- A análise de lances não avalia posições: para saber onde uma partida virou, use a análise do próprio Chess.com — o dossiê serve para achar padrões entre partidas, não erros dentro de uma.
