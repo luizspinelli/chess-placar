@@ -17,6 +17,9 @@ const GLOSSARIO = {
   'Piores variantes': 'Clique no nome para ver a posição no tabuleiro: os lances mostrados são os que se repetem em todas as suas partidas daquela abertura, e é por eles que dá para reconhecê-la sem saber o nome.',
   'Distribuição por código ECO': 'ECO é a classificação padrão de aberturas (Encyclopaedia of Chess Openings), de A00 a E99. A = irregulares e de flanco, B = 1.e4 sem 1…e5, C = 1.e4 e5 e a Francesa, D = 1.d4 d5, E = Índias. Na barra a largura é o volume de partidas e a cor é o aproveitamento.',
   'Cor': 'Resultado quando você jogou de brancas e quando jogou de pretas.',
+  'Erros': 'Avaliação do Stockfish, rodando no seu navegador, nas partidas que você mandou analisar. Um lance conta como erro pela queda da sua chance de vitória: 10 pontos percentuais ou mais é imprecisão, 20 é erro, 30 é erro grave (critério do Lichess). "Virada" é quando a chance cruza de menos de 20% para mais de 50%, ou o contrário.',
+  'Erros e relógio': 'Quantos erros e erros graves você cometeu com cada faixa de tempo no relógio, e a taxa por 100 lances jogados nessa faixa — é a taxa que diz se o apuro te faz errar mais.',
+  'Onde as derrotas escaparam': 'Em cada derrota avaliada, o primeiro erro que deixou sua chance abaixo de 30% sem ela voltar a passar de 45% até o fim. O link abre a partida no Chess.com.',
   'Evolução': 'Quebra o período escolhido em blocos da mesma unidade — 4 semanas viram 4 semanas, 3 meses viram 3 meses, 5 dias viram 5 dias — com o aproveitamento e a variação de rating de cada um. Períodos longos agrupam os blocos para caber em até 12 linhas.',
   'Mapa de calor': 'Cada célula é um dia da semana × hora. Verde = aproveitamento de 50% ou mais, vermelho = abaixo; quanto mais forte a cor, mais partidas naquele horário. Passe o mouse para os números.',
   'Como a sessão terminou': 'Qual foi o resultado da última partida antes de uma pausa. Parar muito após derrota costuma indicar "só mais uma para recuperar".',
@@ -136,7 +139,9 @@ function kpis(jogos, nick){
   }
   const accAdv = A.filter(x => x.accAdv !== null).map(x => x.accAdv);
   const kvs = (obj, keys) => keys.filter(k => obj[k]).map(k => kv(k, media(obj[k]))).join('') || vazio;
+  const errosMotor = typeof resumoErros === 'function' ? resumoErros(L, nick) : null;
   const precisao = [
+    errosMotor ? cardsErros(errosMotor, L.length, nick) : '',
     card('Precisão', tabela(kv('Partidas analisadas', A.length) + kv('Média', media(A.map(x => x.acc))) + kv('Em vitórias', media(A.filter(x => x.r === 'w').map(x => x.acc))) + kv('Em empates', media(A.filter(x => x.r === 'd').map(x => x.acc))) + kv('Em derrotas', media(A.filter(x => x.r === 'l').map(x => x.acc))))),
     card('Por cor', tabela(kvs(accCor, ['Brancas','Pretas']))),
     card('Por período do dia', tabela(kvs(accPer, ['Madrugada','Manhã','Tarde','Noite']))),
@@ -421,6 +426,7 @@ function kpis(jogos, nick){
     }
     if (total >= cmp.n * 1.5 || cmp.n >= total * 1.5) add('info', 'Volume vs. período anterior', `${total} partidas no período, contra ${cmp.n} ${antesRot}. Com volumes tão diferentes, a comparação de aproveitamento é menos estável.`);
   }
+  if (errosMotor) achadosErros(errosMotor, add);
   if (!ach.length) add('info', 'Nada fora do padrão', 'Com os dados do período não há desvio relevante em cor, horário, sessão, aberturas ou relógio.');
   const ICONE = {alerta: '▲', atencao: '●', bom: '✔', info: 'ℹ'}, PRIO = {alerta: 0, atencao: 1, bom: 2, info: 3};
   ach.sort((a, b) => PRIO[a.tipo] - PRIO[b.tipo]);
@@ -443,7 +449,7 @@ function renderKpis(){
   if (!kpiData) return;
   const GRUPOS = [['Visão geral', ['Análise','Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
   $('abasKpi').innerHTML = GRUPOS.map(([nome, abas]) => `<div class="grupoAbas"><span class="grupoAba">${nome}</span><div class="botoes">${abas.filter(k => kpiData[k] !== undefined).map(k => `<button type="button" role="tab" aria-selected="${k === abaKpi}" data-aba="${k}" class="${k === abaKpi ? 'ativa' : ''}">${k}</button>`).join('')}</div></div>`).join('');
-  $('kpiGrid').innerHTML = (abaKpi === 'Análise' ? blocoIA() : '') + kpiData[abaKpi];
+  $('kpiGrid').innerHTML = (abaKpi === 'Análise' ? blocoIA() + blocoMotor() : '') + kpiData[abaKpi];
   $('kpiGrid').classList.toggle('analise', abaKpi === 'Análise');
   $('kpiGrid').scrollTop = 0;
 }

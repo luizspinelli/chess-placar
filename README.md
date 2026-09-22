@@ -15,9 +15,10 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 - **Mapa de calor** dia × hora: onde você joga mais e onde rende melhor, numa grade só.
 - **Tabuleiro da abertura**: clique no nome de uma abertura e veja a posição depois dos lances, do seu ponto de vista (invertida quando você joga de pretas).
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
+- **Motor de análise**: Stockfish 19 rodando no seu navegador (WebAssembly), sem servidor. Avalia lance a lance as últimas 100 partidas da modalidade e classifica os erros pela queda de chance de vitória (critério do Lichess: imprecisão, erro, erro grave). A aba *Precisão* ganha erros por partida, por fase e **por tempo no relógio** — a taxa de erros com menos de 30 s comparada ao resto —, erros graves por abertura, viradas, e o lance em que cada derrota escapou, com link para a partida. Roda em segundo plano (uns 5 s por partida no computador, profundidade ajustável), pode ser interrompido e guarda o resultado no navegador; só as partidas novas custam da próxima vez.
 - **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Duas leituras, ambas adaptadas ao seu rating:
   - *Analisar indicadores* envia um resumo agregado das abas e devolve diagnóstico, pontos fortes, o que mais custa rating e um plano de duas semanas.
-  - *Analisar lances* envia os 15 primeiros lances, o relógio e marcos (roque, primeira captura, dama cedo, xeques) das últimas 100 partidas da modalidade e devolve o que manter, o que parar de fazer e o que estudar. Não há motor de análise: o prompt proíbe a IA de apontar erro em lance específico, porque sem tabuleiro isso seria chute — ela fala de repertório, ritmo e relógio, que os dados sustentam.
+  - *Analisar lances* envia os 15 primeiros lances, o relógio e marcos (roque, primeira captura, dama cedo, xeques) das últimas 100 partidas da modalidade e devolve o que manter, o que parar de fazer e o que estudar. Sem o motor, o prompt proíbe a IA de apontar erro em lance específico, porque sem tabuleiro isso seria chute — ela fala de repertório, ritmo e relógio. Nas partidas que o motor já avaliou, os erros marcados pelo Stockfish entram no dossiê e a IA passa a poder citá-los: em que fase e com quanto relógio acontecem, se repetem na mesma abertura.
 - **Exportar**: PDF da análise e CSV das partidas.
 - **Modo streamer**: só o placar em tela cheia, com fundo transparente ou chroma key, para usar como fonte de navegador no OBS — com meta de rating, ticker e cartão da última partida.
 
@@ -57,6 +58,7 @@ https://chess-placar.vercel.app/?nick=SEUNICK&periodo=custom&data=2026-09-08&hor
 - Lê `https://api.chess.com/pub/player/{nick}/games/archives` e os arquivos mensais do período, um por vez (a API não aceita chamadas paralelas), com cache por ETag.
 - A variação de rating é calculada pela diferença entre partidas ranqueadas consecutivas da mesma modalidade; o mês anterior ao início é lido para dar referência à primeira partida.
 - Aberturas, lances e relógio vêm do PGN de cada partida, interpretado no navegador. A posição do tabuleiro é calculada localmente a partir dos lances; só a imagem é buscada no Chess.com.
+- O motor é o Stockfish 19 (versão lite, 1,8 MB) compilado para WebAssembly, num Web Worker; o chess.js converte os lances para o formato do motor. Tudo roda na sua máquina — nenhuma partida sai do navegador. Precisa que a página venha de um servidor (a versão publicada, ou um servidor estático local): aberta como arquivo, o navegador bloqueia Worker e WASM, e o resto do app segue funcionando.
 - A última busca fica salva no navegador **sem os PGNs** (a cota do `localStorage` não comporta) e reaparece na hora na próxima abertura, enquanto a API é consultada de novo. Por isso *Analisar lances* só funciona depois de uma busca real — restaurando do cache, ele pede para buscar de novo.
 - Partidas contra bots, treinador ou não ranqueadas são ignoradas por padrão.
 
@@ -69,7 +71,7 @@ O que a análise com IA envia ao provedor:
 - *Analisar indicadores*: um resumo agregado das abas — sem partidas individuais, sem nicks de adversários, e omitindo linhas com poucas partidas.
 - *Analisar lances*: para cada uma das últimas 100 partidas, data, cor, resultado, ratings dos dois lados, abertura, os 15 primeiros lances, marcos e tempos de relógio. **Não envia o nick dos adversários** nem os lances além do 15º.
 
-O único recurso externo do app é a imagem do tabuleiro, buscada no Chess.com apenas quando você abre uma abertura. Como não há nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
+O motor de análise roda inteiro no navegador: as partidas não vão a nenhum servidor para serem avaliadas, e as avaliações ficam no `localStorage`. O único recurso externo do app é a imagem do tabuleiro, buscada no Chess.com apenas quando você abre uma abertura. Stockfish e chess.js são servidos da própria origem do site, não de CDN. Como não há nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
 
 ## Estrutura do projeto
 
@@ -79,6 +81,8 @@ css/estilo.css     estilos (temas claro/escuro, celular, streamer)
 js/base.js         constantes, helpers, acesso à API, estado global
 js/periodo.js      período, comparação automática, blocos de evolução
 js/aberturas.js    PGN, posição a partir dos lances, modal do tabuleiro
+js/motor.js        Stockfish no Worker, fila UCI, cache de avaliações
+js/erros.js        classificação de erros, cruzamentos com relógio/fase/abertura
 js/indicadores.js  kpis(): as dez abas e os achados automáticos
 js/grafico.js      gráfico de rating ampliado (zoom, pan)
 js/ia.js           provedores, prompts, análise com IA, PDF
@@ -87,10 +91,12 @@ js/overlay.js      modo streamer/OBS
 js/placar.js       renderização do placar, resumo, perfil, comparativo
 js/busca.js        busca na API, atualização automática, cache
 js/app.js          tema, modo, link e parâmetros de URL (carrega por último)
+vendor/stockfish/  Stockfish 19 lite single-thread (GPLv3, licença incluída)
+vendor/chess.js/   chess.js 0.12.1 (BSD-2)
 og-card.html       fonte da imagem de preview (og.png)
 ```
 
-Sem build e sem dependências: os scripts são clássicos, carregados nessa ordem, e compartilham o escopo global. Para rodar localmente basta abrir `index.html` no navegador. Convenções de código e detalhes de arquitetura estão em `CLAUDE.md`.
+Sem build: os scripts são clássicos, carregados nessa ordem, e compartilham o escopo global. As duas dependências ficam em `vendor/`, servidas da mesma origem. Para rodar localmente basta abrir `index.html` no navegador. Convenções de código e detalhes de arquitetura estão em `CLAUDE.md`.
 
 ## Publicar
 
@@ -100,11 +106,16 @@ Sem build e sem dependências: os scripts são clássicos, carregados nessa orde
 npx vercel --prod
 ```
 
-No Amplify, Netlify, GitHub Pages ou qualquer hospedagem de arquivos estáticos, basta enviar `index.html`, `css/` e `js/` (e `og.png`, se quiser o preview de link).
+No Amplify, Netlify, GitHub Pages ou qualquer hospedagem de arquivos estáticos, basta enviar `index.html`, `css/`, `js/` e `vendor/` (e `og.png`, se quiser o preview de link). O servidor precisa entregar `.wasm` como `application/wasm` — os principais já fazem isso.
+
+## Licenças
+
+O código deste projeto é livre para uso. O Stockfish (`vendor/stockfish/`) é distribuído sob a **GPLv3** (texto em `vendor/stockfish/Copying.txt`) e o chess.js (`vendor/chess.js/`) sob a licença **BSD-2** (`vendor/chess.js/LICENSE`); ambos são redistribuídos sem modificação.
 
 ## Limites conhecidos
 
 - A API do Chess.com atualiza o arquivo mensal com alguns instantes de atraso após o fim da partida.
 - O "melhor rating" do perfil pode ser o rating provisório do cadastro; quando for, o painel mostra o melhor do período no lugar.
 - Os modelos gratuitos do Gemini e do Groq mudam com frequência; o botão ↻ ao lado do modelo lista os disponíveis na sua chave.
-- A análise de lances não avalia posições: para saber onde uma partida virou, use a análise do próprio Chess.com — o dossiê serve para achar padrões entre partidas, não erros dentro de uma.
+- A análise de lances da IA só fala de lances específicos nas partidas que o motor já avaliou; nas demais ela trata de repertório, ritmo e relógio.
+- O motor single-thread é o compromisso para não exigir headers especiais do servidor (a versão multi-thread precisa de COOP/COEP, que quebraria a imagem do tabuleiro). No celular ele roda, mas é lento e gasta bateria.

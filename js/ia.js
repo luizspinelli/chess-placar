@@ -275,7 +275,8 @@ function dossiePartidas(jogos, nick, N = N_DOSSIE){
   const comLances = [...jogos].sort((a, b) => a.end_time - b.end_time).filter(g => parsePGN(g).meias >= 2);
   if (comLances.length < 10) throw new Error(comLances.length || !jogos.length ? `Só ${comLances.length} partidas com lances nesta busca; precisa de pelo menos 10.` : 'Os lances não ficam no cache do navegador: clique em Buscar para baixar as partidas de novo e tente outra vez.');
   const sel = comLances.slice(-N), RES = {w: 'vitória', d: 'empate', l: 'derrota'};
-  const tot = {w: 0, d: 0, l: 0}, cor = {}, abert = {Brancas: {}, Pretas: {}}, motivos = {}, dur = {w: [], l: []}, ratings = [];
+  const tot = {w: 0, d: 0, l: 0}, cor = {}, abert = {Brancas: {}, Pretas: {}}, motivos = {}, dur = {w: [], l: []}, ratings = [], avaliadas = [];
+  let comMotor = 0;
   const linhas = sel.map((g, i) => {
     const branco = g.white.username.toLowerCase() === nick, eu = branco ? g.white : g.black, adv = branco ? g.black : g.white;
     const r = eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l', lado = branco ? 'Brancas' : 'Pretas';
@@ -302,7 +303,11 @@ function dossiePartidas(jogos, nick, N = N_DOSSIE){
       relogio = `relógio: ${seg(base)} → ${seg(meus[meus.length-1])} no fim (adversário: ${seg(dele[dele.length-1])}) · média por lance: ${fase(0, 15)}s na abertura${gasto.length > 15 ? `, ${fase(15, 40)}s no meio-jogo` : ''}${gasto.length > 40 ? `, ${fase(40)}s no final` : ''} · maior reflexão: ${Math.round(maior.v)}s no lance ${maior.k + 1}${apuro >= 0 ? ` · abaixo de 30 s a partir do lance ${apuro + 1}` : ''}`;
     }
     const acc = g.accuracies ? ` · precisão ${g.accuracies[branco ? 'white' : 'black']?.toFixed(0)} vs ${g.accuracies[branco ? 'black' : 'white']?.toFixed(0)}` : '';
-    return `#${i + 1} · ${fmtDia.format(new Date(g.end_time * 1000))} · ${lado.toLowerCase()} · ${RES[r]} por ${motivo} · ${eu.rating} vs ${adv.rating}${g.delta != null ? ` (${sinal(g.delta)})` : ''} · ${pg.variante}${pg.eco ? ` (${pg.eco})` : ''} · ${pg.lances} lances${acc}\n  lances: ${numerar(san.slice(0, 30))}${san.length > 30 ? ' …' : ''}\n  ${marcos}${relogio ? `\n  ${relogio}` : ''}`;
+    // partidas que o motor já avaliou ganham a lista de erros: é o único trecho em que a IA pode falar de lance específico
+    const er = errosDaPartida(g, nick);
+    if (er) { comMotor++; avaliadas.push({g, r}); }
+    const errosTxt = !er ? '' : (er.erros.filter(e => e.grau !== 'imprecisão').map(e => `lance ${e.lance} ${e.san} (${e.grau}, chance ${e.antes}% → ${e.depois}%${e.relogio != null ? `, ${seg(e.relogio)} no relógio` : ''})`).join('; ') || 'nenhum erro ou erro grave') + (er.decisivo ? ` · decisivo: lance ${er.decisivo.lance}` : '') + (er.favor || er.contra ? ` · viradas: ${er.favor} a favor, ${er.contra} contra` : '');
+    return `#${i + 1} · ${fmtDia.format(new Date(g.end_time * 1000))} · ${lado.toLowerCase()} · ${RES[r]} por ${motivo} · ${eu.rating} vs ${adv.rating}${g.delta != null ? ` (${sinal(g.delta)})` : ''} · ${pg.variante}${pg.eco ? ` (${pg.eco})` : ''} · ${pg.lances} lances${acc}\n  lances: ${numerar(san.slice(0, 30))}${san.length > 30 ? ' …' : ''}\n  ${marcos}${relogio ? `\n  ${relogio}` : ''}${errosTxt ? `\n  erros (motor, profundidade ${er.prof}): ${errosTxt}` : ''}`;
   });
   const ap = s => { const n = s.w + s.d + s.l; return `${n} partidas, aproveitamento ${Math.round((s.w + s.d/2) / n * 100)}% (${s.w}V ${s.d}E ${s.l}D)`; };
   const abertLinhas = lado => Object.entries(abert[lado]).filter(([, s]) => s.w + s.d + s.l >= 3).sort((a, b) => (b[1].w + b[1].d + b[1].l) - (a[1].w + a[1].d + a[1].l)).map(([k, s]) => `  ${k}: ${ap(s)}`).join('\n') || '  (nenhuma com 3+ partidas)';
@@ -316,10 +321,18 @@ Aberturas de brancas (3+ partidas):
 ${abertLinhas('Brancas')}
 Aberturas de pretas (3+ partidas):
 ${abertLinhas('Pretas')}
-
+${resumoMotor(avaliadas, nick)}
 PARTIDAS (#1 = mais antiga)
 `;
-  return {n: sel.length, texto: resumo + linhas.join('\n')};
+  return {n: sel.length, comMotor, texto: resumo + linhas.join('\n')};
+}
+// bloco do motor no resumo do dossiê: só existe se alguma das partidas foi avaliada
+function resumoMotor(avaliadas, nick){
+  const res = avaliadas.length ? resumoErros(avaliadas, nick) : null;
+  if (!res) return '';
+  const t30 = taxaErros(res, 'menos de 30 s'), fases = Object.entries(res.fase).sort((a, b) => b[1] - a[1]).map(([f, n]) => `${f} ${n}`).join(', ');
+  return `Motor (Stockfish, profundidade ${res.prof}) em ${res.n} partidas: ${(res.cont.grave / res.n).toFixed(1)} erros graves e ${(res.cont.erro / res.n).toFixed(1)} erros por partida · erros por fase: ${fases || '–'} · erros por 100 lances com menos de 30 s no relógio: ${t30 == null ? '–' : t30.toFixed(1)} (${FAIXAS_RELOGIO.slice(1).map(f => { const t = taxaErros(res, f); return t == null ? null : `${f}: ${t.toFixed(1)}`; }).filter(Boolean).join(', ')}) · viradas: ${res.favor} a favor, ${res.contra} contra · derrotas com lance decisivo identificado: ${res.decisivos.length}
+`;
 }
 
 function promptPartidas(){
@@ -337,7 +350,8 @@ O QUE VOCÊ TEM
 O QUE VOCÊ NÃO TEM — E NÃO DEVE FINGIR TER
 - Você não tem o tabuleiro nem avaliação de motor. NÃO afirme que um lance específico foi erro grave, que uma peça ficou pendurada, que havia mate ou que uma posição estava ganha ou perdida: sem tabuleiro isso é chute e o jogador vai confiar em algo falso. Se um trecho parecer suspeito, apresente como hipótese a conferir ("vale rever a partida #37 a partir do lance 12 na análise do Chess.com").
 - Só os 15 primeiros lances estão disponíveis. Sobre o meio-jogo e o final você sabe apenas a duração, o motivo do fim, os xeques e o relógio — use isso, não invente o que aconteceu.
-
+${dossie.comMotor ? `- EXCEÇÃO: ${dossie.comMotor} partidas trazem a linha "erros (motor)". Esses lances foram avaliados pelo Stockfish e são erros de fato — a queda é da chance de vitória do jogador, em pontos percentuais, e "decisivo" é o erro do qual a partida não voltou. Use-os à vontade: em que fase e com quanto relógio acontecem, se repetem na mesma abertura, se o lance decisivo das derrotas vem cedo ou tarde. A proibição acima continua valendo para qualquer lance SEM essa marcação.
+` : ''}
 REGRAS
 - Cite as partidas pelo número (#12, #40) e o dado que sustenta cada afirmação. Um padrão precisa aparecer em várias partidas; algo que ocorreu uma vez é anedota e não entra.
 - Compare vitórias e derrotas: o que muda na escolha de abertura e na ordem dos lances, no momento do roque, no ritmo e no relógio.
