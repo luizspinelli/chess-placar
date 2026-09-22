@@ -72,8 +72,8 @@ function guardarEvals(g, p, res){
   if (urls.length > MAX_EVALS) for (const u of urls.sort((a, b) => evalsCache[a].t - evalsCache[b].t).slice(0, urls.length - MAX_EVALS)) delete evalsCache[u];
   gravarLS(CHAVE_EVALS, JSON.stringify(evalsCache));
 }
-// as mesmas partidas do dossiê da IA: as últimas N da modalidade que têm lances; só xadrez padrão (o chess.js não lê 960)
-const partidasParaMotor = (jogos, N = N_DOSSIE) => [...jogos].filter(g => g.rules === 'chess' && parsePGN(g).meias >= 2).sort((a, b) => a.end_time - b.end_time).slice(-N);
+// as mesmas partidas do dossiê da IA: as últimas nDossie() da modalidade que têm lances; só xadrez padrão (o chess.js não lê 960)
+const partidasParaMotor = (jogos, N = nDossie()) => [...jogos].filter(g => g.rules === 'chess' && parsePGN(g).meias >= 2).sort((a, b) => a.end_time - b.end_time).slice(-N);
 const pendentesMotor = (jogos, prof) => partidasParaMotor(jogos).filter(g => { const c = evalsCache[g.url]; return !c || (c.e && c.p < prof); });
 
 // ---- execução: derrotas primeiro (é onde está o valor), depois empates, depois vitórias

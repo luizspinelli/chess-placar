@@ -113,7 +113,7 @@ function blocoIA(){
   const resumoCfg = [`${P.nome} · ${modelo}`, typeof motorResumo === 'function' ? motorResumo() : ''].filter(Boolean).join(' · ');
   return `<div class="kpi box ia" id="cardIA">
     <div class="acao">
-      <button type="button" id="iaAnalisar" title="Avalia as partidas pendentes com o motor (quando disponível) e envia à IA os indicadores do período e o dossiê das últimas ${N_DOSSIE} partidas" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar'}</button>
+      <button type="button" id="iaAnalisar" title="Avalia as partidas pendentes com o motor (quando disponível) e envia à IA os indicadores do período e o dossiê das últimas partidas (tamanho em configurar)" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar'}</button>
       <button type="button" id="iaPdf" class="secundario" title="Abre a janela de impressão; escolha 'Salvar como PDF'">Exportar PDF</button>
       <span class="resumoCfg">${escHtml(resumoCfg)}</span>
       <button type="button" id="iaCfgToggle" class="link" aria-expanded="${aberta}" aria-controls="iaCfg">${aberta ? 'ocultar configuração' : 'configurar'}</button>
@@ -125,8 +125,11 @@ function blocoIA(){
       <button type="button" id="iaModelos" class="secundario" title="Buscar modelos disponíveis na sua chave" aria-label="Buscar modelos disponíveis" ${iaOcupado ? 'disabled' : ''}>↻</button>
       <label class="lembrar" title="Desmarcado, a chave vale só nesta aba e não fica gravada no navegador"><input type="checkbox" id="iaLembrar" ${lembrarChave() ? 'checked' : ''}>lembrar chave</label>
       <small class="explica"><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · ${lembrarChave() ? 'fica salva só neste navegador' : 'não será gravada'}${P.gratis ? '' : ' · use uma chave dedicada com limite de gasto'}</small>
+      <div class="motorCfg"><span class="rotulo">Dossiê</span>
+        <select id="dossieN" class="modelo" ${iaOcupado ? 'disabled' : ''}>${TAMANHOS_DOSSIE.map(n => `<option value="${n}" ${n === nDossie() ? 'selected' : ''}>últimas ${n} partidas</option>`).join('')}</select>
+        <small class="explica">Quantas partidas recentes vão linha a linha para a IA e entram na fila do motor. 100 são ~25 mil tokens; 300, 50–70 mil — acima do limite gratuito do Groq e três vezes mais tempo de motor. Os cards de erros e o resumo do motor usam todas as partidas do período que já foram avaliadas, seja qual for o tamanho.</small></div>
       <div id="motorControles">${typeof motorControles === 'function' ? motorControles() : ''}</div>
-      <small class="explica"><b>Analisar</b> roda o motor nas partidas ainda não avaliadas e envia à IA os indicadores do período mais o dossiê das últimas ${N_DOSSIE} partidas desta modalidade (primeiros lances, relógio, marcos e erros do Stockfish). Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano e regras de rotina. Nenhuma partida sai do navegador além do que vai para o provedor de IA escolhido.</small>
+      <small class="explica"><b>Analisar</b> roda o motor nas partidas ainda não avaliadas e envia à IA os indicadores do período mais o dossiê das últimas <b class="nDossie">${nDossie()}</b> partidas desta modalidade (primeiros lances, relógio, marcos e erros do Stockfish). Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano e regras de rotina. Nenhuma partida sai do navegador além do que vai para o provedor de IA escolhido.</small>
     </div>
     <div id="motorStatus">${typeof motorStatus === 'function' ? motorStatus() : ''}</div>
     ${iaErro ? `<p class="erro">${iaErro}</p>` : ''}
@@ -311,15 +314,18 @@ ${dossie ? `
 ${dossie.texto}` : ''}`;
 }
 
-const N_DOSSIE = 100;
 // dossiê das últimas N partidas da modalidade: uma linha por partida com os 15 primeiros lances, marcos lidos do
 // texto do SAN (roque, primeira captura, dama cedo, xeques) e o uso do relógio. Nada aqui simula o tabuleiro —
 // é o que dá para afirmar sem motor, e o prompt proíbe a IA de fingir que avaliou posições.
-function dossiePartidas(jogos, nick, N = N_DOSSIE){
+function dossiePartidas(jogos, nick, N = nDossie()){
   const comLances = [...jogos].sort((a, b) => a.end_time - b.end_time).filter(g => parsePGN(g).meias >= 2);
   if (comLances.length < 10) throw new Error(comLances.length || !jogos.length ? `Só ${comLances.length} partidas com lances nesta busca; precisa de pelo menos 10.` : 'Os lances não ficam no cache do navegador: clique em Buscar para baixar as partidas de novo e tente outra vez.');
   const sel = comLances.slice(-N), RES = {w: 'vitória', d: 'empate', l: 'derrota'};
-  const tot = {w: 0, d: 0, l: 0}, cor = {}, abert = {Brancas: {}, Pretas: {}}, motivos = {}, dur = {w: [], l: []}, ratings = [], avaliadas = [];
+  const tot = {w: 0, d: 0, l: 0}, cor = {}, abert = {Brancas: {}, Pretas: {}}, motivos = {}, dur = {w: [], l: []}, ratings = [];
+  // o bloco do motor no resumo agrega todas as partidas do período que já foram avaliadas (o cache guarda 600, e cresce a
+  // cada rodada), não só as N do dossiê — os erros partida a partida, esses sim, ficam restritos às N linhas abaixo
+  const resultado = g => { const eu = g.white.username.toLowerCase() === nick ? g.white : g.black; return eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l'; };
+  const avaliadas = comLances.filter(g => errosDaPartida(g, nick)).map(g => ({g, r: resultado(g)}));
   let comMotor = 0;
   const linhas = sel.map((g, i) => {
     const branco = g.white.username.toLowerCase() === nick, eu = branco ? g.white : g.black, adv = branco ? g.black : g.white;
@@ -349,7 +355,7 @@ function dossiePartidas(jogos, nick, N = N_DOSSIE){
     const acc = g.accuracies ? ` · precisão ${g.accuracies[branco ? 'white' : 'black']?.toFixed(0)} vs ${g.accuracies[branco ? 'black' : 'white']?.toFixed(0)}` : '';
     // partidas que o motor já avaliou ganham a lista de erros: é o único trecho em que a IA pode falar de lance específico
     const er = errosDaPartida(g, nick);
-    if (er) { comMotor++; avaliadas.push({g, r}); }
+    if (er) comMotor++;
     const errosTxt = !er ? '' : (er.erros.filter(e => e.grau !== 'imprecisão').map(e => `lance ${e.lance} ${e.san} (${e.grau}, chance ${e.antes}% → ${e.depois}%${e.melhor ? `, melhor: ${e.melhor}` : ''}${e.relogio != null ? `, ${seg(e.relogio)} no relógio` : ''})`).join('; ') || 'nenhum erro ou erro grave') + (er.decisivo ? ` · decisivo: lance ${er.decisivo.lance}` : '') + (er.favor || er.contra ? ` · viradas: ${er.favor} a favor, ${er.contra} contra` : '');
     return `#${i + 1} · ${fmtDia.format(new Date(g.end_time * 1000))} · ${lado.toLowerCase()} · ${RES[r]} por ${motivo} · ${eu.rating} vs ${adv.rating}${g.delta != null ? ` (${sinal(g.delta)})` : ''} · ${pg.variante}${pg.eco ? ` (${pg.eco})` : ''} · ${pg.lances} lances${acc}\n  lances: ${numerar(san.slice(0, 30))}${san.length > 30 ? ' …' : ''}\n  ${marcos}${relogio ? `\n  ${relogio}` : ''}${errosTxt ? `\n  erros (motor, profundidade ${er.prof}): ${errosTxt}` : ''}`;
   });
@@ -365,17 +371,17 @@ Aberturas de brancas (3+ partidas):
 ${abertLinhas('Brancas')}
 Aberturas de pretas (3+ partidas):
 ${abertLinhas('Pretas')}
-${resumoMotor(avaliadas, nick)}
+${resumoMotor(avaliadas, nick, comMotor)}
 PARTIDAS (#1 = mais antiga)
 `;
   return {n: sel.length, comMotor, texto: resumo + linhas.join('\n')};
 }
 // bloco do motor no resumo do dossiê: só existe se alguma das partidas foi avaliada
-function resumoMotor(avaliadas, nick){
+function resumoMotor(avaliadas, nick, noDossie = avaliadas.length){
   const res = avaliadas.length ? resumoErros(avaliadas, nick) : null;
   if (!res) return '';
   const t30 = taxaErros(res, 'menos de 30 s'), fases = Object.entries(res.fase).sort((a, b) => b[1] - a[1]).map(([f, n]) => `${f} ${n}`).join(', ');
-  return `Motor (Stockfish, profundidade ${res.prof}) em ${res.n} partidas: ${(res.cont.grave / res.n).toFixed(1)} erros graves e ${(res.cont.erro / res.n).toFixed(1)} erros por partida · erros por fase: ${fases || '–'} · erros por 100 lances com menos de 30 s no relógio: ${t30 == null ? '–' : t30.toFixed(1)} (${FAIXAS_RELOGIO.slice(1).map(f => { const t = taxaErros(res, f); return t == null ? null : `${f}: ${t.toFixed(1)}`; }).filter(Boolean).join(', ')}) · viradas: ${res.favor} a favor, ${res.contra} contra · derrotas com lance decisivo identificado: ${res.decisivos.length}
+  return `Motor (Stockfish, profundidade ${res.prof}) em ${res.n} partidas avaliadas do período${noDossie < res.n ? ` (${noDossie} delas estão no dossiê abaixo, com os erros lance a lance)` : ''}: ${(res.cont.grave / res.n).toFixed(1)} erros graves e ${(res.cont.erro / res.n).toFixed(1)} erros por partida · erros por fase: ${fases || '–'} · erros por 100 lances com menos de 30 s no relógio: ${t30 == null ? '–' : t30.toFixed(1)} (${FAIXAS_RELOGIO.slice(1).map(f => { const t = taxaErros(res, f); return t == null ? null : `${f}: ${t.toFixed(1)}`; }).filter(Boolean).join(', ')}) · viradas: ${res.favor} a favor, ${res.contra} contra · derrotas com lance decisivo identificado: ${res.decisivos.length}
 `;
 }
 
@@ -495,6 +501,8 @@ function exportarPDF(){
 }
 $('kpiGrid').addEventListener('change', e => {
   if (e.target.id === 'iaModelo') gravarLS(modeloLS(provAtual()), e.target.value);
+  // tamanho do dossiê: atualiza os textos e os controles do motor no lugar, sem refazer o cartão (a chave pode estar sendo digitada)
+  if (e.target.id === 'dossieN') { gravarLS('placar-chesscom:nDossie', e.target.value); document.querySelectorAll('.nDossie').forEach(el => el.textContent = nDossie()); if (typeof renderMotor === 'function') renderMotor(); }
   if (e.target.id === 'iaProv') { gravarChave(provAtual(), $('iaChave').value.trim()); gravarLS('placar-chesscom:provedor', e.target.value); iaErro = ''; renderKpis(); }
   if (e.target.id === 'iaLembrar') {
     gravarLS('placar-chesscom:lembrarChave', e.target.checked ? '1' : '0');

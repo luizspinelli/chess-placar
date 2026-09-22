@@ -17,6 +17,7 @@ Todas as chaves do `localStorage` têm o prefixo `placar-chesscom:` e são acess
 | `ultima` | `{chave, quando, estado}` da última busca | `estado.jogos` **sem `pgn`, `tcn`, `fen`, `initial_setup`** — a cota não comporta; `chave` é `chaveBusca(nick)` = JSON de todos os filtros, e a restauração só acontece se bater exatamente |
 | `provedor`, `chave:{p}`, `modelo:{p}`, `lembrarChave` | configuração da IA | com "lembrar" desmarcado a chave fica só em `chavesMemoria` (vida da aba); desmarcar apaga as gravadas |
 | `motorProf` | profundidade escolhida | |
+| `nDossie` | tamanho do dossiê (100/200/300) | valor fora de `TAMANHOS_DOSSIE` cai para 100 |
 | `evals` | `{url: {p, t, e}}` avaliações do motor | poda para as 600 mais recentes por `t` |
 
 - **Restauração** (`carregarUltima`): numa busca nova com a mesma chave, o painel renderiza o estado salvo imediatamente com o aviso "Dados salvos … · atualizando…" e busca a API em seguida. Como os PGNs não estão lá, tudo que depende de lances (dossiê da IA, motor) fica indisponível até a busca real terminar — e avisa.

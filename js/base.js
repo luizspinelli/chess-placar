@@ -69,3 +69,6 @@ const seg = t => t == null ? '–' : t >= 3600 ? `${Math.floor(t/3600)}h${String
 let kpiData = null, abaKpi = 'Análise', iaTexto = '', iaErro = '', iaOcupado = false, curvaDados = {}, modalTc = null;
 const lerLS = (k, d='') => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const gravarLS = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+// quantas partidas recentes vão linha a linha para a IA e entram na fila do motor (motor.js e ia.js leem daqui)
+const N_DOSSIE = 100, TAMANHOS_DOSSIE = [100, 200, 300];
+const nDossie = () => { const n = +lerLS('placar-chesscom:nDossie', N_DOSSIE); return TAMANHOS_DOSSIE.includes(n) ? n : N_DOSSIE; };
