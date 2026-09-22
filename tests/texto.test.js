@@ -8,6 +8,9 @@ test('mdParaHtml(): títulos, listas, negrito — e HTML da IA sempre escapado',
   assert.ok(html.includes('<ul><li>item &lt;script>x&lt;/script></li></ul>'), 'tag da IA vira texto');
   assert.ok(html.includes('<ol><li>um</li><li>dois</li></ol>'));
   assert.ok(!html.includes('<script>'));
+  assert.ok(html.startsWith('<section><h3>Diagnóstico</h3>') && html.endsWith('</section>'), 'cada título abre uma seção');
+  assert.equal(mdParaHtml('## A\ntexto\n## B\n- x').match(/<section>/g).length, 2);
+  assert.equal(mdParaHtml('intro\n## A\ntexto'), '<section><p>intro</p></section><section><h3>A</h3><p>texto</p></section>', 'texto antes do primeiro título vira seção sem título');
 });
 
 test('helpers de formatação', () => {

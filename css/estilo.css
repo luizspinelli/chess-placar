@@ -273,8 +273,11 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 .ia .status{margin:8px 0 0;font-size:.85rem;color:var(--muted)}
 .ia .barra{height:6px;border-radius:999px;background:var(--border2);overflow:hidden;margin:12px 0 0}
 .ia .barra i{display:block;height:100%;background:var(--accent);transition:width .4s}
-.ia .texto{font-size:.9rem;line-height:1.55;color:#d5d9e2;max-width:78ch;margin-top:14px}
-.ia .texto h3{font-size:.95rem;margin:14px 0 4px;color:var(--text)}
+.ia .texto{font-size:.9rem;line-height:1.55;color:#d5d9e2;margin-top:14px;columns:28rem;column-gap:14px}
+/* cada seção da resposta (um título + seu conteúdo) é um cartão que não quebra entre colunas; a contagem de colunas sai da largura */
+.ia .texto section{display:inline-block;width:100%;box-sizing:border-box;break-inside:avoid;margin:0 0 14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)}
+.ia .texto h3{font-size:.95rem;margin:0 0 6px;color:var(--text)}
+.ia .texto section>:last-child{margin-bottom:0}
 .ia .texto ul,.ia .texto ol{margin:4px 0 8px;padding-left:22px}
 .ia .texto p{margin:4px 0}
 .ia .erro{color:var(--amber);font-size:.85rem;margin:8px 0 0}

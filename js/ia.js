@@ -155,18 +155,22 @@ async function carregarModelos(){
 function mdParaHtml(md){
   const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const inline = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>');
-  const out = []; let lista = null;
+  // cada título abre uma <section>: é o bloco que o CSS distribui em colunas (break-inside: avoid) para a resposta
+  // ocupar a largura do painel sem virar uma linha de 200 caracteres
+  const out = []; let lista = null, secao = false;
   const fechar = () => { if (lista) { out.push(`</${lista}>`); lista = null; } };
+  const abrirSecao = () => { if (!secao) { out.push('<section>'); secao = true; } };
   for (const l of md.split('\n')) {
     const t = l.trim();
     if (!t) { fechar(); continue; }
     let m;
-    if ((m = t.match(/^#{1,6}\s+(.*)/))) { fechar(); out.push(`<h3>${inline(m[1])}</h3>`); }
-    else if ((m = t.match(/^[-*•]\s+(.*)/))) { if (lista !== 'ul') { fechar(); out.push('<ul>'); lista = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); }
+    if ((m = t.match(/^#{1,6}\s+(.*)/))) { fechar(); if (secao) out.push('</section>'); out.push(`<section><h3>${inline(m[1])}</h3>`); secao = true; continue; }
+    abrirSecao();
+    if ((m = t.match(/^[-*•]\s+(.*)/))) { if (lista !== 'ul') { fechar(); out.push('<ul>'); lista = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); }
     else if ((m = t.match(/^\d+[.)]\s+(.*)/))) { if (lista !== 'ol') { fechar(); out.push('<ol>'); lista = 'ol'; } out.push(`<li>${inline(m[1])}</li>`); }
     else { fechar(); out.push(`<p>${inline(t)}</p>`); }
   }
-  fechar();
+  fechar(); if (secao) out.push('</section>');
   return out.join('');
 }
 
