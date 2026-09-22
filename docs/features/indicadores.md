@@ -12,7 +12,7 @@ No modo avançado, dez abas agrupadas em **Visão geral** (Análise, Resultados,
 
 ## Como funciona
 
-`kpis(jogos, nick)` faz **uma passada** pelas partidas ordenadas e devolve `{nomeDaAba: html}`. Convenções: resultado é `'w' | 'd' | 'l'` (empates no Set `DRAWS`); aproveitamento = (V + E/2) ÷ N; as barras verdes dos cards são aproveitamento.
+`kpis(jogos, nick)` devolve `{nomeDaAba: html}` em três passos: `prepararPartidas` faz a passada comum (lista ordenada com resultado, ratings de antes da partida, sessão e posição na sessão); uma função por aba (`secaoResultados`, `secaoRating`, `secaoPrecisao`, `secaoRitmo`, `secaoVolume`, `secaoSessoes`, `secaoAdversarios`, `secaoAberturas`, `secaoLances`) devolve `{html, ...dados}`; `achadosAutomaticos(dados)` recebe só o que as seções exportaram. Convenções: resultado é `'w' | 'd' | 'l'` (empates no Set `DRAWS`); aproveitamento = (V + E/2) ÷ N; as barras verdes dos cards são aproveitamento.
 
 | Aba | Cards | Regras e limiares |
 |---|---|---|
@@ -54,6 +54,7 @@ Os achados alimentam o resumo do modo simples, o PDF e o prompt da IA.
 ## Decisões
 
 - **Uma passada, HTML pronto.** `kpis` roda a cada `render()` (troca de aba de modalidade, atualização automática); gerar tudo de uma vez e guardar em `kpiData` mantém a troca de aba de KPI instantânea.
+- **Seções como funções, não como arquivos.** `kpis()` chegou a 400 linhas numa função só, com os achados no fim dependendo de acumuladores definidos 300 linhas acima. A quebra em `secaoX(L)` + `achadosAutomaticos(dados)` deixa cada aba legível sozinha e explicita o que os achados consomem; foi validada comparando o HTML gerado antes e depois, byte a byte, com as mesmas partidas.
 - **Limiares explícitos por achado**, em vez de um teste estatístico genérico: cada um foi calibrado para o que um treinador consideraria digno de nota, e o texto explica o número. Com amostra pequena o achado não aparece — melhor silêncio que falso alarme.
 - **`GLOSSARIO` por prefixo de título.** O "?" aparece em qualquer card cujo título comece com uma chave; um card novo ganha ajuda só adicionando o verbete.
 

@@ -44,7 +44,12 @@ function sparkline(vals, grande){
     <polyline points="${pts}" fill="none" stroke="${cor('--text')}" stroke-width="${grande ? 2 : 1.5}" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${rot}</svg>`;
 }
 
-function kpis(jogos, nick){
+// kpis() em seções: prepararPartidas() faz a passada que todas usam (L ordenada, com sessão e posição); cada
+// seção recebe L (e o que outra seção exportou) e devolve {html, ...dados}; achadosAutomaticos() consome só os
+// dados exportados. kpis() orquestra e monta o objeto {nomeDaAba: html}.
+const somaWDL = s => s.w + s.d + s.l, aprov = s => (s.w + s.d/2) / somaWDL(s);
+
+function prepararPartidas(jogos, nick){
   const L = [...jogos].sort((a,b) => a.end_time - b.end_time).map(g => {
     const branco = g.white.username.toLowerCase() === nick;
     const eu = branco ? g.white : g.black, adv = branco ? g.black : g.white;
@@ -64,7 +69,10 @@ function kpis(jogos, nick){
     sessoes[sessao].itens.push(x); sessoes[sessao].delta += x.g.delta || 0;
     prevTs = x.ts;
   }
+  return {L, sessoes};
+}
 
+function secaoResultados(L){
   // ---- Evolução dentro do período (blocos vindos do próprio atalho: 4 semanas, 3 meses, 5 dias…)
   const evo = estado?.evolucao ? {titulo: estado.evolucao.titulo, blocos: estado.evolucao.blocos.map(b => ({...b, n: 0, w: 0, d: 0, l: 0, delta: 0, rated: 0}))} : null;
   // o último bloco fica aberto: numa atualização automática chegam partidas depois do fim calculado na busca
@@ -99,7 +107,10 @@ function kpis(jogos, nick){
     Object.keys(rated).length > 1 ? card('Ranqueadas × amistosas', tabela(ordem(rated, ['Ranqueadas','Amistosas']))) : '',
     Object.keys(regras).length > 1 ? card('Variantes', tabela(n0(regras))) : '',
   ].join('');
+  return {html: resultados, cor, faixa, perdeu};
+}
 
+function secaoRating(L){
   // ---- Rating
   const curva = {}, ganhoMax = {}, perdaMax = {}, alta = {}, queda = {}, marcos = {};
   curvaDados = {};
@@ -128,7 +139,10 @@ function kpis(jogos, nick){
     card('Maior alta e queda acumuladas', tabela(porTc(alta, (tc, a) => kv(`${TIPO[tc]} · alta`, `+${a}`) + kv(`${TIPO[tc]} · queda`, `-${queda[tc]}`)))),
     card('Marcos de 50 pontos', tabela(Object.keys(marcos).map(tc => (Object.keys(marcos).length > 1 ? kv(`<b>${TIPO[tc]}</b>`, '') : '') + (marcos[tc] || kv('Nenhum marco novo', ''))).join('')), 'span2'),
   ].join('');
+  return {html: rating, curva};
+}
 
+function secaoPrecisao(L, nick){
   // ---- Precisão
   const A = L.filter(x => x.acc !== null);
   const accCor = {}, accPer = {}, accPos = {};
@@ -154,7 +168,12 @@ function kpis(jogos, nick){
     card('Você × adversário', tabela(kv('Sua média', media(A.map(x => x.acc))) + kv('Média do adversário', media(accAdv)) + kv('Diferença', accAdv.length ? sinal(+(media(A.filter(x => x.accAdv !== null).map(x => x.acc)) - media(accAdv)).toFixed(1)) : '–') + kv('Jogou melhor e perdeu', melhorPerdeu) + kv('Jogou pior e ganhou', piorGanhou)), 'span2'),
     ] : [card('Precisão', '<small>Nenhuma partida deste período foi analisada no Chess.com — a precisão (0–100) só existe nas partidas em que você pediu a análise no site. Os erros acima vêm do motor do próprio painel.</small>')]),
   ].join('');
+  return {html: precisao, A, melhorPerdeu, errosMotor};
+}
 
+// horários, sequências, controle de tempo e derrotas por tempo saem da mesma passada: os três últimos são cards
+// que Sessões e Lances exibem, por isso voltam separados
+function secaoRitmo(L){
   // ---- Ritmo
   const periodo = {}, dia = {}, ctrl = {}, timeoutTc = {};
   const heat = Array.from({length: 7}, () => Array(24).fill(null));
@@ -200,7 +219,10 @@ function kpis(jogos, nick){
     card('Mapa de calor <small>(dia × hora)</small>', heatHtml, 'span2'),
     card('Horários', tabela(kv('Hora média das partidas', horaMedia) + kv('Intervalo médio entre partidas', gaps.length ? `${media(gaps)} min` : '–') + kv('Primeira partida do período', fmt.format(L[0].dt)) + kv('Última partida', fmt.format(L[L.length-1].dt)))),
   ].join('');
+  return {horarios, cardSequencias, cardControle, cardTimeout, periodo, dia, posDerrota, pos2Derrotas, maxL};
+}
 
+function secaoVolume(L){
   // ---- Volume
   const porDia = {}, porSemana = {}, porMes = {}, deltaDia = {}, saldoDia = {};
   for (const x of L) {
@@ -226,7 +248,10 @@ function kpis(jogos, nick){
     card('Aproveitamento por mês', tabela(Object.keys(porMes).map(k => linha(k, porMes[k])).join('')), 'span2'),
     card('Partidas por semana <small>(semana iniciada em)</small>', tabela(Object.entries(porSemana).map(([k, v]) => kv(k, v)).join('')), 'span2'),
   ].join('');
+  return {html: volume};
+}
 
+function secaoSessoes(L, sessoes, {cardSequencias, posDerrota, pos2Derrotas}){
   // ---- Sessões
   const porPos = {}, parouApos = {w:0, d:0, l:0};
   let sessPos = 0, sessNeg = 0;
@@ -243,7 +268,10 @@ function kpis(jogos, nick){
     card('Tilt', tabela(linha('Após uma derrota', posDerrota) + linha('Após duas derrotas', pos2Derrotas))),
     cardSequencias,
   ].join('');
+  return {html: sessoesHtml, porPos, parouApos};
+}
 
+function secaoAdversarios(L){
   // ---- Adversários
   const advs = {}, faixaAbs = {}, advMes = {};
   for (const x of L) {
@@ -258,7 +286,10 @@ function kpis(jogos, nick){
     card('Por rating do adversário', tabela(Object.keys(faixaAbs).sort().map(k => linha(k, faixaAbs[k])).join(''))),
     card('Rating médio dos adversários', tabela(kv('No período', media(L.map(x => x.advPre))) + Object.entries(advMes).map(([k, v]) => kv(k, media(v))).join(''))),
   ].join('');
+  return {html: adversarios};
+}
 
+function secaoAberturas(L){
   // ---- Aberturas (PGN)
   const abB = {}, abP = {}, variantes = {}, primeiroAdv = {}, meuPrimeiro = {}, minhaResposta = {}, grupos = {}, faixaEco = {};
   const registra = (k, url, san) => {
@@ -337,7 +368,10 @@ function kpis(jogos, nick){
     card('1º lance do adversário', tabela(topN(primeiroAdv, 5))),
     card('Sua resposta de pretas', tabela(topN(minhaResposta, 6)), 'span2'),
   ].join('');
+  return {html: aberturas, variantes};
+}
 
+function secaoLances(L, {cardControle, cardTimeout}){
   // ---- Lances e relógio (PGN)
   const fase = {}, lancesArr = [], porLances = {};
   let curta = null, longa = null;
@@ -371,7 +405,12 @@ function kpis(jogos, nick){
     cardControle,
     cardTimeout,
   ].join('');
+  return {html: lancesHtml, fase, fracDerrota};
+}
 
+// heurísticas com amostra mínima; recebem só os dados que as seções exportaram
+function achadosAutomaticos({L, sessoes, cor, faixa, perdeu, curva, A, melhorPerdeu, errosMotor, periodo, dia, pos2Derrotas, maxL, porPos, parouApos, variantes, fase, fracDerrota}){
+  const n = somaWDL, ap = aprov;
   // ---- Análise automática
   const total = L.length, apGeral = ap({w: L.filter(x => x.r==='w').length, d: L.filter(x => x.r==='d').length, l: L.filter(x => x.r==='l').length});
   const ratingAtual = [...L].reverse().find(x => x.g.rated)?.eu.rating ?? 0;
@@ -437,11 +476,18 @@ function kpis(jogos, nick){
   const ICONE = {alerta: '▲', atencao: '●', bom: '✔', info: 'ℹ'}, PRIO = {alerta: 0, atencao: 1, bom: 2, info: 3};
   ach.sort((a, b) => PRIO[a.tipo] - PRIO[b.tipo]);
   const analise = ach.map(a => `<div class="kpi box achado ${a.tipo}"><h2><span class="icone">${ICONE[a.tipo]}</span> ${a.titulo}</h2><p>${a.texto}</p></div>`).join('');
+  return analise;
+}
 
+function kpis(jogos, nick){
+  const {L, sessoes} = prepararPartidas(jogos, nick);
+  const resultados = secaoResultados(L), rating = secaoRating(L), precisao = secaoPrecisao(L, nick), ritmo = secaoRitmo(L);
+  const volume = secaoVolume(L), sess = secaoSessoes(L, sessoes, ritmo), adversarios = secaoAdversarios(L), aberturas = secaoAberturas(L), lances = secaoLances(L, ritmo);
+  const analise = achadosAutomaticos({L, sessoes, ...resultados, ...rating, ...precisao, ...ritmo, ...sess, ...aberturas, ...lances});
   return {
-    'Análise': analise, 'Resultados': resultados, 'Rating': rating,
-    'Aberturas': aberturas, 'Lances e relógio': lancesHtml, 'Erros e precisão': precisao,
-    'Adversários': adversarios, 'Sessões': sessoesHtml, 'Horários': horarios, 'Volume': volume,
+    'Análise': analise, 'Resultados': resultados.html, 'Rating': rating.html,
+    'Aberturas': aberturas.html, 'Lances e relógio': lances.html, 'Erros e precisão': precisao.html,
+    'Adversários': adversarios.html, 'Sessões': sess.html, 'Horários': ritmo.horarios, 'Volume': volume.html,
   };
 }
 
