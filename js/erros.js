@@ -62,16 +62,17 @@ function resumoErros(itens, nick){
 // erros (graves + erros) por 100 lances numa faixa de relógio — compara pressão de tempo com o resto
 const taxaErros = (res, faixa) => res.lancesRelogio[faixa] ? (res.relogio[faixa] || 0) / res.lancesRelogio[faixa] * 100 : null;
 
-// cards da aba Precisão (o kpis() chama quando há partidas avaliadas)
+// cards da aba Erros e precisão (o kpis() chama quando há partidas avaliadas)
 function cardsErros(res, total, nick){
   const por = v => (v / res.n).toFixed(1);
   const geral = [
     kv('Partidas analisadas', `${res.n} de ${total} <small>profundidade ${res.prof}</small>`),
-    kv('Erros graves por partida', por(res.cont.grave)), kv('Erros por partida', por(res.cont.erro)), kv('Imprecisões por partida', por(res.cont.imprecisão)),
-    kv('Viradas a favor / contra', `${res.favor} / ${res.contra}`),
+    kv('Graves / partida', por(res.cont.grave)), kv('Erros / partida', por(res.cont.erro)), kv('Imprecisões / partida', por(res.cont.imprecisão)),
+    kv('Viradas a favor · contra', `${res.favor} · ${res.contra}`),
   ].join('');
   const fases = ['Abertura (até 15)', 'Meio-jogo (16–40)', 'Final (41+)'].map(f => kv(f, res.fase[f] || 0)).join('');
-  const rel = FAIXAS_RELOGIO.filter(f => res.lancesRelogio[f]).map(f => { const t = taxaErros(res, f); return kv(f, `${res.relogio[f] || 0} <small>em ${res.lancesRelogio[f]} lances · ${t.toFixed(1)} por 100</small>`); }).join('');
+  const ROTULO = {'menos de 30 s': '< 30 s', '30 s a 2 min': '30 s – 2 min', 'mais de 2 min': '> 2 min'};
+  const rel = FAIXAS_RELOGIO.filter(f => res.lancesRelogio[f]).map(f => { const t = taxaErros(res, f); return kv(ROTULO[f], `${res.relogio[f] || 0} <small>em ${res.lancesRelogio[f]} lances · ${t.toFixed(1)} por 100</small>`); }).join('');
   const abert = Object.entries(res.porAbertura).filter(([, v]) => v.n >= 3).sort((a, b) => b[1].graves / b[1].n - a[1].graves / a[1].n).slice(0, 5)
     .map(([k, v]) => kv(escHtml(k), `${(v.graves / v.n).toFixed(1)} <small>graves/partida · ${v.n} partidas</small>`)).join('');
   const dec = res.decisivos.sort((a, b) => b.x.ts - a.x.ts).slice(0, 8).map(({x, er}) => {

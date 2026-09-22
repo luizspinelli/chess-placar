@@ -152,11 +152,12 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 .abasWrap #abasKpi{flex:1;border-bottom:0}
 #verMenos{align-self:center;margin:0 10px;padding:5px 10px;font-size:.78rem;background:var(--surface);color:var(--muted);border:1px solid var(--border2);white-space:nowrap}
 #verMenos:hover{color:var(--text);filter:none}
-#abasKpi{gap:0;padding:0;justify-content:center}
+/* nunca rola: a barra escondida deixava Análise/Resultados/Rating fora da tela em colunas estreitas */
+#abasKpi{gap:0;padding:0;justify-content:center;flex-wrap:wrap;overflow-x:visible}
 .grupoAbas{display:flex;flex-direction:column;align-items:center;padding:6px 14px 8px;border-right:1px solid var(--border)}
 .grupoAbas:last-child{border-right:0}
 .grupoAbas .grupoAba{font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:0 4px;margin-bottom:4px;white-space:nowrap;text-align:center}
-.grupoAbas .botoes{display:flex;gap:4px}
+.grupoAbas .botoes{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
 #perfil{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 #perfil img,#perfil .avatarVazio{width:48px;height:48px;border-radius:10px;object-fit:cover;background:var(--surface2)}
 #perfil .avatarVazio{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.3rem;color:var(--muted);border:1px solid var(--border2)}
@@ -266,6 +267,7 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 .pag{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:.82rem;color:var(--muted);flex:0 0 auto}
 .pag button{padding:3px 10px;line-height:1.2;background:var(--surface);color:var(--text);border:1px solid var(--border2)}
 .pag input{width:130px;padding:3px 8px;font-size:.8rem}
+.pag #pagInfo{white-space:nowrap}
 .pag select{padding:3px 24px 3px 8px;font-size:.8rem}
 #lista{list-style:none;margin:0;padding:0 14px;overflow-y:auto;min-height:0}
 #lista li{display:grid;grid-template-columns:12px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
@@ -359,6 +361,7 @@ a:hover{text-decoration:underline}
   #lista li{grid-template-columns:12px 1fr;gap:6px 10px}
   .meta{grid-column:2;text-align:left}
   .pag{flex-wrap:wrap;gap:6px}
+  .pag input{width:auto;flex:1 1 150px;min-width:0}
   #modal{padding:0}
   #modal .janela{border-radius:0;border:0}
   #modal .topo{flex-wrap:wrap;gap:6px;padding:6px 44px 6px 8px;position:relative}

@@ -145,11 +145,14 @@ function kpis(jogos, nick){
   const errosMotor = typeof resumoErros === 'function' ? resumoErros(L, nick) : null;
   const precisao = [
     errosMotor ? cardsErros(errosMotor, L.length, nick) : '',
+    // sem partidas analisadas no site, cinco cards de "Sem dados" viram uma linha
+    ...(A.length ? [
     card('Precisão', tabela(kv('Partidas analisadas', A.length) + kv('Média', media(A.map(x => x.acc))) + kv('Em vitórias', media(A.filter(x => x.r === 'w').map(x => x.acc))) + kv('Em empates', media(A.filter(x => x.r === 'd').map(x => x.acc))) + kv('Em derrotas', media(A.filter(x => x.r === 'l').map(x => x.acc))))),
     card('Por cor', tabela(kvs(accCor, ['Brancas','Pretas']))),
     card('Por período do dia', tabela(kvs(accPer, ['Madrugada','Manhã','Tarde','Noite']))),
     card('Por posição na sessão', tabela(kvs(accPos, ['1ª da sessão','2ª','3ª+']))),
     card('Você × adversário', tabela(kv('Sua média', media(A.map(x => x.acc))) + kv('Média do adversário', media(accAdv)) + kv('Diferença', accAdv.length ? sinal(+(media(A.filter(x => x.accAdv !== null).map(x => x.acc)) - media(accAdv)).toFixed(1)) : '–') + kv('Jogou melhor e perdeu', melhorPerdeu) + kv('Jogou pior e ganhou', piorGanhou)), 'span2'),
+    ] : [card('Precisão', '<small>Nenhuma partida deste período foi analisada no Chess.com — a precisão (0–100) só existe nas partidas em que você pediu a análise no site. Os erros acima vêm do motor do próprio painel.</small>')]),
   ].join('');
 
   // ---- Ritmo
@@ -437,7 +440,7 @@ function kpis(jogos, nick){
 
   return {
     'Análise': analise, 'Resultados': resultados, 'Rating': rating,
-    'Aberturas': aberturas, 'Lances e relógio': lancesHtml, 'Precisão': precisao,
+    'Aberturas': aberturas, 'Lances e relógio': lancesHtml, 'Erros e precisão': precisao,
     'Adversários': adversarios, 'Sessões': sessoesHtml, 'Horários': horarios, 'Volume': volume,
   };
 }
@@ -450,7 +453,7 @@ $('abasKpi').addEventListener('click', e => {
 
 function renderKpis(){
   if (!kpiData) return;
-  const GRUPOS = [['Visão geral', ['Análise','Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
+  const GRUPOS = [['Visão geral', ['Análise','Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Erros e precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
   $('abasKpi').innerHTML = GRUPOS.map(([nome, abas]) => `<div class="grupoAbas"><span class="grupoAba">${nome}</span><div class="botoes">${abas.filter(k => kpiData[k] !== undefined).map(k => `<button type="button" role="tab" aria-selected="${k === abaKpi}" data-aba="${k}" class="${k === abaKpi ? 'ativa' : ''}">${k}</button>`).join('')}</div></div>`).join('');
   $('kpiGrid').innerHTML = (abaKpi === 'Análise' ? blocoIA() + blocoMotor() : '') + kpiData[abaKpi];
   $('kpiGrid').classList.toggle('analise', abaKpi === 'Análise');

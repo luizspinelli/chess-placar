@@ -161,7 +161,7 @@ function mdParaHtml(md){
 function resumoParaIA(curto){
   const div = document.createElement('div');
   const linhas = [];
-  const ABAS_SENSIVEIS = new Set(curto ? ['Adversários','Aberturas','Horários','Volume','Precisão','Lances e relógio'] : ['Adversários','Aberturas']);
+  const ABAS_SENSIVEIS = new Set(curto ? ['Adversários','Aberturas','Horários','Volume','Erros e precisão','Lances e relógio'] : ['Adversários','Aberturas']);
   const MIN = 10;
   const ACHADOS_SENSIVEIS = /abertura|dia da semana|período do dia|contra mais fracos/i;
   const {rotulo, nick} = estado;
@@ -428,7 +428,7 @@ function exportarPDF(){
   const div = document.createElement('div'); div.innerHTML = kpiData['Análise'];
   const achados = [...div.querySelectorAll('.achado')].map(a => `<li><b>${a.querySelector('h2').textContent.replace(/^[▲●✔ℹ]\s*/, '').trim()}</b> — ${a.querySelector('p').textContent.trim()}</li>`).join('');
   const esc = t => t.replace(/</g, '&lt;');
-  const secoes = ['Resultados','Rating','Aberturas','Lances e relógio','Precisão','Sessões','Horários'].map(tab => {
+  const secoes = ['Resultados','Rating','Aberturas','Lances e relógio','Erros e precisão','Sessões','Horários'].map(tab => {
     if (!kpiData[tab]) return '';
     div.innerHTML = kpiData[tab];
     const cards = [...div.querySelectorAll('.kpi')].map(c => {

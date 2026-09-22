@@ -98,8 +98,8 @@ async function motorAnalisar(){
       if (!res) break;
       guardarEvals(g, prof, res);
       motor.progresso.feitas++;
-      // a aba Precisão mostra os erros: refaz os cards conforme as partidas chegam; nas outras abas só o cartão do motor
-      if (abaKpi === 'Precisão') { kpiData = kpis(estado.jogos.filter(g => g.time_class === aba), nick); renderKpis(); } else renderMotor();
+      // a aba Erros e precisão mostra os erros: refaz os cards conforme as partidas chegam; nas outras abas só o cartão do motor
+      if (abaKpi === 'Erros e precisão') { kpiData = kpis(estado.jogos.filter(g => g.time_class === aba), nick); renderKpis(); } else renderMotor();
     }
   } catch (err) {
     motor.erro = err.message;
@@ -123,7 +123,7 @@ function blocoMotor(){
     const resta = p && p.pos > 20 ? seg(Math.round((p.posTotal - p.pos) * (p.ms / p.pos) / 1000)) : null;
     const status = motor.rodando
       ? `Analisando ${p.feitas + 1}/${p.total} partidas · posição ${p.pos}/${p.posTotal}${resta ? ` · ~${resta} restantes` : ''}`
-      : p ? `Concluído: ${p.feitas - p.falhas} partida${p.feitas - p.falhas === 1 ? '' : 's'} analisada${p.feitas - p.falhas === 1 ? '' : 's'} em ${seg(Math.round(p.ms / 1000))}${p.falhas ? ` · ${p.falhas} que o motor não conseguiu ler` : ''}${motor.cancelar ? ' · interrompido' : ''}. Os erros estão na aba Precisão.`
+      : p ? `Concluído: ${p.feitas - p.falhas} partida${p.feitas - p.falhas === 1 ? '' : 's'} analisada${p.feitas - p.falhas === 1 ? '' : 's'} em ${seg(Math.round(p.ms / 1000))}${p.falhas ? ` · ${p.falhas} que o motor não conseguiu ler` : ''}${motor.cancelar ? ' · interrompido' : ''}. Os erros estão na aba Erros e precisão.`
       : !todas.length ? 'Esta busca veio do cache, que não guarda os lances: clique em Buscar para baixá-los e o motor fica disponível.'
       : `${prontas} de ${todas.length} partidas já analisadas${pendentes ? ` · ${pendentes} a analisar em profundidade ${prof}${prontas + pendentes > todas.length ? ' (as já feitas estão em profundidade menor)' : ''}` : ''}.`;
     corpo = `<div class="cfg">
@@ -134,7 +134,7 @@ function blocoMotor(){
     ${motor.rodando ? `<div class="barra"><i style="width:${pct}%"></i></div>` : ''}
     <p class="status">${status}</p>${motor.erro ? `<p class="erro">${escHtml(motor.erro)}</p>` : ''}`;
   }
-  return `<div class="kpi box motor" id="cardMotor"><h2>Motor de análise</h2>${corpo}</div>`;
+  return `<div class="kpi box motor span2" id="cardMotor"><h2>Motor de análise</h2>${corpo}</div>`;
 }
 // troca só o cartão, sem refazer a aba: refazer apagaria o que o usuário está digitando no cartão da IA ao lado
 function renderMotor(){ const el = $('cardMotor'); if (el) el.outerHTML = blocoMotor(); }
