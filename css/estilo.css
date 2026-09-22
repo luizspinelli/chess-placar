@@ -380,7 +380,7 @@ a:hover{text-decoration:underline}
 .motor .cfg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
 .motor .cfg select.modelo{width:auto;flex:0 1 auto;max-width:260px;padding:6px 28px 6px 10px;font-size:.85rem}
 .motor .cfg button{padding:7px 12px;font-size:.85rem}
-.motor .cfg #motorParar{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+.motor .cfg #motorParar,.motor .cfg .secundario{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
 .motor .cfg small{flex-basis:100%;color:var(--muted)}
 .motor .barra{height:6px;border-radius:999px;background:var(--border2);overflow:hidden;margin:8px 0 6px}
 .motor .barra i{display:block;height:100%;background:var(--accent);transition:width .4s}

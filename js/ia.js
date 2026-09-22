@@ -112,14 +112,13 @@ function blocoIA(){
       <input id="iaChave" type="password" placeholder="Chave da API (${P.nome})" value="${chave.replace(/"/g,'&quot;')}" autocomplete="off">
       <select id="iaModelo" class="modelo">${[...new Set([modelo, ...modelosIA[p]])].map(m => `<option value="${m}" ${m === modelo ? 'selected' : ''}>${m}</option>`).join('')}</select>
       <button type="button" id="iaModelos" title="Buscar modelos disponíveis na sua chave" aria-label="Buscar modelos disponíveis" ${iaOcupado ? 'disabled' : ''}>↻</button>
-      <button type="button" id="iaBtn" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar indicadores'}</button>
-      <button type="button" id="iaPartidas" title="Avalia as partidas pendentes com o motor (quando disponível) e depois envia lances, relógio, marcos e erros das últimas ${N_DOSSIE} partidas à IA" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : `Dossiê das últimas ${N_DOSSIE}`}</button>
+      <button type="button" id="iaAnalisar" title="Avalia as partidas pendentes com o motor (quando disponível) e envia à IA os indicadores do período e o dossiê das últimas ${N_DOSSIE} partidas" ${iaOcupado ? 'disabled' : ''}>${iaOcupado ? 'Analisando…' : 'Analisar'}</button>
       <button type="button" id="iaPdf" title="Abre a janela de impressão; escolha 'Salvar como PDF'">Exportar PDF</button>
       <label class="lembrar" title="Desmarcado, a chave vale só nesta aba e não fica gravada no navegador"><input type="checkbox" id="iaLembrar" ${lembrarChave() ? 'checked' : ''}>lembrar chave</label>
       <small><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · ${lembrarChave() ? 'fica salva só neste navegador' : 'não será gravada'}${P.gratis ? '' : ' · use uma chave dedicada com limite de gasto'}</small>
     </div>
     ${iaErro ? `<p class="erro">${iaErro}</p>` : ''}
-    <div class="texto">${iaTexto ? mdParaHtml(iaTexto) : `<small><b>Analisar indicadores</b> envia um resumo das abas (não as partidas) e devolve diagnóstico com plano de treino. <b>Dossiê</b> roda primeiro o motor nas partidas ainda não avaliadas e depois envia à IA, por partida, os 15 primeiros lances, o relógio, os marcos e os erros apontados pelo Stockfish — e devolve o que manter, o que parar de fazer e o que estudar.</small>`}</div>
+    <div class="texto">${iaTexto ? mdParaHtml(iaTexto) : `<small>Roda o motor nas partidas ainda não avaliadas e envia à IA os indicadores do período mais o dossiê das últimas ${N_DOSSIE} partidas desta modalidade (primeiros lances, relógio, marcos e erros do Stockfish). Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano e regras de rotina.</small>`}</div>
   </div>`;
 }
 
@@ -204,7 +203,14 @@ const nivelJogador = ratingRef => ratingRef >= 2400 ? 'nível de mestre (rating 
   : ratingRef >= 1000 ? 'amador intermediário (rating ' + ratingRef + '): tática de 2-3 lances, planos das aberturas que já joga, finais básicos'
   : 'amador iniciante (rating ' + ratingRef + '): peças penduradas, mates curtos, contar material, não desistir cedo; aberturas só como princípios';
 
-function promptIndicadores(){
+// um prompt só: indicadores agregados do período + dossiê das últimas partidas (lances, relógio, marcos e erros do
+// motor). O escopo (curto/médio/longo) e o nível do jogador vêm da amostra; sem lances na busca, vai só com os indicadores.
+let iaAviso = '';
+function promptCompleto(){
+  iaAviso = '';
+  let dossie = null;
+  try { dossie = dossiePartidas(estado.jogos.filter(g => g.time_class === aba), estado.nick); }
+  catch (err) { iaAviso = `Sem o dossiê de partidas nesta análise (${err.message.replace(/\.$/, '')}).`; }
   const jogosAba = estado.jogos.filter(g => g.time_class === aba);
   const dias = jogosAba.length ? Math.max(1, Math.round((jogosAba[jogosAba.length-1].end_time - jogosAba[0].end_time) / 86400) + 1) : 1;
   const nJogos = jogosAba.length;
@@ -218,11 +224,11 @@ function promptIndicadores(){
 
   const temCmp = (estado.comp?.tc[aba]?.n ?? 0) >= 10;
   const nivel = nivelJogador(estado.depois[aba] ?? 0);
-  return `Você é um treinador de xadrez experiente. Vai analisar os indicadores de um jogador do Chess.com e escrever um diagnóstico em português do Brasil.
+  return `Você é um treinador de xadrez experiente. Vai analisar um jogador do Chess.com a partir de duas fontes — os INDICADORES agregados do período e${dossie ? ` o DOSSIÊ das últimas ${dossie.n} partidas de ${TIPO[aba]} (primeiros lances, relógio, marcos${dossie.comMotor ? ' e erros apontados pelo motor' : ''})` : ' (o dossiê de partidas não está disponível nesta busca)'} — e escrever, em português do Brasil, um diagnóstico com o que ele deve manter, o que deve parar de fazer, o que deve estudar e um plano.
 
 NÍVEL DO JOGADOR: ${nivel}. Adapte vocabulário, expectativas e recomendações a esse nível.
 
-COMO LER OS DADOS
+COMO LER OS INDICADORES
 - Formato das linhas: "rótulo: N partidas, aproveitamento X% (V E D)". Aproveitamento conta empate como meio ponto. N é a quantidade de partidas daquela linha; X% é o rendimento nelas, NÃO a proporção sobre o total.
 - "Sessão" é um bloco de partidas com menos de 30 minutos entre uma e outra. "Posição na sessão" é a ordem da partida dentro desse bloco.
 - "Tilt" mede o rendimento nas partidas jogadas logo após uma ou duas derrotas seguidas.
@@ -234,37 +240,56 @@ COMO LER OS DADOS
 ${temCmp ? `- "Período anterior equivalente" é o mesmo recorte de calendário deslocado para trás (mês anterior, ano anterior ou a mesma janela de dias). Serve para dizer se o jogador evoluiu ou regrediu; só compare aproveitamento se as duas amostras tiverem tamanho parecido.
 ` : ''}- Os "achados automáticos" já apontam desvios estatísticos; use-os como ponto de partida, mas verifique se os números sustentam.
 
+${dossie ? `COMO LER O DOSSIÊ
+- Uma linha por partida, numeradas de #1 (mais antiga) a #${dossie.n} (mais recente), com data, cor, resultado e motivo, ratings, abertura, número de lances e precisão (quando o Chess.com analisou).
+- Os 15 primeiros lances de cada partida em notação algébrica; "…" indica que a partida continuou.
+- Marcos lidos do texto dos lances: em que lance cada lado rocou, a primeira captura, quantas vezes a dama se moveu nos 10 primeiros lances, xeques dados e recebidos.
+- Relógio: tempo inicial e final dos dois lados, média de segundos por lance em cada fase, a maior reflexão e a partir de que lance o jogador ficou abaixo de 30 s.
+
+O QUE VOCÊ NÃO TEM — E NÃO DEVE FINGIR TER
+- Você não tem o tabuleiro nem avaliação de motor. NÃO afirme que um lance específico foi erro grave, que uma peça ficou pendurada, que havia mate ou que uma posição estava ganha ou perdida: sem tabuleiro isso é chute e o jogador vai confiar em algo falso. Se um trecho parecer suspeito, apresente como hipótese a conferir ("vale rever a partida #37 a partir do lance 12 na análise do Chess.com").
+- Só os 15 primeiros lances estão disponíveis. Sobre o meio-jogo e o final você sabe apenas a duração, o motivo do fim, os xeques e o relógio — use isso, não invente o que aconteceu.
+${dossie.comMotor ? `- EXCEÇÃO: ${dossie.comMotor} partidas trazem a linha "erros (motor)". Esses lances foram avaliados pelo Stockfish e são erros de fato — a queda é da chance de vitória do jogador, em pontos percentuais, e "decisivo" é o erro do qual a partida não voltou. Use-os à vontade: em que fase e com quanto relógio acontecem, se repetem na mesma abertura, se o lance decisivo das derrotas vem cedo ou tarde. "melhor:" é o lance que o motor preferia no lugar — cite-o como fato, mas NÃO invente a razão tática por trás dele (sem tabuleiro você não a vê); quando for relevante, diga que vale conferir aquele lance na análise do Chess.com. A proibição acima continua valendo para qualquer lance SEM essa marcação.
+` : ''}` : ''}
 REGRAS
-- Cite o número que sustenta cada afirmação. Não invente dados nem estime o que não está no resumo.
-- Amostras pequenas (menos de ~15 partidas) não sustentam conclusões fortes: mencione como hipótese ou ignore.
+- Cite o número (e, no dossiê, a partida: #12, #40) que sustenta cada afirmação. Não invente dados nem estime o que não está nos dados.
+- Amostras pequenas (menos de ~15 partidas) não sustentam conclusões fortes: mencione como hipótese ou ignore. Um padrão precisa aparecer em várias partidas; o que ocorreu uma vez é anedota.
+- Cruze as duas fontes: os indicadores dizem ONDE o rendimento cai (cor, horário, sessão, relógio); o dossiê diz COMO isso acontece nas partidas (abertura, ordem de lances, ritmo, erros). Quando as duas apontam para o mesmo lugar, é o achado principal.
 - Priorize o que mais custa rating hoje. Um problema em 40% das partidas vale mais que um em 5%.
 - Seja concreto: em vez de "estude aberturas", diga qual abertura, o que revisar nela e por quê, com base nos números.
-- Adapte tudo ao NÍVEL DO JOGADOR indicado acima. Para iniciantes, nada de linhas teóricas nomeadas, puzzles "nível 1500+" ou finais complexos; para mestres, nada de conselhos de fundamentos (não pendurar peças, "não desista") — desistir em posição perdida é normal nesse nível.
+- Adapte tudo ao NÍVEL DO JOGADOR. Para iniciantes, nada de linhas teóricas nomeadas, puzzles "nível 1500+" ou finais complexos; para mestres, nada de conselhos de fundamentos — desistir em posição perdida é normal nesse nível.
 - Não repita os números crus em lista; interprete-os.
-- Sem introdução, sem elogios genéricos, sem conclusão motivacional. Até 600 palavras; termine todas as seções.
+- Sem introdução, sem elogios genéricos, sem conclusão motivacional. Até 900 palavras; termine todas as seções.
 
 ESCOPO DO PERÍODO
 ${escopo}
 
 ESTRUTURA (use exatamente estes títulos, em markdown "##", nesta ordem, sem acrescentar outros)
 ## Diagnóstico
-3-4 frases sobre o perfil do jogador e o que explica o resultado do período${temCmp ? ', dizendo se ele evoluiu ou regrediu em relação ao período anterior e em quê' : ''}.
+3-4 frases: como esse jogador ganha e como perde, e o que explica o resultado do período${temCmp ? ', dizendo se ele evoluiu ou regrediu em relação ao período anterior e em quê' : ''}.
 ${longo ? `## O que mudou no período
 Compare começo e fim usando as linhas de rating, aproveitamento por mês e rating médio dos adversários por mês. Diga o que melhorou, o que piorou e o que ficou igual. Só depois disso trate padrões como estruturais.
-` : ''}## Pontos fortes
-3 itens, cada um com o número que comprova. Ponto forte é o que fica acima da média geral do jogador (ex.: uma cor, um horário, uma abertura, o comportamento após derrota), não a média em si.
-## O que está custando mais rating
-3 itens em ordem de impacto. Para cada um: o padrão, o dado, e o que fazer a respeito.
+` : ''}## O que manter
+3 itens: hábitos e escolhas que estão dando resultado, cada um com o número${dossie ? ' e as partidas' : ''} que comprovam. Ponto forte é o que fica acima da média geral do jogador, não a média em si.
+## O que parar de fazer
+3 itens em ordem de impacto: o padrão, em quantas partidas aparece, o que custou e o que fazer no lugar.
+## O que estudar
+3-4 itens concretos e priorizados: qual abertura ou ordem de lances, que tipo de posição ou final, que habilidade de relógio — e por quê, com base nos dados. Para cada um, diga como estudar (quais partidas revisar, que tipo de exercício, quanto tempo).
 ${curto ? `## Ajustes imediatos
 3 ajustes concretos para as próximas sessões.` : `## Plano para 2 semanas
 Semana 1 e Semana 2, com 2-3 ações práticas cada (o que treinar, quanto tempo, como medir).`}
 ## Regras de rotina
-Quando jogar, quando parar, quantas partidas por sessão e o que fazer após derrota, tudo derivado dos dados de sessão, tilt, horário e relógio.${longo ? `
-## O que acompanhar nos próximos 30 dias
-2-3 métricas do próprio painel para confirmar se as mudanças estão funcionando, com o valor atual e a meta.` : ''}
+Quando jogar, quando parar, quantas partidas por sessão e o que fazer após derrota, tudo derivado dos dados de sessão, tilt, horário e relógio.
+## Como acompanhar
+2-3 métricas do próprio painel para verificar nas próximas 50 partidas se mudou, com o valor atual e a meta.
 
 DADOS
-${resumoParaIA(curto)}`;
+
+=== INDICADORES DO PERÍODO ===
+${resumoParaIA(curto)}
+${dossie ? `
+=== DOSSIÊ DAS ÚLTIMAS ${dossie.n} PARTIDAS ===
+${dossie.texto}` : ''}`;
 }
 
 const N_DOSSIE = 100;
@@ -335,50 +360,9 @@ function resumoMotor(avaliadas, nick){
 `;
 }
 
-function promptPartidas(){
-  const dossie = dossiePartidas(estado.jogos.filter(g => g.time_class === aba), estado.nick);
-  return `Você é um treinador de xadrez experiente. Vai ler as últimas ${dossie.n} partidas de ${TIPO[aba]} de um jogador do Chess.com — os primeiros lances, o relógio e alguns marcos de cada uma — e escrever, em português do Brasil, o que ele deve manter, o que deve parar de fazer e o que deve estudar.
-
-NÍVEL DO JOGADOR: ${nivelJogador(estado.depois[aba] ?? 0)}. Adapte vocabulário, expectativas e recomendações a esse nível.
-
-O QUE VOCÊ TEM
-- Um resumo agregado e depois uma linha por partida, numeradas de #1 (mais antiga) a #${dossie.n} (mais recente), com data, cor, resultado e motivo, ratings, abertura, número de lances e precisão (quando o Chess.com analisou).
-- Os 15 primeiros lances de cada partida em notação algébrica; "…" indica que a partida continuou.
-- Marcos lidos do texto dos lances: em que lance cada lado rocou, a primeira captura, quantas vezes a dama se moveu nos 10 primeiros lances, xeques dados e recebidos.
-- Relógio: tempo inicial e final dos dois lados, média de segundos por lance em cada fase, a maior reflexão e a partir de que lance o jogador ficou abaixo de 30 s.
-
-O QUE VOCÊ NÃO TEM — E NÃO DEVE FINGIR TER
-- Você não tem o tabuleiro nem avaliação de motor. NÃO afirme que um lance específico foi erro grave, que uma peça ficou pendurada, que havia mate ou que uma posição estava ganha ou perdida: sem tabuleiro isso é chute e o jogador vai confiar em algo falso. Se um trecho parecer suspeito, apresente como hipótese a conferir ("vale rever a partida #37 a partir do lance 12 na análise do Chess.com").
-- Só os 15 primeiros lances estão disponíveis. Sobre o meio-jogo e o final você sabe apenas a duração, o motivo do fim, os xeques e o relógio — use isso, não invente o que aconteceu.
-${dossie.comMotor ? `- EXCEÇÃO: ${dossie.comMotor} partidas trazem a linha "erros (motor)". Esses lances foram avaliados pelo Stockfish e são erros de fato — a queda é da chance de vitória do jogador, em pontos percentuais, e "decisivo" é o erro do qual a partida não voltou. Use-os à vontade: em que fase e com quanto relógio acontecem, se repetem na mesma abertura, se o lance decisivo das derrotas vem cedo ou tarde. "melhor:" é o lance que o motor preferia no lugar — cite-o como fato, mas NÃO invente a razão tática por trás dele (sem tabuleiro você não a vê); quando for relevante, diga que vale conferir aquele lance na análise do Chess.com. A proibição acima continua valendo para qualquer lance SEM essa marcação.
-` : ''}
-REGRAS
-- Cite as partidas pelo número (#12, #40) e o dado que sustenta cada afirmação. Um padrão precisa aparecer em várias partidas; algo que ocorreu uma vez é anedota e não entra.
-- Compare vitórias e derrotas: o que muda na escolha de abertura e na ordem dos lances, no momento do roque, no ritmo e no relógio.
-- Nas aberturas, lembre que de brancas a defesa nomeada é escolha do adversário (o jogador só controla a resposta); de pretas é escolha do próprio jogador.
-- Priorize por impacto: quantas partidas o padrão afeta e quanto rating custou (a variação está entre parênteses após os ratings).
-- Adapte ao NÍVEL DO JOGADOR: para amadores, estudo concreto e curto; para jogadores fortes, repertório, planos e gestão de tempo.
-- Sem introdução, sem elogios genéricos, sem conclusão motivacional. Até 700 palavras; termine todas as seções.
-
-ESTRUTURA (use exatamente estes títulos, em markdown "##", nesta ordem, sem acrescentar outros)
-## Leitura geral
-3-4 frases: como esse jogador ganha e como perde nessas ${dossie.n} partidas.
-## O que manter
-3 itens: hábitos e escolhas que estão dando resultado, cada um com as partidas e os números que comprovam.
-## O que parar de fazer
-3 itens em ordem de impacto: o padrão, em quantas partidas aparece, o que custou e o que fazer no lugar.
-## O que estudar
-3-4 itens concretos e priorizados: qual abertura ou ordem de lances, que tipo de posição ou final, que habilidade de relógio — e por quê, com base nos dados. Para cada um, diga como estudar (quais partidas revisar, que tipo de exercício, quanto tempo).
-## Como acompanhar
-2-3 sinais para verificar nas próximas 50 partidas se mudou, com o valor atual de cada um.
-
-DADOS
-${dossie.texto}`;
-}
-
-// dossiê completo: primeiro o motor nas partidas pendentes (quando ele existe e a página é servida por http),
-// depois a IA com tudo. Motor interrompido não chama a IA; motor com erro manda o que já estava avaliado.
-async function dossieCompleto(){
+// o único botão de análise: primeiro o motor nas partidas pendentes (quando ele existe e a página é servida por
+// http), depois a IA com indicadores + dossiê. Motor interrompido não chama a IA; motor com erro manda o que já estava avaliado.
+async function analisarTudo(){
   if (!estado) return;
   const chave = $('iaChave').value.trim();
   if (!chave) { iaErro = 'Informe a chave da API.'; renderKpis(); return; }
@@ -393,10 +377,10 @@ async function dossieCompleto(){
       if (motor.cancelar) { iaErro = 'Motor interrompido; a IA não foi chamada. Clique de novo para continuar de onde parou.'; renderKpis(); return; }
     }
   }
-  await executarIA(promptPartidas);
+  await executarIA(promptCompleto);
 }
 
-// laço comum às duas análises: valida chave, monta o prompt, tenta o modelo escolhido e cai para os reservas
+// laço da chamada: valida chave, monta o prompt, tenta o modelo escolhido e cai para os reservas
 async function executarIA(montarPrompt){
   const p = provAtual(), P = PROVEDORES[p];
   const chave = $('iaChave').value.trim(), escolhido = $('iaModelo').value;
@@ -416,7 +400,7 @@ async function executarIA(montarPrompt){
         const res = await P.chamar(chave, m, prompt);
         if (res.ok) {
           iaTexto = res.texto || 'Resposta vazia.';
-          iaErro = m !== escolhido ? `Respondido por ${m} (o modelo escolhido estava indisponível); ele passou a ser o padrão.` : '';
+          iaErro = [m !== escolhido ? `Respondido por ${m} (o modelo escolhido estava indisponível); ele passou a ser o padrão.` : '', iaAviso].filter(Boolean).join(' ');
           gravarLS(modeloLS(p), m);
           return;
         }
@@ -433,7 +417,7 @@ async function executarIA(montarPrompt){
     iaOcupado = false; renderKpis();
   }
 }
-$('kpiGrid').addEventListener('click', e => { if (e.target.id === 'iaBtn') executarIA(promptIndicadores); if (e.target.id === 'iaPartidas') dossieCompleto(); if (e.target.id === 'iaModelos') carregarModelos(); if (e.target.id === 'iaPdf') exportarPDF(); });
+$('kpiGrid').addEventListener('click', e => { if (e.target.id === 'iaAnalisar') analisarTudo(); if (e.target.id === 'iaModelos') carregarModelos(); if (e.target.id === 'iaPdf') exportarPDF(); });
 
 function exportarPDF(){
   if (!estado || !kpiData) return;

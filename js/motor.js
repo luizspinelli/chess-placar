@@ -128,8 +128,8 @@ function blocoMotor(){
       : `${prontas} de ${todas.length} partidas já analisadas${pendentes ? ` · ${pendentes} a analisar em profundidade ${prof}${prontas + pendentes > todas.length ? ' (as já feitas estão em profundidade menor)' : ''}` : ''}.`;
     corpo = `<div class="cfg">
       <select id="motorProf" class="modelo" ${motor.rodando ? 'disabled' : ''}>${Object.entries(PROFUNDIDADES).map(([k, v]) => `<option value="${k}" ${+k === prof ? 'selected' : ''}>profundidade ${k} (${v})</option>`).join('')}</select>
-      ${motor.rodando ? '<button type="button" id="motorParar">Parar</button>' : `<button type="button" id="motorBtn" ${pendentes ? '' : 'disabled'}>Analisar ${pendentes || todas.length} partida${(pendentes || todas.length) === 1 ? '' : 's'}</button>`}
-      <small>Stockfish 19 rodando no seu navegador; nada sai da máquina. Profundidade 12 leva uns 5 s por partida no computador${celular ? '; no celular é mais lento e gasta bateria' : ''}.</small>
+      ${motor.rodando ? '<button type="button" id="motorParar">Parar</button>' : `<button type="button" id="motorBtn" class="secundario" title="Só o motor, sem chamar a IA: gera os cards de erros da aba Precisão e não precisa de chave" ${pendentes ? '' : 'disabled'}>Só o motor · ${pendentes || todas.length} partida${(pendentes || todas.length) === 1 ? '' : 's'}</button>`}
+      <small>Stockfish 19 rodando no seu navegador; nada sai da máquina. O botão <b>Analisar</b> da IA já roda o motor antes; este aqui é para rodar só o motor (sem chave) ou trocar a profundidade. Profundidade 12 leva uns 5 s por partida no computador${celular ? '; no celular é mais lento e gasta bateria' : ''}.</small>
     </div>
     ${motor.rodando ? `<div class="barra"><i style="width:${pct}%"></i></div>` : ''}
     <p class="status">${status}</p>${motor.erro ? `<p class="erro">${escHtml(motor.erro)}</p>` : ''}`;

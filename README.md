@@ -16,9 +16,7 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 - **Tabuleiro da abertura**: clique no nome de uma abertura e veja a posição depois dos lances, do seu ponto de vista (invertida quando você joga de pretas).
 - **Filtro por adversário**: digite o nick na lista de partidas e veja o retrospecto direto (`12 partidas · 10V 0E 2D`); o CSV respeita o filtro.
 - **Motor de análise**: Stockfish 19 rodando no seu navegador (WebAssembly), sem servidor. Avalia lance a lance as últimas 100 partidas da modalidade e classifica os erros pela queda de chance de vitória (critério do Lichess: imprecisão, erro, erro grave). A aba *Precisão* ganha erros por partida, por fase e **por tempo no relógio** — a taxa de erros com menos de 30 s comparada ao resto —, erros graves por abertura, viradas, e o lance em que cada derrota escapou, com link para a partida. Roda em segundo plano (uns 5 s por partida no computador, profundidade ajustável), pode ser interrompido e guarda o resultado no navegador; só as partidas novas custam da próxima vez.
-- **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Duas leituras, ambas adaptadas ao seu rating:
-  - *Analisar indicadores* envia um resumo agregado das abas e devolve diagnóstico, pontos fortes, o que mais custa rating e um plano de duas semanas.
-  - *Dossiê das últimas 100* roda primeiro o motor nas partidas ainda não avaliadas e depois envia à IA, por partida, os 15 primeiros lances, o relógio, marcos (roque, primeira captura, dama cedo, xeques) e os erros apontados pelo Stockfish, com o lance que ele preferia. Devolve o que manter, o que parar de fazer e o que estudar. Sem motor (página aberta como arquivo), o prompt proíbe a IA de apontar erro em lance específico — sem tabuleiro seria chute — e ela fala de repertório, ritmo e relógio.
+- **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Um botão: roda o motor nas partidas ainda não avaliadas e envia à IA, numa chamada, o resumo agregado dos indicadores e o dossiê das últimas 100 partidas — 15 primeiros lances, relógio, marcos (roque, primeira captura, dama cedo, xeques) e os erros apontados pelo Stockfish, com o lance que ele preferia. Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano de duas semanas e regras de rotina, adaptados ao seu rating. Sem motor (página aberta como arquivo), o prompt proíbe a IA de apontar erro em lance específico — sem tabuleiro seria chute — e ela fala de repertório, ritmo e relógio.
 - **Exportar**: PDF da análise e CSV das partidas.
 - **Modo streamer**: só o placar em tela cheia, com fundo transparente ou chroma key, para usar como fonte de navegador no OBS — com meta de rating, ticker e cartão da última partida.
 
@@ -68,8 +66,8 @@ Não há servidor próprio: o navegador fala direto com a API pública do Chess.
 
 O que a análise com IA envia ao provedor:
 
-- *Analisar indicadores*: um resumo agregado das abas — sem partidas individuais, sem nicks de adversários, e omitindo linhas com poucas partidas.
-- *Analisar lances*: para cada uma das últimas 100 partidas, data, cor, resultado, ratings dos dois lados, abertura, os 15 primeiros lances, marcos e tempos de relógio. **Não envia o nick dos adversários** nem os lances além do 15º.
+- o resumo agregado das abas — sem partidas individuais, sem nicks de adversários, e omitindo linhas com poucas partidas;
+- para cada uma das últimas 100 partidas, data, cor, resultado, ratings dos dois lados, abertura, os 15 primeiros lances, marcos, tempos de relógio e os erros marcados pelo motor. **Não envia o nick dos adversários** nem os lances além do 15º.
 
 O motor de análise roda inteiro no navegador: as partidas não vão a nenhum servidor para serem avaliadas, e as avaliações ficam no `localStorage`. O único recurso externo do app é a imagem do tabuleiro, buscada no Chess.com apenas quando você abre uma abertura. Stockfish e chess.js são servidos da própria origem do site, não de CDN. Como não há nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
 
