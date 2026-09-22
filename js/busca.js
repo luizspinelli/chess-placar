@@ -121,9 +121,11 @@ async function baixarMeses(meses, atualizacao){
 }
 
 // a parte pura: filtra modalidade e bots/amistosas, calcula g.delta pela ranqueada anterior da mesma modalidade,
-// separa o período (jogos) do anterior (só agregados) e guarda o rating de antes/depois por modalidade
+// separa o período (jogos) do anterior (só agregados) e guarda o rating de antes/depois por modalidade. Sem partida
+// ranqueada anterior como referência (conta nova na modalidade), `antes` cai para o rating da 1ª partida — já com o
+// resultado dela embutido — e `aprox[tc]` marca a aproximação, para o placar mostrar "≈" em vez de "?" e variação 0
 function montarPartidas(todos, f){
-  const antes = {}, depois = {}, ultimo = {}, jogos = [], compTc = f.comparando ? {} : null;
+  const antes = {}, depois = {}, ultimo = {}, aprox = {}, jogos = [], compTc = f.comparando ? {} : null;
   let ignoradas = 0;
   for (const g of todos) {
     if (!f.modalidades.has(g.time_class)) continue;
@@ -132,7 +134,7 @@ function montarPartidas(todos, f){
     const tc = g.time_class;
     if (g.end_time >= f.inicioTs && g.end_time <= f.fimTs) {
       g.delta = g.rated && tc in ultimo ? eu.rating - ultimo[tc] : null;
-      if (g.rated) { if (!(tc in antes)) antes[tc] = ultimo[tc] ?? null; depois[tc] = eu.rating; }
+      if (g.rated) { if (!(tc in antes)) { antes[tc] = ultimo[tc] ?? eu.rating; if (!(tc in ultimo)) aprox[tc] = true; } depois[tc] = eu.rating; }
       jogos.push(g);
     } else if (compTc && g.end_time >= f.iniAntTs && g.end_time <= f.fimAntTs) {
       // do período anterior guardamos só os agregados: o estado inteiro vai para o localStorage
@@ -140,11 +142,11 @@ function montarPartidas(todos, f){
       c.n++; c[eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l']++;
       const ac = g.accuracies?.[eu === g.white ? 'white' : 'black'];
       if (ac != null) { c.acc += ac; c.accN++; }
-      if (g.rated) { if (c.antes === undefined) c.antes = ultimo[tc] ?? null; c.depois = eu.rating; }
+      if (g.rated) { if (c.antes === undefined) c.antes = ultimo[tc] ?? eu.rating; c.depois = eu.rating; }
     }
     if (g.rated) ultimo[tc] = eu.rating;
   }
-  return {jogos, antes, depois, compTc, ignoradas};
+  return {jogos, antes, depois, aprox, compTc, ignoradas};
 }
 
 // abas bullet/blitz/rápida/diária: só as que têm partidas (e, na busca, só as marcadas); a ativa continua se ainda existir,
@@ -183,7 +185,7 @@ async function buscar(atualizacao){
   try {
     const {archives} = await getJSON(API + nick + '/games/archives');
     const todos = await baixarMeses(mesesDaJanela(archives, f.comparando ? f.iniAnt : inicio, fim), atualizacao);
-    const {jogos, antes, depois, compTc, ignoradas} = montarPartidas(todos, f);
+    const {jogos, antes, depois, aprox, compTc, ignoradas} = montarPartidas(todos, f);
     const rotulo = fim ? `de ${fmt.format(inicio)} a ${fmt.format(fim)}` : `desde ${fmt.format(inicio)}`;
     if (!jogos.length && !monitorando) throw new Error(`Nenhuma partida ${rotulo}.`);
 
@@ -194,7 +196,7 @@ async function buscar(atualizacao){
       try { stats = await getJSON(API + nick + '/stats'); } catch {}
     } else { perfil = estado.perfil; stats = estado.stats; }
     const comp = compTc ? {rotulo: `${fmtDia.format(f.iniAnt)} a ${fmtDia.format(f.fimAnt)}`, tc: compTc} : null;
-    estado = {jogos, antes, depois, nick, rotulo, monitorando, ignoradas, perfil, stats, comp, evolucao: evolucaoDoPeriodo(inicio, fim)};
+    estado = {jogos, antes, depois, aprox, nick, rotulo, monitorando, ignoradas, perfil, stats, comp, evolucao: evolucaoDoPeriodo(inicio, fim)};
     renderAbasModalidade(jogos, f.modalidades);
     if (atualizacao !== true) pagina = 1;
     falhou = false;

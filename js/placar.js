@@ -67,7 +67,7 @@ function renderPerfil(){
 }
 
 function render(){
-  const {jogos: tudo, antes, depois, nick, rotulo, monitorando, ignoradas} = estado;
+  const {jogos: tudo, antes, depois, aprox = {}, nick, rotulo, monitorando, ignoradas} = estado;
   const jogos = tudo.filter(g => g.time_class === aba);
   const classes = Object.keys(depois).filter(tc => tc === aba);
   const c = {w:0, d:0, l:0};
@@ -79,7 +79,7 @@ function render(){
   renderLista();
 
   const total = jogos.length;
-  const varTotal = classes.reduce((t,tc) => antes[tc] === null ? t : t + depois[tc] - antes[tc], 0);
+  const varTotal = classes.reduce((t,tc) => antes[tc] == null ? t : t + depois[tc] - antes[tc], 0);
   $('nw').textContent = c.w; $('nd').textContent = c.d; $('nl').textContent = c.l;
   $('nr').textContent = sinal(varTotal); $('nr').className = cls(varTotal);
   document.querySelectorAll('.bar i').forEach(i => i.style.flex = c[i.className] || 0);
@@ -88,7 +88,7 @@ function render(){
   $('rpct').title = 'Aproveitamento = (vitórias + metade dos empates) ÷ partidas. 50% significa equilíbrio.';
   $('rating').innerHTML = classes.map(tc => {
     const a = antes[tc], d = depois[tc];
-    return `<span>${TIPO[tc] || tc}: ${a ?? '?'} → ${d}${a === null ? '' : ` <b class="${cls(d-a)}">${sinal(d-a)}</b>`}</span>`;
+    return `<span>${TIPO[tc] || tc}: ${a == null ? '?' : (aprox[tc] ? '≈' : '') + a} → ${d}${a == null ? '' : ` <b class="${cls(d-a)}">${sinal(d-a)}</b>`}</span>`;
   }).join('');
   renderComparativo(jogos, c, total, varTotal);
   kpiData = total ? kpis(jogos, nick) : null;

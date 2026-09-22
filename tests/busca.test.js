@@ -21,13 +21,18 @@ test('montarPartidas(): delta pela ranqueada anterior, antes/depois, comparaçã
   assert.deepEqual(r.jogos.map(g => g.delta), [10, -8]);
   assert.equal(r.antes.rapid, 1180, 'rating antes = o da última ranqueada anterior ao período'); assert.equal(r.depois.rapid, 1182);
   assert.equal(r.ignoradas, 2, 'bot e amistosa dentro do período');
-  assert.deepEqual(r.compTc.rapid, {n: 1, w: 1, d: 0, l: 0, acc: 80, accN: 1, antes: null, depois: 1180});
+  assert.deepEqual(r.compTc.rapid, {n: 1, w: 1, d: 0, l: 0, acc: 80, accN: 1, antes: 1180, depois: 1180}, 'sem referência antes do comparativo, antes cai para a própria 1ª partida');
 });
 
-test('montarPartidas(): sem comparação não há compTc; primeira ranqueada sem referência tem delta null e antes null', () => {
+test('montarPartidas(): sem comparação não há compTc; primeira ranqueada sem referência tem delta null e antes aproximado pela própria partida', () => {
   const r = montarPartidas([jogo(1001 * DIA), jogo(1002 * DIA, {eu: 1208})], f({comparando: false}));
   assert.equal(r.compTc, null);
-  assert.deepEqual(r.jogos.map(g => g.delta), [null, 8]); assert.equal(r.antes.rapid, null);
+  assert.deepEqual(r.jogos.map(g => g.delta), [null, 8]); assert.equal(r.antes.rapid, 1200); assert.equal(r.aprox.rapid, true);
+});
+
+test('montarPartidas(): com referência no mês anterior, antes é exato e não há aprox', () => {
+  const r = montarPartidas([jogo(999 * DIA, {eu: 1190}), jogo(1001 * DIA)], f({comparando: false}));
+  assert.equal(r.antes.rapid, 1190); assert.equal(r.aprox.rapid, undefined); assert.equal(r.jogos[0].delta, 10);
 });
 
 test('mesesDaJanela(): cobre a janela e inclui o mês anterior como referência', () => {

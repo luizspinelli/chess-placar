@@ -25,7 +25,7 @@ O app abre no **modo simples**. "Ver análise completa →" abre o modo avançad
 
 ## Limites
 
-- O placar de rating some quando o período só tem amistosas (`antes` fica `null`).
+- O placar de rating some quando o período só tem amistosas (`antes` fica indefinido). Quando há partida ranqueada mas nenhuma anterior como referência (conta nova na modalidade — o mês anterior ao início é baixado justamente para servir de referência), `antes` cai para o rating da 1ª partida, que já embute o resultado dela: o placar mostra `≈323 → 797 +474` (o `≈` vem de `estado.aprox[tc]`) em vez de `? → 797` com variação 0, e a variação fica alguns pontos abaixo da real. Validado com a conta `luizspinelli`, cujas primeiras partidas de rápida são de julho/2026.
 - O "histórico total" é da API e inclui partidas contra bots, diferente do resto do painel.
 
 ## Como testar
