@@ -32,5 +32,6 @@ Aba **Aberturas**: de brancas e de pretas (8 mais jogadas cada), melhores e pior
 - Piores/melhores variantes exigem 3 partidas; achados de abertura exigem mais (ver [indicadores.md](indicadores.md)).
 
 ## Como testar
+Automatizado: `tests/pgn.test.js` (parsePGN: abertura, lances, relógios, memoização) e `tests/tabuleiro.test.js` (fenDaAbertura contra o chess.js em partidas legais aleatórias — acerta a posição ou devolve `''`).
 
 Abrir o tabuleiro de uma variante conhecida (ex.: Najdorf) e conferir posição e lances; de pretas, conferir o tabuleiro invertido. Casos de referência do `fenDaAbertura`: `O-O`, `O-O-O`, en passant, `e8=Q`, `exd5`, `Nbd2`, e o `Bb5+ Nd7 … Nf6` (cravada).

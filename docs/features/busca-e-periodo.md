@@ -36,5 +36,6 @@ Nicks já usados ficam como chips abaixo do campo (até 10; × remove). Em telas
 - Chess960 e outras variantes entram na contagem (campo `rules`), mas o motor de análise as pula.
 
 ## Como testar
+Automatizado: `tests/periodo.test.js` (atalhos, absoluto, `periodoAnterior`) e `tests/busca.test.js` (`mesesDaJanela`, `montarPartidas` — delta pela ranqueada anterior, bots fora —, `ehBot`).
 
 Buscar um nick real com `7d`, `3m`, `ano` e um período absoluto; conferir que a variação de rating da primeira partida do período não é `null` (o mês anterior foi lido). Ligar a atualização automática e verificar a contagem regressiva e a pausa com a aba escondida. Sem rede para a API, interceptar `https://api.chess.com/**` com Playwright e servir partidas sintéticas (ver CLAUDE.md).

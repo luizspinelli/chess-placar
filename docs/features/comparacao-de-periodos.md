@@ -32,5 +32,6 @@ A caixa **Comparar com período anterior** já vem marcada nos períodos relativ
 - A faixa compara a modalidade da aba ativa; trocar de aba troca a comparação.
 
 ## Como testar
+Automatizado: `tests/periodo.test.js` cobre `periodoAnterior` e `comparaAuto`; `tests/busca.test.js` cobre os agregados de `estado.comp` em `montarPartidas`.
 
 `?nick=x&periodo=4w` deve abrir com a caixa marcada e a faixa visível; `periodo=ano` sem a faixa; `periodo=4w&comparar=0` sem a faixa e, ao clicar em outro atalho, a caixa continua desmarcada. Em `3m`, o rótulo da faixa deve ser os três meses de calendário anteriores inteiros.

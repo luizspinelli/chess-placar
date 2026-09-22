@@ -92,11 +92,12 @@ js/app.js          tema, modo, link e parâmetros de URL (carrega por último)
 vendor/stockfish/  Stockfish 19 lite single-thread (GPLv3, licença incluída)
 vendor/chess.js/   chess.js 0.12.1 (BSD-2)
 og-card.html       fonte da imagem de preview (og.png)
+tests/             testes das funções puras (node --test tests/*.test.js)
 ```
 
 Sem build: os scripts são clássicos, carregados nessa ordem, e compartilham o escopo global. As duas dependências ficam em `vendor/`, servidas da mesma origem.
 
-Cada feature tem um documento em [`docs/features/`](docs/README.md) — comportamento, regras, limiares e o porquê das decisões. Convenções de código e arquitetura estão em `CLAUDE.md`. Para rodar localmente basta abrir `index.html` no navegador. Convenções de código e detalhes de arquitetura estão em `CLAUDE.md`.
+Cada feature tem um documento em [`docs/features/`](docs/README.md) — comportamento, regras, limiares e o porquê das decisões. Convenções de código e arquitetura estão em `CLAUDE.md`. Para rodar localmente basta abrir `index.html` no navegador; `node --test tests/*.test.js` roda os testes das funções puras (período, PGN, tabuleiro, montagem das partidas, classificação de erros), sem instalar nada.
 
 ## Publicar
 

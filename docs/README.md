@@ -35,7 +35,7 @@ Cada decisão não óbvia com o porquê e as alternativas descartadas.
 O que a feature não faz, e casos em que se comporta de forma inesperada.
 
 ## Como testar
-Roteiro manual (e, se existir, como reproduzir com dados sintéticos).
+Qual arquivo de `tests/` cobre a feature (se houver) e o roteiro manual (e, se existir, como reproduzir com dados sintéticos).
 ```
 
 Seções vazias são removidas, não deixadas em branco. Frases curtas; números concretos.

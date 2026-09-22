@@ -29,5 +29,6 @@ Escolha um período relativo com número (`4w`, `3m`, `5d`, `30d`…). A aba **R
 - Blocos com poucas partidas mostram porcentagens instáveis; o card não esconde blocos pequenos (a IA recebe o N de cada um e o prompt já manda desconfiar de amostras curtas).
 
 ## Como testar
+Automatizado: `tests/periodo.test.js` cobre `evolucaoDoPeriodo` (blocos na unidade do atalho, agrupamento acima de 12, nada com 1 bloco).
 
 `4w` → 4 linhas; `3m` → 3 meses de calendário (o primeiro começa no dia 1º); `5d` → 5 janelas com rótulo de intervalo; `30d` → 10 blocos "a cada 3 dias"; `1d`, `ano`, absoluto → sem card. Somar V-E-D dos blocos deve dar o placar.

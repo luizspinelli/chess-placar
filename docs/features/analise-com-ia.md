@@ -45,5 +45,6 @@ Sem lances na busca (restauração do cache) a análise sai só com os indicador
 - A qualidade depende do modelo; Flash/Llama gratuitos dão análise mais rasa que Claude/GPT.
 
 ## Como testar
+Automatizado: `tests/texto.test.js` cobre `mdParaHtml` (inclusive o escape de HTML vindo da IA).
 
 Com uma chave gratuita do Gemini: Analisar em `7d` (deve sair "Ajustes imediatos", sem plano de 2 semanas) e em `ano` (com "O que mudou no período"). Em `file://` (sem motor) e servido por http (com motor): a segunda resposta pode citar lances e o "melhor:"; a primeira não. Parar o motor no meio: a IA não deve ser chamada. Restaurando do cache: análise só com indicadores e o aviso. Sem chave, a mensagem "Informe a chave da API". Exportar PDF com e sem análise.

@@ -41,5 +41,6 @@ Só funciona com a página servida por http(s) — na versão publicada ou num s
 - O relógio do erro é o que sobrava **depois** do lance — para "com quanto tempo pensou" seria preciso o lance anterior; a faixa de 30 s absorve a diferença.
 
 ## Como testar
+Automatizado: `tests/erros.test.js` cobre `chanceVitoria`, `errosDaPartida` (grau pela queda de chance, decisivo, relógio) e `resumoErros`; o pipeline do Worker não roda em Node.
 
 Servir a pasta por http (`python3 -m http.server`) e usar partidas legais — aleatórias geradas com o chess.js servem, o pipeline não se importa com a qualidade. Conferir: motor sobe (`uciok`), FEN do chess.js = `Fen:` do `d`, cache preenchido, zero "não conseguiu ler", botão desabilitado ao recarregar, profundidade maior reabre pendentes, Parar interrompe, `file://` mostra a explicação. Com partidas reais: abrir 2–3 lances de "Onde as derrotas escaparam" no Chess.com e ver se batem com a análise do site.
