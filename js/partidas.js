@@ -22,11 +22,15 @@ function renderLista(){
     extra = ` · ${c.w}V ${c.d}E ${c.l}D`;
   }
   $('pagInfo').textContent = total ? `${ini + 1}–${Math.min(ini + n, total)} de ${total}${extra}` : (filtro ? 'nada com esse filtro' : '');
+  rotuloLista(jogosAtuais.length);
   $('pagNum').textContent = `${pagina}/${paginas}`;
   $('pagAnt').disabled = pagina <= 1;
   $('pagProx').disabled = pagina >= paginas;
   $('lista').scrollTop = 0;
 }
+// no celular a lista começa recolhida: 20 partidas abertas empurravam o modo simples para quatro telas
+const rotuloLista = n => { const aberta = document.body.classList.contains('listaAberta'); $('listaToggle').textContent = aberta ? 'Ocultar partidas ▴' : `Ver as ${n} partida${n === 1 ? '' : 's'} ▾`; $('listaToggle').setAttribute('aria-expanded', aberta); };
+$('listaToggle').addEventListener('click', () => { document.body.classList.toggle('listaAberta'); rotuloLista(jogosAtuais.length); });
 $('pagAnt').addEventListener('click', () => { pagina--; renderLista(); });
 $('filtro').addEventListener('input', () => { filtro = $('filtro').value.trim().toLowerCase(); pagina = 1; renderLista(); });
 $('csv').addEventListener('click', () => {

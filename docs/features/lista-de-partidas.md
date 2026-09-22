@@ -8,7 +8,7 @@ Ver e conferir as partidas que estão por trás dos números, achar o retrospect
 
 ## Como usar
 
-Abaixo dos indicadores, a lista da modalidade ativa, mais recente primeiro: resultado (ponto colorido), adversário e rating, cor, motivo do fim, variação de rating, data e o link "ver". Paginação de 10/20/50. **Filtrar adversário** aceita parte do nick e mostra o retrospecto (`12 partidas · 10V 0E 2D`). **CSV** baixa as partidas listadas — respeitando o filtro.
+Abaixo dos indicadores, a lista da modalidade ativa, mais recente primeiro (no celular começa recolhida — "Ver as 65 partidas ▾" — porque 20 partidas abertas empurravam o modo simples para quatro telas): resultado (ponto colorido), adversário e rating, cor, motivo do fim, variação de rating, data e o link "ver". Paginação de 10/20/50. **Filtrar adversário** aceita parte do nick e mostra o retrospecto (`12 partidas · 10V 0E 2D`). **CSV** baixa as partidas listadas — respeitando o filtro.
 
 ## Como funciona
 

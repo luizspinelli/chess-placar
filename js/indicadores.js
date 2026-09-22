@@ -21,7 +21,7 @@ const GLOSSARIO = {
   'Erros e relógio': 'Quantos erros e erros graves você cometeu com cada faixa de tempo no relógio, e a taxa por 100 lances jogados nessa faixa — é a taxa que diz se o apuro te faz errar mais.',
   'Onde as derrotas escaparam': 'Em cada derrota avaliada, o primeiro erro que deixou sua chance abaixo de 30% sem ela voltar a passar de 45% até o fim. O link abre a partida no Chess.com.',
   'Evolução': 'Quebra o período escolhido em blocos da mesma unidade — 4 semanas viram 4 semanas, 3 meses viram 3 meses, 5 dias viram 5 dias — com o aproveitamento e a variação de rating de cada um. Períodos longos agrupam os blocos para caber em até 12 linhas.',
-  'Mapa de calor': 'Cada célula é um dia da semana × hora. Verde = aproveitamento de 50% ou mais, vermelho = abaixo; quanto mais forte a cor, mais partidas naquele horário. Passe o mouse para os números.',
+  'Mapa de calor': 'Cada célula é um dia da semana × hora. Verde = aproveitamento de 50% ou mais, vermelho = abaixo; quanto mais forte a cor, mais partidas naquele horário. Passe o mouse ou toque numa célula para ver os números.',
   'Como a sessão terminou': 'Qual foi o resultado da última partida antes de uma pausa. Parar muito após derrota costuma indicar "só mais uma para recuperar".',
   'Sequências': 'Série atual e maiores séries de vitórias e derrotas seguidas no período.',
 };
@@ -445,6 +445,7 @@ function kpis(jogos, nick){
   };
 }
 
+$('abasKpi').addEventListener('change', e => { if (e.target.id === 'abasSel') { abaKpi = e.target.value; renderKpis(); } });
 $('abasKpi').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   abaKpi = b.dataset.aba;
@@ -454,7 +455,9 @@ $('abasKpi').addEventListener('click', e => {
 function renderKpis(){
   if (!kpiData) return;
   const GRUPOS = [['Visão geral', ['Análise','Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Erros e precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
-  $('abasKpi').innerHTML = GRUPOS.map(([nome, abas]) => `<div class="grupoAbas"><span class="grupoAba">${nome}</span><div class="botoes">${abas.filter(k => kpiData[k] !== undefined).map(k => `<button type="button" role="tab" aria-selected="${k === abaKpi}" data-aba="${k}" class="${k === abaKpi ? 'ativa' : ''}">${k}</button>`).join('')}</div></div>`).join('');
+  // no celular a barra vira um <select> com os grupos como optgroup (o CSS decide qual dos dois aparece)
+  const sel = `<select id="abasSel" aria-label="Aba de indicadores">${GRUPOS.map(([nome, abas]) => `<optgroup label="${nome}">${abas.filter(k => kpiData[k] !== undefined).map(k => `<option value="${k}" ${k === abaKpi ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`).join('')}</select>`;
+  $('abasKpi').innerHTML = sel + GRUPOS.map(([nome, abas]) => `<div class="grupoAbas"><span class="grupoAba">${nome}</span><div class="botoes">${abas.filter(k => kpiData[k] !== undefined).map(k => `<button type="button" role="tab" aria-selected="${k === abaKpi}" data-aba="${k}" class="${k === abaKpi ? 'ativa' : ''}">${k}</button>`).join('')}</div></div>`).join('');
   $('kpiGrid').innerHTML = (abaKpi === 'Análise' ? blocoIA() : '') + kpiData[abaKpi];
   $('kpiGrid').classList.toggle('analise', abaKpi === 'Análise');
   $('kpiGrid').scrollTop = 0;

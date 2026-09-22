@@ -58,11 +58,11 @@ function desenharModal(){
   const pontos = vista.pontos ? pts.map(p => `<circle cx="${X(K(p)).toFixed(1)}" cy="${Y(p.rating).toFixed(1)}" r="${pts.length > 300 ? 2 : pts.length > 60 ? 3 : 4}" fill="${p.r === 'w' ? cor('--win') : p.r === 'l' ? cor('--loss') : cor('--draw')}" opacity=".85"/>`).join('') : '';
   const c = {w:0, d:0, l:0}; pts.forEach(p => c[p.r]++);
   const resumo = pts.length ? `${pts.length} partidas · ${c.w}V ${c.d}E ${c.l}D · ${pts[0].rating} → ${pts[pts.length-1].rating} (${sinal(pts[pts.length-1].rating - pts[0].rating)})` : 'sem partidas na janela';
+  $('modalResumo').textContent = resumo;
   corpo.insertAdjacentHTML('beforeend', `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="cursor:grab" role="img" aria-label="Gráfico interativo de rating">${g}
     <clipPath id="clip"><rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}"/></clipPath>
     <g clip-path="url(#clip)"><path d="${area}" fill="${cor('--accent')}" opacity=".08"/><path d="${linha}" fill="none" stroke="${cor('--text')}" stroke-width="1.8"/>${mediaMovel}${pontos}</g>
     ${marca(pts[iMax], 'pico', -12)}${marca(pts[iMin], 'vale', 22)}
-    <text x="${W - mr}" y="${mt - 8}" text-anchor="end" font-size="13" fill="${cor('--muted')}">${resumo}</text>
     ${W < 900 ? '' : `<text x="${ml}" y="${mt - 8}" font-size="12" fill="${cor('--muted')}">${t0 === T0 && t1 === T1 ? 'rolagem = zoom · arrastar = mover · clique no ponto = abrir partida' : 'duplo clique = ver tudo'}</text>`}</svg>`);
   modalGeo = {t0, t1, span, T0, T1, X, Y, K, pts, W, H, ml, mr, mt, mb, minZoom: porTempo ? 600 : 4};
 }

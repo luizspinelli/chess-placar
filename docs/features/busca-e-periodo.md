@@ -10,7 +10,7 @@ Trazer as partidas de um jogador do Chess.com para um recorte de tempo escolhido
 
 Informe o nick e escolha o período. **Relativo**: atalhos de dias (1, 3, 7, 14, 30), meses (3, 6, 12), calendário (mês em curso, mês anterior, ano) ou uma duração livre (número + dias/semanas/meses). **Absoluto**: data e hora de início, fim opcional. Marque as modalidades (bullet, blitz, rápida, diária). **Buscar partidas** faz a busca; **Monitorar a partir de agora** fixa o início no momento atual e liga a atualização automática (30 s a 5 min).
 
-Nicks já usados ficam como chips abaixo do campo (até 10; × remove). O botão "Veja um exemplo" da tela inicial busca `hikaru`.
+Nicks já usados ficam como chips abaixo do campo (até 10; × remove). Em telas até 1100 px o formulário fica recolhido atrás de "☰ Filtros e opções" (que vira "▲ Fechar filtros" quando aberto) e se fecha sozinho ao buscar. O botão "Veja um exemplo" da tela inicial busca `hikaru`.
 
 ## Como funciona
 

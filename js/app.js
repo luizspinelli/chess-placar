@@ -45,6 +45,24 @@ $('modo').addEventListener('click', e => { const b = e.target.closest('button');
 $('verMais').addEventListener('click', () => aplicarModo('avancado'));
 $('verMenos').addEventListener('click', () => aplicarModo('simples'));
 
+// ---- dica por toque: `title` só aparece com mouse. No celular, o "?" do glossário, as células do mapa de calor
+// e os ▲/▼ do comparativo mostram o texto num balão ao toque (no desktop o hover continua funcionando).
+{
+  const dica = $('dica'), esconder = () => { dica.hidden = true; };
+  document.addEventListener('click', e => {
+    const alvo = e.target.closest('.ajuda, .heat i[title], #comparativo i[title], #rpct[title]');
+    if (!alvo || !alvo.title) { if (!dica.hidden) esconder(); return; }
+    e.preventDefault();
+    dica.textContent = alvo.title; dica.hidden = false;
+    const r = alvo.getBoundingClientRect(), largura = Math.min(340, innerWidth - 24);
+    dica.style.width = `${largura}px`;
+    dica.style.left = `${Math.max(12, Math.min(innerWidth - largura - 12, r.left + r.width / 2 - largura / 2))}px`;
+    dica.style.top = `${r.bottom + 8 + scrollY}px`;
+  });
+  addEventListener('scroll', esconder, {passive: true});
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') esconder(); });
+}
+
 // ---- parâmetros de URL (para favoritos e fonte de navegador no OBS)
 // ?nick=x&periodo=mes|mes-1|3m|6m|12m|ano|custom&data=YYYY-MM-DD&hora=HH:MM&dataFim=&horaFim=&tc=rapid,blitz&auto=1&intervalo=60&tema=claro|escuro&streamer=1
 {

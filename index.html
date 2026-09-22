@@ -116,6 +116,7 @@
   </section>
 
   <section id="partidas" class="box">
+    <button type="button" id="listaToggle" aria-expanded="false" aria-controls="lista">Ver as partidas ▾</button>
     <div class="pag">
       <span id="pagInfo"></span>
       <span class="inline">
@@ -138,6 +139,7 @@
       <div class="topo"><h2>Rating</h2><div id="modalAbas" class="abas" role="tablist"></div>
         <span id="modalOpcoes" class="inline"><label>eixo</label><select name="eixo"><option value="partidas">por partida</option><option value="tempo">por tempo</option></select><label><input type="checkbox" name="media" checked>média móvel (10)</label><label><input type="checkbox" name="pontos" checked>pontos</label></span>
         <button type="button" class="fechar" id="modalFechar" aria-label="Fechar">✕</button></div>
+      <div id="modalResumo"></div>
       <div class="corpo" id="modalCorpo"><div class="tip" id="modalTip"></div></div>
     </div>
   </div>
@@ -155,6 +157,7 @@
   </div>
 </main>
 
+<div id="dica" role="tooltip" hidden></div>
 <!-- scripts clássicos, em ordem de dependência de carga (app.js por último); sem bundler para continuar abrindo via file:// -->
 <script src="js/base.js"></script>
 <script src="js/periodo.js"></script>

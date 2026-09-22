@@ -42,7 +42,8 @@ document.addEventListener('visibilitychange', () => {
 $('auto').addEventListener('change', agendar);
 $('intervalo').addEventListener('change', agendar);
 $('f').addEventListener('submit', e => { e.preventDefault(); buscar(false); });
-$('filtrosToggle').addEventListener('click', () => document.body.classList.toggle('filtrosAbertos'));
+const filtros = abrir => { document.body.classList.toggle('filtrosAbertos', abrir); $('filtrosToggle').textContent = abrir ? '▲ Fechar filtros' : '☰ Filtros e opções'; };
+$('filtrosToggle').addEventListener('click', () => filtros(!document.body.classList.contains('filtrosAbertos')));
 $('btnInicio').addEventListener('click', () => { const n = $('nickInicio').value.trim(); if (!n) { $('nickInicio').focus(); return; } $('nick').value = n; buscar(false); });
 $('nickInicio').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnInicio').click(); });
 $('exemplo').addEventListener('click', e => { e.preventDefault(); $('nick').value = 'hikaru'; $('nickInicio').value = 'hikaru'; buscar(false); });
@@ -98,7 +99,7 @@ async function buscar(atualizacao){
 
   ocupado = true;
   document.body.classList.remove('inicio');
-  if (!atualizacao) document.body.classList.remove('filtrosAbertos');
+  if (!atualizacao) filtros(false);
   clearTimeout(timer); clearInterval(tick);
   $('proxTxt').textContent = 'Atualizando…'; $('proxBar').style.width = '100%';
   $('btn').disabled = true;

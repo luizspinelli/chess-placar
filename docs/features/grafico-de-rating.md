@@ -15,7 +15,7 @@ O resumo e a aba Rating trazem a sparkline com pico e vale; "⤢ Ampliar" (ou cl
 - `kpis()` popula `curvaDados[modalidade] = [{ts, rating, adv, advRating, r, delta, url}]` só com ranqueadas.
 - `desenharModal` desenha em **SVG** com `viewBox` proporcional ao corpo (um `W` fixo esmagaria os textos no celular). Eixo Y em passos de 10/20/25/50/100/200 para caber em ≤8 linhas; eixo X com rótulos por data (mês/ano acima de 120 dias, dia/mês acima de 2 dias, hora abaixo) e, no eixo por partidas, `#índice · data`.
 - **Janela** `vista.t0…t1` (índice de partida ou timestamp): zoom com fator 0,8/1,25 ao redor do cursor, mínimo de 4 partidas ou 600 s; pan preso aos limites. Pontos coloridos por resultado (raio 4 → 3 acima de 60 pontos → 2 acima de 300). Média móvel de 10 partidas em tracejado.
-- Tooltip com rating, variação, data, adversário e resultado do ponto mais próximo do cursor; linha vertical de cursor.
+- Tooltip com rating, variação, data, adversário e resultado do ponto mais próximo do cursor; linha vertical de cursor. O resumo da janela ("65 partidas · 31V 0E 34D · 1139 → 1132") fica em HTML acima do gráfico (`#modalResumo`), não dentro do SVG — lá era cortado em tela estreita.
 - O tema (claro/escuro) redesenha o modal; `cor('--var')` lê as cores do CSS.
 
 ## Decisões

@@ -154,6 +154,7 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 #verMenos:hover{color:var(--text);filter:none}
 /* nunca rola: a barra escondida deixava Análise/Resultados/Rating fora da tela em colunas estreitas */
 #abasKpi{gap:0;padding:0;justify-content:center;flex-wrap:wrap;overflow-x:visible}
+#abasSel{display:none}
 .grupoAbas{display:flex;flex-direction:column;align-items:center;padding:6px 14px 8px;border-right:1px solid var(--border)}
 .grupoAbas:last-child{border-right:0}
 .grupoAbas .grupoAba{font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:0 4px;margin-bottom:4px;white-space:nowrap;text-align:center}
@@ -211,6 +212,8 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 @media(max-width:1500px){#resumoMini{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ajuda{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--muted);font-size:.65rem;font-weight:700;margin-left:6px;cursor:help;vertical-align:middle;text-transform:none;letter-spacing:0}
 .ajuda:hover{color:var(--accent);border-color:var(--accent)}
+#dica{position:absolute;z-index:50;padding:10px 12px;font-size:.82rem;line-height:1.45;color:var(--text);background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--shadow)}
+#listaToggle{display:none}
 #kpiGrid{overflow-y:auto;overflow-x:hidden;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start}
 .kpi{padding:14px 16px;min-width:0;background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
 .kpi.box{border-width:0 1px 1px 0;border-radius:0;box-shadow:none}
@@ -310,6 +313,8 @@ a:hover{text-decoration:underline}
 #modal .janela{flex:1;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);min-height:0;box-shadow:var(--shadow);overflow:hidden}
 #modal .topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
 #modal .topo h2{margin:0}
+#modalResumo{padding:5px 14px;font-size:.82rem;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+#modalResumo:empty{display:none}
 #modal .topo .abas{border:0;background:none;padding:0}
 #modal .topo .inline{margin-left:auto;font-size:.82rem}
 #modal .topo .inline label{font-weight:500}
@@ -340,6 +345,8 @@ a:hover{text-decoration:underline}
 @media(max-width:1100px){
   html,body{height:auto;overflow:visible}
   main{display:flex;flex-direction:column;height:auto;padding:12px;gap:12px}
+  body.inicio main{min-height:100vh;justify-content:center}
+  body.inicio #inicio{margin:0 auto}
   body:not(.inicio):not(.streamer) #filtrosToggle{display:block;padding:10px;background:var(--surface);color:var(--text);border:1px solid var(--border);text-align:left;font-weight:600}
   /* com os filtros fechados sobra só o status: sem ele a busca fica sem nenhum sinal */
   body:not(.inicio):not(.filtrosAbertos) form{padding:0;gap:0;border:0;background:none;box-shadow:none}
@@ -370,11 +377,24 @@ a:hover{text-decoration:underline}
   /* placar inteiro grudado come 400px de tela no celular */
   #placar{position:static}
   /* 10 abas num scroll horizontal ficam fora de alcance no celular: quebram em linhas */
-  .abasWrap{flex-wrap:wrap;align-items:center;padding:6px 8px 8px;gap:6px}
-  .abasWrap #abasKpi{order:2;flex:1 1 100%;flex-wrap:wrap;overflow-x:visible;justify-content:flex-start;gap:6px;padding:0}
-  .abasWrap #abasKpi .grupoAbas,.abasWrap #abasKpi .botoes{display:contents}
-  .grupoAbas .grupoAba{display:none}
-  #verMenos{order:1;margin:0 0 0 auto;flex:0 0 auto}
+  /* dez abas em quatro linhas comiam 200 px a cada troca: no celular a barra vira um <select> com os grupos */
+  .abasWrap{flex-wrap:nowrap;align-items:center;padding:8px;gap:8px}
+  body:not(.simples) .abasWrap{position:sticky;top:0;z-index:4}
+  .abasWrap #abasKpi{flex:1 1 auto;padding:0;justify-content:flex-start;min-width:0}
+  .abasWrap #abasKpi .grupoAbas{display:none}
+  #abasSel{display:block;width:100%;padding:9px 32px 9px 12px;font-size:.9rem;font-weight:600}
+  #verMenos{flex:0 0 auto;margin:0}
+  /* lista recolhida por padrão; cabeçalho da paginação em duas linhas */
+  #listaToggle{display:block;width:100%;text-align:left;padding:12px 14px;background:var(--surface);color:var(--text);font-weight:600;border:0;border-bottom:1px solid var(--border);border-radius:0}
+  body:not(.listaAberta) #partidas .pag,body:not(.listaAberta) #lista{display:none}
+  .pag #pagInfo{flex-basis:100%}
+  .pag .inline{width:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  /* mapa de calor cabe na largura; os números vêm pelo toque */
+  .heatWrap{overflow:visible}
+  .heat{min-width:0;font-size:.5rem;gap:1px}
+  .heat i{height:11px}
+  .heat span{padding-right:2px}
+  .motivos{grid-template-columns:1fr;gap:8px}
   .abas button{padding:8px 12px}
   .grade button{padding:9px 4px}
   .chips span{padding:6px 12px}
