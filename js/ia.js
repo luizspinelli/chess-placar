@@ -32,6 +32,11 @@ async function lerSSE(r, aoEvento, controle){
 }
 // fetch com o vigia de inatividade: o AbortController é o que interrompe a leitura quando o servidor some
 const fetchSSE = (url, opts) => { const controle = new AbortController(); return fetch(url, {...opts, signal: controle.signal}).then(r => ({r, controle})); };
+// esforço de raciocínio do Claude: 'medium' por padrão — a tarefa é organizar números já agregados, e o médio mantém a qualidade
+// gastando bem menos tempo pensando; "raciocínio profundo" volta ao 'high'. Só nos modelos que aceitam output_config.effort
+// (Opus 5, Sonnet 5, Opus 4.6+, Sonnet 4.6, Fable): nos demais o parâmetro daria 400.
+const iaProfunda = () => lerLS('placar-chesscom:iaProfunda', '0') === '1';
+const suportaEsforco = m => /claude-(opus|sonnet)-5|claude-opus-4-[678]|claude-sonnet-4-6|fable|mythos/.test(m);
 const cabAnthropic = chave => ({'x-api-key': chave, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'});
 const PROVEDORES = {
   gemini: {
@@ -89,7 +94,7 @@ const PROVEDORES = {
     async chamar(chave, modelo, prompt, aoProgresso){
       const {r, controle} = await fetchSSE('https://api.anthropic.com/v1/messages', {
         method: 'POST', headers: {'Content-Type': 'application/json', ...cabAnthropic(chave)},
-        body: JSON.stringify({model: modelo, max_tokens: 16000, stream: true, messages: [{role: 'user', content: prompt}]})
+        body: JSON.stringify({model: modelo, max_tokens: 16000, stream: true, messages: [{role: 'user', content: prompt}], ...(suportaEsforco(modelo) ? {output_config: {effort: iaProfunda() ? 'high' : 'medium'}} : {})})
       });
       if (!r.ok) { const d = await r.json().catch(() => ({})); return {ok: false, status: r.status, erro: d.error?.message}; }
       let texto = '', parada = null, erro = null;
@@ -98,7 +103,7 @@ const PROVEDORES = {
       await lerSSE(r, ({json}) => {
         if (!json) return;
         if (json.type === 'content_block_start' && json.content_block?.type === 'thinking') aoProgresso?.('raciocinando', 0);
-        else if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') { texto += json.delta.text; aoProgresso?.('respondendo', texto.length); }
+        else if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') { texto += json.delta.text; aoProgresso?.('respondendo', texto.length, texto); }
         else if (json.type === 'message_delta') parada = json.delta?.stop_reason || parada;
         else if (json.type === 'error') erro = json.error?.message || 'erro no streaming';
       }, controle);
@@ -130,7 +135,7 @@ const PROVEDORES = {
       await lerSSE(r, ({data, json}) => {
         if (data === '[DONE]' || !json) return;
         if (json.error) erro = json.error.message || 'erro no streaming';
-        const t = json.choices?.[0]?.delta?.content; if (t) { texto += t; aoProgresso?.('respondendo', texto.length); }
+        const t = json.choices?.[0]?.delta?.content; if (t) { texto += t; aoProgresso?.('respondendo', texto.length, texto); }
       }, controle);
       if (erro) return {ok: false, status: 500, erro};
       return {ok: true, status: r.status, texto};
@@ -178,13 +183,14 @@ function blocoIA(){
       <small class="explica"><a href="${P.link}" target="_blank" rel="noopener">criar chave${P.gratis ? ' gratuita' : ' (uso cobrado por ' + P.nome + ')'}</a> · ${lembrarChave() ? 'fica salva só neste navegador' : 'não será gravada'}${P.gratis ? '' : ' · use uma chave dedicada com limite de gasto'}</small>
       <div class="motorCfg"><span class="rotulo">Dossiê</span>
         <select id="dossieN" class="modelo" ${iaOcupado ? 'disabled' : ''}>${TAMANHOS_DOSSIE.map(n => `<option value="${n}" ${n === nDossie() ? 'selected' : ''}>últimas ${n} partidas</option>`).join('')}</select>
-        <small class="explica">Quantas partidas recentes vão linha a linha para a IA e entram na fila do motor. 100 são ~25 mil tokens; 300, 50–70 mil — acima do limite gratuito do Groq e três vezes mais tempo de motor. Os cards de erros e o resumo do motor usam todas as partidas do período que já foram avaliadas, seja qual for o tamanho.</small></div>
+        <label class="lembrar" title="Só no Claude: manda o modelo pensar mais antes de responder (effort high). O padrão médio costuma bastar e responde bem mais rápido."><input type="checkbox" id="iaProfunda" ${iaProfunda() ? 'checked' : ''}>raciocínio profundo</label>
+        <small class="explica">Quantas partidas recentes vão linha a linha para a IA e entram na fila do motor. Derrotas e empates vão completas (lances, marcos, relógio); vitórias em linha curta. 100 são ~18 mil tokens; 300, 40–50 mil — acima do limite gratuito do Groq e três vezes mais tempo de motor. Os cards de erros e o resumo do motor usam todas as partidas do período que já foram avaliadas, seja qual for o tamanho.</small></div>
       <div id="motorControles">${typeof motorControles === 'function' ? motorControles() : ''}</div>
       <small class="explica"><b>Analisar</b> roda o motor nas partidas ainda não avaliadas e envia à IA os indicadores do período mais o dossiê das últimas <b class="nDossie">${nDossie()}</b> partidas desta modalidade (primeiros lances, relógio, marcos e erros do Stockfish). Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano e regras de rotina. Nenhuma partida sai do navegador além do que vai para o provedor de IA escolhido.</small>
     </div>
     <div id="motorStatus">${typeof motorStatus === 'function' ? motorStatus() : ''}</div>
     ${iaErro ? `<p class="erro">${iaErro}</p>` : ''}
-    ${iaTexto ? relatorioIA(iaTexto) : ''}
+    <div id="iaResultado">${iaTexto ? relatorioIA(iaTexto) : ''}</div>
   </div>`;
 }
 
@@ -265,14 +271,14 @@ function numerosRelatorio(){
 // a resposta da IA como relatório de uma página: cabeçalho com os números do período, diagnóstico como abertura,
 // depois três colunas (manter · parar · estudar) e três (plano · regras · acompanhar). Seções com título fora do
 // esperado vão para o fim, em colunas. Mesmo HTML no painel e no PDF; só o CSS muda.
-function relatorioIA(md){
+function relatorioIA(md, {parcial = false, meta = iaMeta} = {}){
   const por = {}; for (const sec of secoesMd(md)) (por[posicaoRelatorio(sec.titulo)] ??= []).push(sec);
   const bloco = (chave, classe = chave) => (por[chave] || []).map(s => `<section class="${classe}">${s.titulo ? `<h3>${s.titulo}</h3>` : ''}${s.html}</section>`).join('');
   const nums = numerosRelatorio().map(x => `<div><b>${x.v}</b><small>${x.k}</small></div>`).join('');
-  const quando = iaMeta ? new Date(iaMeta.quando).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'}) : '';
+  const quando = meta ? new Date(meta.quando).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'}) : '';
   const tres = chaves => { const h = chaves.map(([k, cl]) => bloco(k, cl)).join(''); return h ? `<div class="tres">${h}</div>` : ''; };
-  return `<div class="relatorio">
-    <div class="cabecalho"><div><h3>Análise · ${TIPO[aba] || aba}</h3><small>${escHtml(estado.nick)} · ${escHtml(estado.rotulo)}${quando ? ` · ${quando}` : ''}${iaMeta?.modelo ? ` · ${escHtml(iaMeta.modelo)}` : ''}</small></div><div class="numeros">${nums}</div></div>
+  return `<div class="relatorio${parcial ? ' parcial' : ''}">
+    <div class="cabecalho"><div><h3>Análise · ${TIPO[aba] || aba}</h3><small>${escHtml(estado.nick)} · ${escHtml(estado.rotulo)}${quando ? ` · ${quando}` : ''}${meta?.modelo ? ` · ${escHtml(meta.modelo)}` : ''}${parcial ? ' · <b>recebendo…</b>' : ''}</small></div><div class="numeros">${nums}</div></div>
     ${por.diagnostico || por.mudou ? `<div class="lede${por.mudou ? ' comMudou' : ''}">${bloco('diagnostico')}${bloco('mudou')}</div>` : ''}
     ${tres([['manter', 'manter'], ['parar', 'parar'], ['estudar', 'estudar']])}
     ${tres([['plano', 'plano'], ['regras', 'regras'], ['acompanhar', 'acompanhar']])}
@@ -367,7 +373,7 @@ ${temCmp ? `- "Período anterior equivalente" é o mesmo recorte de calendário 
 
 ${dossie ? `COMO LER O DOSSIÊ
 - Uma linha por partida, numeradas de #1 (mais antiga) a #${dossie.n} (mais recente), com data, cor, resultado e motivo, ratings, abertura, número de lances e precisão (quando o Chess.com analisou).
-- Os 15 primeiros lances de cada partida em notação algébrica; "…" indica que a partida continuou.
+- Derrotas e empates trazem os 15 primeiros lances em notação algébrica ("…" indica que a partida continuou), os marcos e o relógio. Vitórias vêm em linha curta — cabeçalho, roque e relógio final — porque o que há para corrigir está nas derrotas; as vitórias entram inteiras nos agregados de aberturas e do motor.
 - Marcos lidos do texto dos lances: em que lance cada lado rocou, a primeira captura, quantas vezes a dama se moveu nos 10 primeiros lances, xeques dados e recebidos.
 - Relógio: tempo inicial e final dos dois lados, média de segundos por lance em cada fase, a maior reflexão e a partir de que lance o jogador ficou abaixo de 30 s.
 
@@ -417,7 +423,7 @@ ${dossie ? `
 ${dossie.texto}` : ''}`;
 }
 
-// dossiê das últimas N partidas da modalidade: uma linha por partida com os 15 primeiros lances, marcos lidos do
+// dossiê das últimas N partidas da modalidade: derrotas e empates com os 15 primeiros lances, marcos lidos do
 // texto do SAN (roque, primeira captura, dama cedo, xeques) e o uso do relógio. Nada aqui simula o tabuleiro —
 // é o que dá para afirmar sem motor, e o prompt proíbe a IA de fingir que avaliou posições.
 function dossiePartidas(jogos, nick, N = nDossie()){
@@ -460,7 +466,12 @@ function dossiePartidas(jogos, nick, N = nDossie()){
     const er = errosDaPartida(g, nick);
     if (er) comMotor++;
     const errosTxt = !er ? '' : (er.erros.filter(e => e.grau !== 'imprecisão').map(e => `lance ${e.lance} ${e.san} (${e.grau}, chance ${e.antes}% → ${e.depois}%${e.melhor ? `, melhor: ${e.melhor}` : ''}${e.relogio != null ? `, ${seg(e.relogio)} no relógio` : ''})`).join('; ') || 'nenhum erro ou erro grave') + (er.decisivo ? ` · decisivo: lance ${er.decisivo.lance}` : '') + (er.favor || er.contra ? ` · viradas: ${er.favor} a favor, ${er.contra} contra` : '');
-    return `#${i + 1} · ${fmtDia.format(new Date(g.end_time * 1000))} · ${lado.toLowerCase()} · ${RES[r]} por ${motivo} · ${eu.rating} vs ${adv.rating}${g.delta != null ? ` (${sinal(g.delta)})` : ''} · ${pg.variante}${pg.eco ? ` (${pg.eco})` : ''} · ${pg.lances} lances${acc}\n  lances: ${numerar(san.slice(0, 30))}${san.length > 30 ? ' …' : ''}\n  ${marcos}${relogio ? `\n  ${relogio}` : ''}${errosTxt ? `\n  erros (motor, profundidade ${er.prof}): ${errosTxt}` : ''}`;
+    const cabecalho = `#${i + 1} · ${fmtDia.format(new Date(g.end_time * 1000))} · ${lado.toLowerCase()} · ${RES[r]} por ${motivo} · ${eu.rating} vs ${adv.rating}${g.delta != null ? ` (${sinal(g.delta)})` : ''} · ${pg.variante}${pg.eco ? ` (${pg.eco})` : ''} · ${pg.lances} lances${acc}`;
+    const errosLinha = errosTxt ? `\n  erros (motor, profundidade ${er.prof}): ${errosTxt}` : '';
+    // vitória em linha curta: o que há para corrigir está nas derrotas e empates; a vitória entra inteira nos agregados de aberturas e do
+    // motor, e aqui só o roque e o relógio final — os 15 lances, os marcos e o relógio detalhado são ~60% dos tokens de cada partida
+    if (r === 'w') return `${cabecalho} · roque: ${roque ? `lance ${roque}` : 'não'}${meus.length ? ` · relógio final: ${seg(meus[meus.length-1])} vs ${seg(dele[dele.length-1])}` : ''}${errosLinha}`;
+    return `${cabecalho}\n  lances: ${numerar(san.slice(0, 30))}${san.length > 30 ? ' …' : ''}\n  ${marcos}${relogio ? `\n  ${relogio}` : ''}${errosLinha}`;
   });
   const ap = s => { const n = s.w + s.d + s.l; return `${n} partidas, aproveitamento ${Math.round((s.w + s.d/2) / n * 100)}% (${s.w}V ${s.d}E ${s.l}D)`; };
   const abertLinhas = lado => Object.entries(abert[lado]).filter(([, s]) => s.w + s.d + s.l >= 3).sort((a, b) => (b[1].w + b[1].d + b[1].l) - (a[1].w + a[1].d + a[1].l)).map(([k, s]) => `  ${k}: ${ap(s)}`).join('\n') || '  (nenhuma com 3+ partidas)';
@@ -540,7 +551,12 @@ async function executarIA(montarPrompt){
         const t0 = Date.now(); let fase = 'aguardando resposta', chars = 0;
         const FASE = {conectado: 'conectado, aguardando o modelo', raciocinando: 'o modelo está raciocinando', respondendo: 'respondendo'};
         const pintar = () => { const el = document.querySelector('#cardIA .erro'); if (el) el.textContent = `${P.nome} · ${m} · ${FASE[fase] || fase}… ${seg(Math.round((Date.now() - t0) / 1000))}${chars ? ` · ${chars} caracteres` : ''}`; };
-        const progresso = (f, n) => { fase = f; chars = n; pintar(); };
+        // o relatório vai sendo montado enquanto chega (no máximo a cada 1,5 s): quem lê o Diagnóstico não espera a última coluna
+        let ultimoParcial = 0;
+        const progresso = (f, n, parcial) => {
+          fase = f; chars = n; pintar();
+          if (parcial && Date.now() - ultimoParcial > 1500) { ultimoParcial = Date.now(); const el = $('iaResultado'); if (el) el.innerHTML = relatorioIA(parcial, {parcial: true, meta: {modelo: m, quando: t0}}); }
+        };
         const relogio = setInterval(pintar, 1000);
         let res;
         try { res = await P.chamar(chave, m, prompt, progresso); }
@@ -634,6 +650,7 @@ function exportarPDF(){
 $('kpiGrid').addEventListener('change', e => {
   if (e.target.id === 'iaModelo') gravarLS(modeloLS(provAtual()), e.target.value);
   // tamanho do dossiê: atualiza os textos e os controles do motor no lugar, sem refazer o cartão (a chave pode estar sendo digitada)
+  if (e.target.id === 'iaProfunda') gravarLS('placar-chesscom:iaProfunda', e.target.checked ? '1' : '0');
   if (e.target.id === 'dossieN') { gravarLS('placar-chesscom:nDossie', e.target.value); document.querySelectorAll('.nDossie').forEach(el => el.textContent = nDossie()); if (typeof renderMotor === 'function') renderMotor(); }
   if (e.target.id === 'iaProv') { gravarChave(provAtual(), $('iaChave').value.trim()); gravarLS('placar-chesscom:provedor', e.target.value); iaErro = ''; renderKpis(); }
   if (e.target.id === 'iaLembrar') {

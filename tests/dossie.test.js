@@ -28,3 +28,12 @@ test('dossiePartidas(): corta nas últimas N, exige 10+ com lances, e o mesmo N 
   assert.ok(d.includes('RESUMO DAS 12 PARTIDAS') && d.includes('#12 ·') && !d.includes('#13 ·'));
   assert.ok(!d.includes('Motor ('), 'sem avaliações do motor, o bloco do motor não aparece');
 });
+
+test('dossiePartidas(): derrotas completas (lances, marcos, relógio), vitórias em linha curta', () => {
+  const jogos = Array.from({length: 12}, (_, i) => jogo(i));   // pares vencem, ímpares perdem
+  const linhas = dossiePartidas(jogos, 'eu', 12).texto.split('\n#').slice(1);
+  const vitorias = linhas.filter(l => l.includes('· vitória por')), derrotas = linhas.filter(l => l.includes('· derrota por'));
+  assert.equal(vitorias.length, 6); assert.equal(derrotas.length, 6);
+  for (const l of derrotas) assert.ok(l.includes('lances: 1.e4') && l.includes('roque:') && l.includes('relógio:'), 'derrota traz lances, marcos e relógio');
+  for (const l of vitorias) { assert.ok(!l.includes('lances: 1.'), 'vitória não traz os lances'); assert.ok(l.includes('roque: ') && l.includes('relógio final:'), 'vitória traz roque e relógio final'); }
+});

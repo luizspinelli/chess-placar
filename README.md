@@ -71,7 +71,7 @@ Não há servidor próprio: o navegador fala direto com a API pública do Chess.
 O que a análise com IA envia ao provedor:
 
 - o resumo agregado das abas — sem partidas individuais, sem nicks de adversários, e omitindo linhas com poucas partidas;
-- para cada uma das últimas 100 partidas (200 ou 300, se você escolher), data, cor, resultado, ratings dos dois lados, abertura, os 15 primeiros lances, marcos, tempos de relógio e os erros marcados pelo motor. **Não envia o nick dos adversários** nem os lances além do 15º.
+- para cada uma das últimas 100 partidas (200 ou 300, se você escolher), data, cor, resultado, ratings dos dois lados, abertura, duração e os erros marcados pelo motor; nas derrotas e empates, também os 15 primeiros lances, marcos e tempos de relógio (vitórias vão resumidas). **Não envia o nick dos adversários** nem os lances além do 15º.
 
 O motor de análise roda inteiro no navegador: as partidas não vão a nenhum servidor para serem avaliadas, e as avaliações ficam no `localStorage`. O único recurso externo do app é a imagem do tabuleiro, buscada no Chess.com apenas quando você abre uma abertura. Stockfish e chess.js são servidos da própria origem do site, não de CDN. Como não há nenhum script de terceiros, o risco principal seria um XSS na própria página — por isso tudo que vem da API é escapado antes de ir para a tela. Ainda assim, para provedores pagos vale usar uma chave dedicada com limite de gasto.
 
