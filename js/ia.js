@@ -598,12 +598,12 @@ function exportarPDF(){
     if (!kpiData[tab]) return '';
     div.innerHTML = kpiData[tab];
     const cards = [...div.querySelectorAll('.kpi')].map(c => {
-      const t = c.querySelector('h2')?.textContent.replace(/\s+/g, ' ').trim();
+      const t = [...c.querySelector('h2')?.childNodes || []].filter(n => !(n.nodeType === 1 && n.classList.contains('ajuda'))).map(n => n.textContent).join('').replace(/\s+/g, ' ').trim();   // sem o "?" da ajuda
       // linha de cabeçalho de coluna (primeira célula vazia, ex.: "· aproveitamento · rating") não é dado: fica de fora
       const rows = [...c.querySelectorAll('tr')].filter(tr => tr.children[0]?.textContent.trim()).map(tr => { const g = tr.closest('.motivos > div')?.querySelector('h3')?.textContent.trim(); return (g ? `${g} · ` : '') + [...tr.children].map(td => td.textContent.replace(/\s+/g, ' ').trim()).join(': '); }).filter(Boolean);
-      return rows.length ? `<h4>${esc(t)}</h4><ul class="mini">${rows.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '';
+      return rows.length ? `<div class="bloco"><h4>${esc(t)}</h4><ul class="mini">${rows.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>` : '';
     }).join('');
-    return cards ? `<h3>${tab}</h3><div class="cols">${cards}</div>` : '';
+    return cards ? `<h3>${tab}</h3>${cards}` : '';
   }).join('');
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Análise Chess.com — ${esc(nick)}</title>
   <style>
@@ -615,7 +615,7 @@ function exportarPDF(){
     h3{font-size:10.5pt;margin:12px 0 5px;color:#6b655b;text-transform:uppercase;letter-spacing:.05em;break-after:avoid}
     h4{font-size:9.5pt;margin:6px 0 2px}
     ul,ol{margin:4px 0 8px;padding-left:20px} li{margin:2px 0}
-    .mini{font-size:8.5pt;columns:1;margin:0 0 5px} .cols{columns:3;column-gap:18px} .cols h4{break-after:avoid}
+    .mini{font-size:8.5pt;columns:1;margin:0 0 5px} .cols{columns:3;column-gap:18px;column-fill:auto} .bloco{break-inside:avoid;margin:0 0 6px} .cols h3{margin:8px 0 4px;break-after:avoid} .cols h3:first-child{margin-top:0} .cols h4{break-after:avoid}
     /* relatório impresso: o mesmo HTML de relatorioIA, mas como documento — cabeçalho e diagnóstico em largura total e as seções
        fluindo em duas colunas de texto que atravessam as páginas; a grade de três colunas da tela não cabe numa folha */
     .relatorio{font-size:9.5pt;line-height:1.4} .relatorio .cabecalho{display:flex;flex-direction:column;gap:6px;border-bottom:1.5px solid #1c1a17;padding-bottom:8px}
@@ -640,8 +640,7 @@ function exportarPDF(){
     <div style="align-self:center;color:#6b655b;font-size:10pt">${esc($('rating').textContent.trim())}</div>`}
   </div>
   ${achados ? `<h2>Achados automáticos</h2><ul>${achados}</ul>` : ''}
-  <h2>Indicadores</h2>${secoes}
-  <p class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} a partir da API pública do Chess.com.</p>
+  <h2>Indicadores</h2><div class="cols">${secoes}<p class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} a partir da API pública do Chess.com.</p></div>
   <scr` + `ipt>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</scr` + `ipt>
   </body></html>`;
   const url = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
