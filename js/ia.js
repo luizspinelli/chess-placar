@@ -599,32 +599,33 @@ function exportarPDF(){
     div.innerHTML = kpiData[tab];
     const cards = [...div.querySelectorAll('.kpi')].map(c => {
       const t = c.querySelector('h2')?.textContent.replace(/\s+/g, ' ').trim();
-      const rows = [...c.querySelectorAll('tr')].map(tr => { const g = tr.closest('.motivos > div')?.querySelector('h3')?.textContent.trim(); return (g ? `${g} · ` : '') + [...tr.children].map(td => td.textContent.replace(/\s+/g, ' ').trim()).join(': '); }).filter(Boolean);
+      // linha de cabeçalho de coluna (primeira célula vazia, ex.: "· aproveitamento · rating") não é dado: fica de fora
+      const rows = [...c.querySelectorAll('tr')].filter(tr => tr.children[0]?.textContent.trim()).map(tr => { const g = tr.closest('.motivos > div')?.querySelector('h3')?.textContent.trim(); return (g ? `${g} · ` : '') + [...tr.children].map(td => td.textContent.replace(/\s+/g, ' ').trim()).join(': '); }).filter(Boolean);
       return rows.length ? `<h4>${esc(t)}</h4><ul class="mini">${rows.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '';
     }).join('');
     return cards ? `<h3>${tab}</h3><div class="cols">${cards}</div>` : '';
   }).join('');
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Análise Chess.com — ${esc(nick)}</title>
   <style>
-    body{font:12pt/1.45 Georgia,serif;color:#1c1a17;margin:0;padding:28px 34px}
+    body{font:11pt/1.4 Georgia,serif;color:#1c1a17;margin:0;padding:0}
     h1{font-size:20pt;margin:0 0 2px} .sub{color:#6b655b;margin:0 0 14px}
     .placar{display:flex;gap:18px;margin:0 0 18px;padding:10px 14px;border:1.5px solid #1c1a17}
     .placar b{font-size:16pt;display:block;line-height:1}.placar span{font-size:9pt;color:#6b655b}
-    h2{font-size:14pt;border-bottom:1.5px solid #1c1a17;padding-bottom:3px;margin:20px 0 8px}
-    h3{font-size:12pt;margin:14px 0 6px;color:#6b655b;text-transform:uppercase;letter-spacing:.05em}
-    h4{font-size:10.5pt;margin:8px 0 2px}
+    h2{font-size:13pt;border-bottom:1.5px solid #1c1a17;padding-bottom:3px;margin:16px 0 6px;break-after:avoid}
+    h3{font-size:10.5pt;margin:12px 0 5px;color:#6b655b;text-transform:uppercase;letter-spacing:.05em;break-after:avoid}
+    h4{font-size:9.5pt;margin:6px 0 2px}
     ul,ol{margin:4px 0 8px;padding-left:20px} li{margin:2px 0}
-    .mini{font-size:9.5pt;columns:1;margin:0 0 6px} .cols{columns:2;column-gap:24px} .cols h4{break-after:avoid}
+    .mini{font-size:8.5pt;columns:1;margin:0 0 5px} .cols{columns:3;column-gap:18px} .cols h4{break-after:avoid}
     /* relatório de uma página: a mesma estrutura do painel (relatorioIA), em tinta */
-    .relatorio{font-size:10pt;line-height:1.4;break-after:page} .relatorio .cabecalho{display:flex;flex-direction:column;gap:8px;border-bottom:1.5px solid #1c1a17;padding-bottom:8px}
-    .relatorio .cabecalho h3{font-size:14pt;margin:0;color:#1c1a17;text-transform:none;letter-spacing:0} .relatorio .cabecalho small{color:#6b655b;font-size:9pt}
-    .relatorio .numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(110pt,1fr));gap:8px} .relatorio .numeros>div{border:1px solid #d9d2c2;padding:5px 8px} .relatorio .numeros>div>b{display:block;font-size:13pt;line-height:1.1} .relatorio .numeros small{font-size:8pt;color:#6b655b}
-    .relatorio .lede{border-left:3px solid #1c1a17;padding:6px 12px;margin:10px 0;display:grid;gap:12px} .relatorio .lede.comMudou{grid-template-columns:2fr 1fr}
-    .relatorio .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px} .relatorio .resto{columns:2;column-gap:14px;margin-top:10px}
-    .relatorio section{border:1px solid #d9d2c2;border-top:3px solid #6b655b;padding:6px 10px;break-inside:avoid} .relatorio .manter{border-top-color:#2f9e5a} .relatorio .parar{border-top-color:#d0463c} .relatorio .estudar{border-top-color:#3b6fe8}
-    .relatorio section h3{font-size:8.5pt;text-transform:uppercase;letter-spacing:.08em;color:#6b655b;margin:0 0 4px} .relatorio p{margin:3px 0} .relatorio ol,.relatorio ul{margin:0;padding-left:16px} .relatorio li{margin:2px 0}
+    .relatorio{font-size:8.2pt;line-height:1.32} .relatorio .cabecalho{display:flex;flex-direction:column;gap:6px;border-bottom:1.5px solid #1c1a17;padding-bottom:6px}
+    .relatorio .cabecalho h3{font-size:13pt;margin:0;color:#1c1a17;text-transform:none;letter-spacing:0} .relatorio .cabecalho small{color:#6b655b;font-size:8pt}
+    .relatorio .numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(90pt,1fr));gap:6px} .relatorio .numeros>div{border:1px solid #d9d2c2;padding:4px 7px} .relatorio .numeros>div>b{display:block;font-size:12pt;line-height:1.1} .relatorio .numeros small{font-size:7.5pt;color:#6b655b}
+    .relatorio .lede{border-left:3px solid #1c1a17;padding:4px 10px;margin:8px 0;display:grid;gap:10px} .relatorio .lede.comMudou{grid-template-columns:3fr 2fr}
+    .relatorio .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;align-items:start} .relatorio .resto{columns:2;column-gap:14px;margin-top:8px}
+    .relatorio section{border:1px solid #d9d2c2;border-top:3px solid #6b655b;padding:5px 8px;break-inside:avoid} .relatorio .manter{border-top-color:#2f9e5a} .relatorio .parar{border-top-color:#d0463c} .relatorio .estudar{border-top-color:#3b6fe8}
+    .relatorio section h3{font-size:7.5pt;text-transform:uppercase;letter-spacing:.08em;color:#6b655b;margin:0 0 3px;break-after:avoid} .relatorio p{margin:2px 0} .relatorio ol,.relatorio ul{margin:0;padding-left:14px} .relatorio li{margin:1.5px 0}
     .rodape{margin-top:24px;font-size:9pt;color:#6b655b;border-top:1px solid #d9d2c2;padding-top:6px}
-    @page{margin:14mm} @media print{.cols{columns:2}}
+    @page{size:A4 portrait;margin:11mm 12mm} @media print{.cols{columns:3}}
   </style></head><body>
   ${iaTexto ? relatorioIA(iaTexto) : `<h1>Análise de xadrez — ${esc(nick)}</h1>
   <p class="sub">Chess.com · ${esc(rotulo)} · modalidade: ${TIPO[aba]}</p>`}
