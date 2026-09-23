@@ -280,7 +280,7 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 .relatorio .cabecalho h3{font-size:1.05rem;margin:0;color:var(--text)}
 .relatorio .cabecalho small{color:var(--muted)}
 .relatorio .numeros{display:flex;flex-wrap:wrap;gap:6px 18px;text-align:right}
-.relatorio .numeros b{display:block;font-size:1.15rem;line-height:1.1;color:var(--text)}
+.relatorio .numeros>div>b{display:block;font-size:1.15rem;line-height:1.1;color:var(--text)}
 .relatorio .numeros small{font-size:.72rem;color:var(--muted);white-space:nowrap}
 .relatorio .lede{display:grid;gap:14px;margin:12px 0 0;padding:10px 14px;border-left:3px solid var(--accent);background:var(--surface2);border-radius:0 var(--r) var(--r) 0;font-size:.9rem}
 .relatorio .lede.comMudou{grid-template-columns:2fr 1fr}
