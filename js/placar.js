@@ -40,7 +40,7 @@ $('abas').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   aba = b.dataset.tc; pagina = 1;
   $('abas').querySelectorAll('button').forEach(x => { x.classList.toggle('ativa', x === b); x.setAttribute('aria-selected', x === b); });
-  render();
+  render(); sincronizarURL();
 });
 
 const bandeira = url => { const c = (url || '').split('/').pop(); return c && c.length === 2 ? String.fromCodePoint(...[...c.toUpperCase()].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65)) : ''; };
@@ -68,6 +68,8 @@ function renderPerfil(){
 
 function render(){
   const {jogos: tudo, antes, depois, aprox = {}, nick, rotulo, monitorando, ignoradas} = estado;
+  // o relatório da IA é por jogador e modalidade: ao trocar de aba ou restaurar uma busca, vem o último guardado (ou nada)
+  if (!iaOcupado) { const r = armazem.ler('relatorios', `${nick}|${aba}`); iaTexto = r?.texto || ''; iaMeta = r?.meta || null; }
   const jogos = tudo.filter(g => g.time_class === aba);
   const classes = Object.keys(depois).filter(tc => tc === aba);
   const c = {w:0, d:0, l:0};

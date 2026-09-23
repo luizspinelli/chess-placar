@@ -491,15 +491,16 @@ function kpis(jogos, nick){
   };
 }
 
-$('abasKpi').addEventListener('change', e => { if (e.target.id === 'abasSel') { abaKpi = e.target.value; renderKpis(); } });
+$('abasKpi').addEventListener('change', e => { if (e.target.id === 'abasSel') { abaKpi = e.target.value; renderKpis(); sincronizarURL(); } });
 $('abasKpi').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   abaKpi = b.dataset.aba;
-  renderKpis();
+  renderKpis(); sincronizarURL();
 });
 
 function renderKpis(){
   if (!kpiData) return;
+  if (kpiData[abaKpi] === undefined) abaKpi = 'Análise';   // nome vindo da URL ou de versão antiga
   const GRUPOS = [['Visão geral', ['Análise','Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Erros e precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
   // no celular a barra vira um <select> com os grupos como optgroup (o CSS decide qual dos dois aparece)
   const sel = `<select id="abasSel" aria-label="Aba de indicadores">${GRUPOS.map(([nome, abas]) => `<optgroup label="${nome}">${abas.filter(k => kpiData[k] !== undefined).map(k => `<option value="${k}" ${k === abaKpi ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`).join('')}</select>`;

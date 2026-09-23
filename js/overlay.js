@@ -1,15 +1,20 @@
 // Modo streamer/OBS: overlay do placar e seus controles.
 let ovUltimaUrl = null;
+// valores vindos da URL ou digitados: só o que o CSS e o cálculo da meta entendem; o resto vira o padrão em vez de quebrar o layout do OBS
+const fundoValido = v => { v = String(v || '').trim().replace(/^#/, ''); return /^([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v) ? v.toLowerCase() : v.toLowerCase() === 'transparente' ? 'transparente' : ''; };
+const escalaValida = v => { const n = parseFloat(String(v).replace(',', '.')); return n >= 0.5 && n <= 3 ? String(n) : '1'; };
+const metaValida = v => { v = String(v || '').trim(); return /^[+-]?\d{1,4}$/.test(v) ? v : ''; };
 function renderOverlay(){
   const on = document.body.classList.contains('streamer');
   $('overlay').hidden = !on;
   document.body.classList.toggle('desatualizado', on && falhou);
   if (!on || !estado) return;
   const tipo = $('ovTipo').value; document.body.dataset.ov = tipo;
-  document.documentElement.style.setProperty('--ovEscala', $('ovFonte').value);
-  $('placar').style.zoom = $('ovFonte').value; $('overlay').style.zoom = $('ovFonte').value;
-  const fundo = $('ovFundo').value.trim();
-  document.body.style.background = fundo && fundo !== 'transparente' ? (fundo.startsWith('#') ? fundo : '#' + fundo) : 'transparent';
+  const escala = escalaValida($('ovFonte').value);
+  document.documentElement.style.setProperty('--ovEscala', escala);
+  $('placar').style.zoom = escala; $('overlay').style.zoom = escala;
+  const fundo = fundoValido($('ovFundo').value);
+  document.body.style.background = fundo && fundo !== 'transparente' ? '#' + fundo : 'transparent';
 
   const jogos = jogosAtuais;                       // já filtrados pela modalidade, mais recente primeiro
   const nick = nickAtual;
@@ -24,7 +29,7 @@ function renderOverlay(){
   if (!t.hidden) t.innerHTML = `<span><small>V</small><b class="w">${$('nw').textContent}</b></span><span><small>E</small><b class="d">${$('nd').textContent}</b></span><span><small>D</small><b class="l">${$('nl').textContent}</b></span><span><small>rating</small><b class="${$('nr').className}">${$('nr').textContent}</b></span>${seqHtml ? `<span>${seqHtml}</span>` : ''}`;
 
   // meta
-  const m = $('ovMetaBar'), metaTxt = $('ovMeta').value.trim();
+  const m = $('ovMetaBar'), metaTxt = metaValida($('ovMeta').value);
   const ratingAtual = estado.depois[aba] ?? null, ratingIni = estado.antes[aba] ?? null;
   if (metaTxt && ratingAtual !== null) {
     const alvo = /^[+-]/.test(metaTxt) ? (ratingIni ?? ratingAtual) + parseInt(metaTxt) : parseInt(metaTxt);

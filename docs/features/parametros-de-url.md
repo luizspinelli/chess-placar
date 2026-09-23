@@ -25,6 +25,8 @@ Tudo que está no formulário cabe na URL: favoritos por período, link para o O
 - A chave de IA, o modelo e a profundidade do motor **não** vão na URL — são do navegador.
 - Filtro por adversário e aba de KPI ativa não vão na URL.
 
+A barra de endereço **acompanha a tela**: `sincronizarURL()` chama `history.replaceState` com `linkAtual()` após cada busca e ao trocar de aba de modalidade (`aba`) ou de indicadores (`kpi`), sem criar entradas no histórico. Os dois parâmetros de aba só entram quando fogem do padrão (mais de uma modalidade na busca; aba diferente de Análise no modo avançado). Os parâmetros do overlay passam por validação no bootstrap e ao renderizar (`fundoValido`: hexadecimal de 3, 6 ou 8 dígitos ou `transparente`; `escalaValida`: 0,5 a 3; `metaValida`: até 4 dígitos com sinal opcional) — valor fora disso cai no padrão em vez de quebrar o layout do OBS.
+
 ## Como testar
 
 Preencher tudo, Copiar link, abrir em janela anônima: a mesma vista deve aparecer (inclusive caixa de comparação, tema, modo e overlay).

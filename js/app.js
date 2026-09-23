@@ -8,6 +8,9 @@ const aplicarTema = t => {
 };
 $('tema').addEventListener('click', e => { const b = e.target.closest('button'); if (b) aplicarTema(b.dataset.tema); });
 
+// a barra de endereço acompanha busca e abas (replaceState: sem entradas novas no histórico), então F5 e o link copiado
+// reproduzem o que está na tela; a restauração do armazém faz o resto
+function sincronizarURL(){ try { history.replaceState(null, '', linkAtual()); } catch {} }
 function linkAtual(){
   const u = new URL(location.href); u.search = '';
   const q = u.searchParams;
@@ -23,6 +26,9 @@ function linkAtual(){
   if (!document.body.classList.contains('simples')) q.set('modo', 'avancado');
   if (document.body.classList.contains('streamer')) q.set('streamer', '1');
   if ($('ovTipo').value !== 'placar') q.set('overlay', $('ovTipo').value);
+  // abas: só quando fogem do padrão, para o link continuar curto
+  if (estado && new Set(estado.jogos.map(g => g.time_class)).size > 1) q.set('aba', aba);
+  if (abaKpi !== 'Análise' && !document.body.classList.contains('simples')) q.set('kpi', abaKpi);
   if ($('ovMeta').value.trim()) q.set('meta', $('ovMeta').value.trim());
   if ($('ovFundo').value.trim()) q.set('fundo', $('ovFundo').value.trim().replace('#', ''));
   if ($('ovFonte').value !== '1') q.set('escala', $('ovFonte').value);
@@ -77,9 +83,11 @@ $('verMenos').addEventListener('click', () => aplicarModo('simples'));
   if (q.get('bots') === '1') $('soHumanos').checked = false;
   if (q.has('comparar')) { $('comparar').checked = q.get('comparar') === '1'; comparManual = true; }
   if (q.get('overlay')) $('ovTipo').value = q.get('overlay');
-  if (q.get('meta')) $('ovMeta').value = q.get('meta');
-  if (q.get('fundo')) $('ovFundo').value = q.get('fundo');
-  if (q.get('escala')) $('ovFonte').value = q.get('escala');
+  if (q.get('meta')) $('ovMeta').value = metaValida(q.get('meta'));
+  if (q.get('fundo')) $('ovFundo').value = fundoValido(q.get('fundo'));
+  if (q.get('escala')) $('ovFonte').value = escalaValida(q.get('escala'));
+  if (q.get('aba') && TIPO[q.get('aba')]) aba = q.get('aba');
+  if (q.get('kpi')) abaKpi = q.get('kpi');   // renderKpis() volta para Análise se o nome não existir
   if (q.get('ultima') === '0') $('ovUltima').checked = false;
   if (q.get('seq') === '0') $('ovSeq').checked = false;
   if (q.get('auto') === '1' || q.get('streamer') === '1') $('auto').checked = true;

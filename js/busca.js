@@ -57,18 +57,22 @@ $('btnAgora').addEventListener('click', () => {
   $('auto').checked = true;
   buscar(false);
 });
-const CHAVE_ULTIMA = 'placar-chesscom:ultima';
+const MAX_BUSCAS = 5;   // buscas guardadas (as mais recentes); cada uma tem ~2 KB por partida
 function chaveBusca(nick){ return JSON.stringify({nick, periodo: $('periodo').value, data: $('data').value, hora: $('hora').value, dataFim: $('dataFim').value, horaFim: $('horaFim').value, tc: [...document.querySelectorAll('input[name=tc]:checked')].map(i => i.value), bots: $('soHumanos').checked, comparar: $('comparar').checked}); }
-function salvarUltima(){
+// guarda a busca no armazém sem o PGN bruto, mas com os lances já parseados (g._pgn, ~1,8 KB por partida): é o que deixa
+// dossiê e motor funcionarem numa restauração. Falha de gravação vira aviso na linha de status, não silêncio.
+async function salvarUltima(){
   if (!estado) return;
   const compacto = estado.jogos.map(g => { parsePGN(g); const {pgn, tcn, initial_setup, fen, ...resto} = g; return resto; });
-  try { localStorage.setItem(CHAVE_ULTIMA, JSON.stringify({chave: chaveBusca(estado.nick), quando: Date.now(), estado: {...estado, jogos: compacto}})); } catch {}
+  const ok = await armazem.gravar('buscas', chaveBusca(estado.nick), {quando: Date.now(), versao: VERSAO_ESTADO, estado: {...estado, jogos: compacto}});
+  armazem.podar('buscas', MAX_BUSCAS);
+  if (!ok && !$('status').className) { const st = $('status'), aviso = `sem cache local (${armazem.erro || 'IndexedDB indisponível'})`; if (!st.textContent.includes('sem cache local')) st.textContent = st.textContent ? `${st.textContent} · ${aviso}` : `Busca concluída · ${aviso}`; }
 }
 function carregarUltima(nick){
   try {
-    const u = JSON.parse(localStorage.getItem(CHAVE_ULTIMA) || 'null');
-    if (!u || u.chave !== chaveBusca(nick)) return false;
-    estado = u.estado; estado.monitorando = $('auto').checked;
+    const u = armazem.ler('buscas', chaveBusca(nick));
+    if (!u || u.versao !== VERSAO_ESTADO) return false;
+    estado = structuredClone(u.estado); estado.monitorando = $('auto').checked;
     renderAbasModalidade(estado.jogos, null);
     render();
     $('status').className = ''; $('status').textContent = `Dados salvos ${new Date(u.quando).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'})} · atualizando…`;
@@ -176,8 +180,9 @@ async function buscar(atualizacao){
   $('btn').disabled = true;
   status.textContent = atualizacao ? 'Atualizando…' : 'Buscando…';
   if (!atualizacao) {
-    iaTexto = ''; iaErro = '';
+    iaTexto = ''; iaErro = ''; iaMeta = null;
     filtro = ''; $('filtro').value = '';
+    await armazem.pronto;
     if (!carregarUltima(nick)) { $('placar').style.display = 'none'; $('kpis').style.display = 'none'; $('partidas').style.display = 'none'; }
     else atualizacao = 'cache';
   }
@@ -201,6 +206,7 @@ async function buscar(atualizacao){
     if (atualizacao !== true) pagina = 1;
     falhou = false;
     render();
+    if (atualizacao !== true) sincronizarURL();
     salvarUltima();
   } catch (err) {
     // 404 num nick que já funcionou antes é bloqueio da API, não nick inexistente

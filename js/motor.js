@@ -1,7 +1,7 @@
 // Motor de análise: Stockfish 19 (WASM, single-thread) num Web Worker, alimentado por lances que o chess.js converte
 // de SAN para UCI. Roda inteiro no navegador — nada sai da máquina. Só funciona servido por http(s): em file:// o
 // Chrome bloqueia Worker e WASM, e aí o cartão explica em vez de falhar. Avaliações ficam em cache por URL da partida.
-const MOTOR_URL = 'vendor/stockfish/stockfish-19-lite-single.js', CHAVE_EVALS = 'placar-chesscom:evals', MAX_EVALS = 600;
+const MOTOR_URL = 'vendor/stockfish/stockfish-19-lite-single.js', MAX_EVALS = 3000;
 const MATE_BASE = 20000;   // |cp| >= MATE_BASE codifica mate: sinal = quem dá, |cp| - MATE_BASE = em quantos lances
 const PROFUNDIDADES = {10: 'rápida', 12: 'padrão', 14: 'profunda'};
 const motor = {worker: null, pronto: null, rodando: false, cancelar: false, progresso: null, erro: '', inicial: {}};
@@ -63,18 +63,16 @@ async function avaliarPartida(g, profundidade, aoAvancar){
   return {e, m};
 }
 
-// ---- cache: {url: {p: profundidade, t: quando, e: [cp...] | null (partida que o motor não conseguiu ler), m: [melhor lance em SAN...]}}
-let evalsCache = (() => { try { return JSON.parse(lerLS(CHAVE_EVALS, '{}')) || {}; } catch { return {}; } })();
-const evalsDe = g => { const c = evalsCache[g.url]; return c && c.e ? c : null; };
+// ---- cache no armazém (coleção evals, IndexedDB com espelho em memória): {url: {p: profundidade, t: quando, e: [cp...] | null
+// (partida que o motor não conseguiu ler), m: [melhor lance em SAN...]}}; poda para as MAX_EVALS mais recentes
+const evalsDe = g => { const c = armazem.ler('evals', g.url); return c && c.e ? c : null; };
 function guardarEvals(g, p, res){
-  evalsCache[g.url] = {p, t: Date.now(), e: res?.e ?? null, m: res?.m};
-  const urls = Object.keys(evalsCache);
-  if (urls.length > MAX_EVALS) for (const u of urls.sort((a, b) => evalsCache[a].t - evalsCache[b].t).slice(0, urls.length - MAX_EVALS)) delete evalsCache[u];
-  gravarLS(CHAVE_EVALS, JSON.stringify(evalsCache));
+  armazem.gravar('evals', g.url, {p, t: Date.now(), e: res?.e ?? null, m: res?.m});
+  armazem.podar('evals', MAX_EVALS);
 }
 // as mesmas partidas do dossiê da IA: as últimas nDossie() da modalidade que têm lances; só xadrez padrão (o chess.js não lê 960)
 const partidasParaMotor = (jogos, N = nDossie()) => [...jogos].filter(g => g.rules === 'chess' && parsePGN(g).meias >= 2).sort((a, b) => a.end_time - b.end_time).slice(-N);
-const pendentesMotor = (jogos, prof) => partidasParaMotor(jogos).filter(g => { const c = evalsCache[g.url]; return !c || (c.e && c.p < prof); });
+const pendentesMotor = (jogos, prof) => partidasParaMotor(jogos).filter(g => { const c = armazem.ler('evals', g.url); return !c || (c.e && c.p < prof); });
 
 // ---- execução: derrotas primeiro (é onde está o valor), depois empates, depois vitórias
 async function motorAnalisar(){

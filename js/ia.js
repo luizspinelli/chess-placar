@@ -156,7 +156,6 @@ const esquecerChaves = () => { for (const p in PROVEDORES) try { localStorage.re
 
 // a aba Análise abre com uma barra de ação (Analisar · PDF · "Gemini · modelo · motor 65/65") e a configuração
 // recolhida; ela só vem aberta enquanto não há chave salva, ou quando o usuário clica em Configurar.
-let iaMeta = null;        // {modelo, quando} da última resposta, para o cabeçalho do relatório
 let iaCfgAberta = null;   // null = automático (aberta só sem chave); true/false depois que o usuário decide
 function blocoIA(){
   const p = provAtual(), P = PROVEDORES[p];
@@ -510,6 +509,7 @@ async function analisarTudo(){
 }
 
 // laço da chamada: valida chave, monta o prompt, tenta o modelo escolhido e cai para os reservas
+const chaveRelatorio = () => `${estado.nick}|${aba}`;
 // "Failed to fetch" é o navegador dizendo que não houve resposta nenhuma; a causa real só aparece no console
 const erroDeRede = (P, e) => {
   const host = {Gemini: 'generativelanguage.googleapis.com', Groq: 'api.groq.com', Claude: 'api.anthropic.com', OpenAI: 'api.openai.com'}[P.nome] || 'o provedor';
@@ -549,6 +549,8 @@ async function executarIA(montarPrompt){
         if (res.ok) {
           iaTexto = res.texto || 'Resposta vazia.';
           iaMeta = {modelo: m, quando: Date.now()};
+          // o relatório custou minutos e centavos: fica guardado por jogador e modalidade, e render() o traz de volta após um refresh
+          armazem.gravar('relatorios', chaveRelatorio(), {texto: iaTexto, meta: iaMeta, quando: iaMeta.quando});
           iaErro = [m !== escolhido ? `Respondido por ${m} (o modelo escolhido estava indisponível); ele passou a ser o padrão.` : '', iaAviso].filter(Boolean).join(' ');
           gravarLS(modeloLS(p), m);
           return;

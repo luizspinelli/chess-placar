@@ -32,6 +32,8 @@ Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.ht
 | `periodo` | `ano` (padrão), `mes`, `mes-1`, `Nd`, `Nw`, `Nm`, `custom` | período analisado: `7d` = últimos 7 dias, `2w` = 2 semanas, `3m` = 3 meses (a partir do dia 1º) |
 | `data`, `hora`, `dataFim`, `horaFim` | `YYYY-MM-DD`, `HH:MM` | intervalo do período `custom` (fim opcional) |
 | `tc` | `bullet,blitz,rapid,daily` | modalidades consideradas |
+| `aba` | `bullet`, `blitz`, `rapid`, `daily` | modalidade em foco (só quando a busca tem mais de uma) |
+| `kpi` | `Resultados`, `Rating`, `Aberturas`… | aba de indicadores aberta no modo avançado (padrão `Análise`) |
 | `bots` | `1` | inclui partidas contra bots e amistosas (por padrão ficam fora) |
 | `comparar` | `1`, `0` | compara com o período anterior equivalente (dobra as requisições à API); já vem ligado nos períodos relativos de até ~6 meses, e `0` desliga |
 | `auto` | `1` | atualização automática |
@@ -44,6 +46,8 @@ Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.ht
 | `fundo` | `00ff00` | cor de fundo do overlay (chroma); vazio = transparente |
 | `escala` | `0.8` a `2` | tamanho do overlay |
 | `ultima`, `seq` | `0` | esconde o cartão da última partida / a sequência |
+
+A barra de endereço acompanha o que está na tela (busca e abas), então F5 e o link copiado reproduzem o mesmo painel — e a última busca fica guardada no navegador, aparecendo na hora enquanto a API é consultada de novo.
 
 Exemplo para o OBS (ticker no rodapé, contando a partir das 20h de hoje, meta de +30 pontos):
 
@@ -77,6 +81,7 @@ O motor de análise roda inteiro no navegador: as partidas não vão a nenhum se
 index.html         marcação
 css/estilo.css     estilos (temas claro/escuro, celular, streamer)
 js/base.js         constantes, helpers, acesso à API, estado global
+js/armazem.js      IndexedDB com espelho em memória: buscas, avaliações do motor, relatórios
 js/periodo.js      período, comparação automática, blocos de evolução
 js/aberturas.js    PGN, posição a partir dos lances, modal do tabuleiro
 js/motor.js        Stockfish no Worker, fila UCI, cache de avaliações

@@ -12,7 +12,7 @@ test('errosDaPartida(): classifica pela queda de chance do lado que moveu, marca
   const g = {url: 'g-teste', white: {username: 'Eu'}, black: {username: 'Ela'},
     pgn: '1. e4 {[%clk 0:09:50]} 1... e5 {[%clk 0:09:55]} 2. Nf3 {[%clk 0:09:00]} 2... Nc6 {[%clk 0:09:40]} 3. Bc4 {[%clk 0:00:20]} 3... Nf6 {[%clk 0:09:30]} *'};
   // e[i] = avaliação depois do i-ésimo lance, do ponto de vista das brancas
-  evalsCache[g.url] = {p: 12, t: 0, e: [20, 30, 25, -350, -340, -900, -950], m: [null, null, 'Nc3', null, 'd4', null]};
+  armazem.gravar('evals', g.url, {p: 12, t: 0, e: [20, 30, 25, -350, -340, -900, -950], m: [null, null, 'Nc3', null, 'd4', null]});
   const r = errosDaPartida(g, 'eu');
   assert.equal(r.prof, 12);
   assert.equal(r.erros.length, 2, 'só os lances das brancas (eu) contam');
@@ -27,7 +27,7 @@ test('errosDaPartida(): classifica pela queda de chance do lado que moveu, marca
 
 test('resumoErros(): agrega por fase e faixa de relógio e lista o decisivo das derrotas', () => {
   const g = {url: 'g-teste', white: {username: 'Eu'}, black: {username: 'Ela'}, pgn: '1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 *'};
-  evalsCache[g.url] = {p: 12, t: 0, e: [20, 30, 25, -350, -340, -900, -950]};
+  armazem.gravar('evals', g.url, {p: 12, t: 0, e: [20, 30, 25, -350, -340, -900, -950]});
   const res = resumoErros([{g, r: 'l', adv: {username: 'Ela'}, dt: new Date(0), ts: 0}], 'eu');
   assert.equal(res.n, 1); assert.equal(res.cont.grave, 1); assert.equal(res.cont.imprecisão, 1);
   assert.equal(res.fase['Abertura (até 15)'], 1, 'graves + erros por fase; imprecisão não entra');
