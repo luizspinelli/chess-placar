@@ -15,16 +15,23 @@ function parseSSE(buffer){
 // lê a resposta em streaming e chama aoEvento para cada evento. Os provedores respondem em streaming porque a
 // resposta completa de um modelo que raciocina leva minutos, e conexões paradas por tanto tempo são cortadas por
 // proxies, VPNs e redes móveis — no navegador isso vira um "Failed to fetch" sem mais explicação.
-async function lerSSE(r, aoEvento){
-  const reader = r.body.getReader(), dec = new TextDecoder(); let buffer = '';
-  for (;;) {
-    const {value, done} = await reader.read();
-    buffer += done ? '' : dec.decode(value, {stream: true});
-    const {eventos, resto} = parseSSE(done ? buffer + '\n\n' : buffer); buffer = resto;
-    for (const ev of eventos) aoEvento(ev);
-    if (done) return;
-  }
+let INATIVIDADE_SSE = 180000;   // 3 min sem nenhum byte da API = conexão morta; a Anthropic manda ping durante o raciocínio
+async function lerSSE(r, aoEvento, controle){
+  const reader = r.body.getReader(), dec = new TextDecoder(); let buffer = '', vigia = null;
+  const armar = () => { clearTimeout(vigia); vigia = setTimeout(() => controle?.abort(new Error(`a API ficou ${Math.round(INATIVIDADE_SSE / 60000)} min sem enviar dados`)), INATIVIDADE_SSE); };
+  try {
+    for (;;) {
+      armar();
+      const {value, done} = await reader.read();
+      buffer += done ? '' : dec.decode(value, {stream: true});
+      const {eventos, resto} = parseSSE(done ? buffer + '\n\n' : buffer); buffer = resto;
+      for (const ev of eventos) aoEvento(ev);
+      if (done) return;
+    }
+  } finally { clearTimeout(vigia); }
 }
+// fetch com o vigia de inatividade: o AbortController é o que interrompe a leitura quando o servidor some
+const fetchSSE = (url, opts) => { const controle = new AbortController(); return fetch(url, {...opts, signal: controle.signal}).then(r => ({r, controle})); };
 const cabAnthropic = chave => ({'x-api-key': chave, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'});
 const PROVEDORES = {
   gemini: {
@@ -80,18 +87,21 @@ const PROVEDORES = {
     },
     // sem temperature nem thinking: os modelos atuais rejeitam sampling e o seletor aceita modelos de qualquer geração
     async chamar(chave, modelo, prompt, aoProgresso){
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const {r, controle} = await fetchSSE('https://api.anthropic.com/v1/messages', {
         method: 'POST', headers: {'Content-Type': 'application/json', ...cabAnthropic(chave)},
         body: JSON.stringify({model: modelo, max_tokens: 16000, stream: true, messages: [{role: 'user', content: prompt}]})
       });
       if (!r.ok) { const d = await r.json().catch(() => ({})); return {ok: false, status: r.status, erro: d.error?.message}; }
       let texto = '', parada = null, erro = null;
+      aoProgresso?.('conectado', 0);
+      // os modelos atuais raciocinam antes de escrever: os blocos "thinking" chegam vazios (e pings no meio), e só depois vem o texto
       await lerSSE(r, ({json}) => {
         if (!json) return;
-        if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') { texto += json.delta.text; aoProgresso?.(texto.length); }
+        if (json.type === 'content_block_start' && json.content_block?.type === 'thinking') aoProgresso?.('raciocinando', 0);
+        else if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') { texto += json.delta.text; aoProgresso?.('respondendo', texto.length); }
         else if (json.type === 'message_delta') parada = json.delta?.stop_reason || parada;
         else if (json.type === 'error') erro = json.error?.message || 'erro no streaming';
-      });
+      }, controle);
       if (parada === 'refusal') return {ok: false, status: r.status, erro: 'O modelo recusou a solicitação. Tente outro modelo.'};
       if (erro) return {ok: false, status: 500, erro};
       return {ok: true, status: r.status, texto};
@@ -110,17 +120,18 @@ const PROVEDORES = {
     },
     // max_completion_tokens e sem temperature: os modelos de raciocínio rejeitam max_tokens e sampling
     async chamar(chave, modelo, prompt, aoProgresso){
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      const {r, controle} = await fetchSSE('https://api.openai.com/v1/chat/completions', {
         method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${chave}`},
         body: JSON.stringify({model: modelo, messages: [{role: 'user', content: prompt}], max_completion_tokens: 16000, stream: true})
       });
       if (!r.ok) { const d = await r.json().catch(() => ({})); return {ok: false, status: r.status, erro: d.error?.message}; }
       let texto = '', erro = null;
+      aoProgresso?.('conectado', 0);
       await lerSSE(r, ({data, json}) => {
         if (data === '[DONE]' || !json) return;
         if (json.error) erro = json.error.message || 'erro no streaming';
-        const t = json.choices?.[0]?.delta?.content; if (t) { texto += t; aoProgresso?.(texto.length); }
-      });
+        const t = json.choices?.[0]?.delta?.content; if (t) { texto += t; aoProgresso?.('respondendo', texto.length); }
+      }, controle);
       if (erro) return {ok: false, status: 500, erro};
       return {ok: true, status: r.status, texto};
     }
@@ -502,6 +513,8 @@ async function analisarTudo(){
 // "Failed to fetch" é o navegador dizendo que não houve resposta nenhuma; a causa real só aparece no console
 const erroDeRede = (P, e) => {
   const host = {Gemini: 'generativelanguage.googleapis.com', Groq: 'api.groq.com', Claude: 'api.anthropic.com', OpenAI: 'api.openai.com'}[P.nome] || 'o provedor';
+  // o abort do vigia chega ao leitor como "BodyStreamBuffer was aborted" (Chrome) ou AbortError, não com a nossa razão
+  if (e.name === 'AbortError' || /abort/i.test(e.message)) return `${P.nome} conectou mas ficou ${Math.round(INATIVIDADE_SSE / 60000)} min sem enviar dados, e a chamada foi encerrada. Costuma ser VPN, proxy ou rede que segura respostas em streaming; tente de novo ou em outra rede.`;
   return `Sem resposta da rede ao chamar ${P.nome} (${e.message}). Causas comuns: bloqueador de anúncios ou extensão de privacidade barrando ${host}; VPN, proxy ou rede corporativa cortando a conexão; sem internet. Abra o console do navegador (F12 → Console) para ver o motivo exato e tente de novo.`;
 };
 async function executarIA(montarPrompt){
@@ -522,10 +535,17 @@ async function executarIA(montarPrompt){
         iaOcupado = true; iaErro = `Tentando ${P.nome} · ${m}${tentativa ? ` (${tentativa + 1}ª tentativa)` : ''}…`; renderKpis();
         // progresso no lugar, sem refazer o cartão; o fetch que falha antes de qualquer resposta (rede, CORS, extensão
         // bloqueando, conexão cortada) lança TypeError "Failed to fetch": vira status 0, repetível e com mensagem explicada
-        const progresso = n => { const el = document.querySelector('#cardIA .erro'); if (el) el.textContent = `${P.nome} · ${m} respondendo… ${n} caracteres`; };
+        // a linha de status mostra fase e tempo decorrido, atualizada a cada segundo: o Opus passa minutos raciocinando antes da
+        // primeira palavra, e sem isso a tela parecia travada em "Tentando…"
+        const t0 = Date.now(); let fase = 'aguardando resposta', chars = 0;
+        const FASE = {conectado: 'conectado, aguardando o modelo', raciocinando: 'o modelo está raciocinando', respondendo: 'respondendo'};
+        const pintar = () => { const el = document.querySelector('#cardIA .erro'); if (el) el.textContent = `${P.nome} · ${m} · ${FASE[fase] || fase}… ${seg(Math.round((Date.now() - t0) / 1000))}${chars ? ` · ${chars} caracteres` : ''}`; };
+        const progresso = (f, n) => { fase = f; chars = n; pintar(); };
+        const relogio = setInterval(pintar, 1000);
         let res;
         try { res = await P.chamar(chave, m, prompt, progresso); }
         catch (e) { res = {ok: false, status: 0, erro: erroDeRede(P, e)}; }
+        finally { clearInterval(relogio); }
         if (res.ok) {
           iaTexto = res.texto || 'Resposta vazia.';
           iaMeta = {modelo: m, quando: Date.now()};
