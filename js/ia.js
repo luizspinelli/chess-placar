@@ -280,9 +280,9 @@ function relatorioIA(md, {parcial = false, meta = iaMeta} = {}){
   return `<div class="relatorio${parcial ? ' parcial' : ''}">
     <div class="cabecalho"><div><h3>Análise · ${TIPO[aba] || aba}</h3><small>${escHtml(estado.nick)} · ${escHtml(estado.rotulo)}${quando ? ` · ${quando}` : ''}${meta?.modelo ? ` · ${escHtml(meta.modelo)}` : ''}${parcial ? ' · <b>recebendo…</b>' : ''}</small></div><div class="numeros">${nums}</div></div>
     ${por.diagnostico || por.mudou ? `<div class="lede${por.mudou ? ' comMudou' : ''}">${bloco('diagnostico')}${bloco('mudou')}</div>` : ''}
-    ${tres([['manter', 'manter'], ['parar', 'parar'], ['estudar', 'estudar']])}
+    <div class="corpo">${tres([['manter', 'manter'], ['parar', 'parar'], ['estudar', 'estudar']])}
     ${tres([['plano', 'plano'], ['regras', 'regras'], ['acompanhar', 'acompanhar']])}
-    ${por.resto ? `<div class="resto">${bloco('resto')}</div>` : ''}
+    ${por.resto ? `<div class="resto">${bloco('resto')}</div>` : ''}</div>
   </div>`;
 }
 
@@ -616,14 +616,16 @@ function exportarPDF(){
     h4{font-size:9.5pt;margin:6px 0 2px}
     ul,ol{margin:4px 0 8px;padding-left:20px} li{margin:2px 0}
     .mini{font-size:8.5pt;columns:1;margin:0 0 5px} .cols{columns:3;column-gap:18px} .cols h4{break-after:avoid}
-    /* relatório de uma página: a mesma estrutura do painel (relatorioIA), em tinta */
-    .relatorio{font-size:8.2pt;line-height:1.32} .relatorio .cabecalho{display:flex;flex-direction:column;gap:6px;border-bottom:1.5px solid #1c1a17;padding-bottom:6px}
-    .relatorio .cabecalho h3{font-size:13pt;margin:0;color:#1c1a17;text-transform:none;letter-spacing:0} .relatorio .cabecalho small{color:#6b655b;font-size:8pt}
-    .relatorio .numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(90pt,1fr));gap:6px} .relatorio .numeros>div{border:1px solid #d9d2c2;padding:4px 7px} .relatorio .numeros>div>b{display:block;font-size:12pt;line-height:1.1} .relatorio .numeros small{font-size:7.5pt;color:#6b655b}
-    .relatorio .lede{border-left:3px solid #1c1a17;padding:4px 10px;margin:8px 0;display:grid;gap:10px} .relatorio .lede.comMudou{grid-template-columns:3fr 2fr}
-    .relatorio .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;align-items:start} .relatorio .resto{columns:2;column-gap:14px;margin-top:8px}
-    .relatorio section{border:1px solid #d9d2c2;border-top:3px solid #6b655b;padding:5px 8px;break-inside:avoid} .relatorio .manter{border-top-color:#2f9e5a} .relatorio .parar{border-top-color:#d0463c} .relatorio .estudar{border-top-color:#3b6fe8}
-    .relatorio section h3{font-size:7.5pt;text-transform:uppercase;letter-spacing:.08em;color:#6b655b;margin:0 0 3px;break-after:avoid} .relatorio p{margin:2px 0} .relatorio ol,.relatorio ul{margin:0;padding-left:14px} .relatorio li{margin:1.5px 0}
+    /* relatório impresso: o mesmo HTML de relatorioIA, mas como documento — cabeçalho e diagnóstico em largura total e as seções
+       fluindo em duas colunas de texto que atravessam as páginas; a grade de três colunas da tela não cabe numa folha */
+    .relatorio{font-size:9.5pt;line-height:1.4} .relatorio .cabecalho{display:flex;flex-direction:column;gap:6px;border-bottom:1.5px solid #1c1a17;padding-bottom:8px}
+    .relatorio .cabecalho h3{font-size:15pt;margin:0;color:#1c1a17;text-transform:none;letter-spacing:0} .relatorio .cabecalho small{color:#6b655b;font-size:8.5pt}
+    .relatorio .numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(90pt,1fr));gap:6px} .relatorio .numeros>div{border:1px solid #d9d2c2;padding:4px 8px} .relatorio .numeros>div>b{display:block;font-size:13pt;line-height:1.1} .relatorio .numeros small{font-size:8pt;color:#6b655b}
+    .relatorio .lede{border-left:3px solid #1c1a17;padding:4px 12px;margin:10px 0 12px;display:grid;gap:14px} .relatorio .lede.comMudou{grid-template-columns:3fr 2fr}
+    .relatorio .corpo{columns:2;column-gap:8mm} .relatorio .tres,.relatorio .resto{display:contents}
+    .relatorio section{display:block;break-inside:auto;margin:0 0 8px;padding:0 0 6px;border-bottom:1px solid #d9d2c2} .relatorio section h3{border-top:3px solid #6b655b;padding-top:5px} .relatorio li,.relatorio p{break-inside:avoid}
+    .relatorio .manter h3{border-top-color:#2f9e5a} .relatorio .parar h3{border-top-color:#d0463c} .relatorio .estudar h3{border-top-color:#3b6fe8}
+    .relatorio section h3{font-size:8pt;text-transform:uppercase;letter-spacing:.08em;color:#6b655b;margin:0 0 4px;break-after:avoid} .relatorio p{margin:3px 0} .relatorio ol,.relatorio ul{margin:0;padding-left:16px} .relatorio li{margin:2px 0}
     .rodape{margin-top:24px;font-size:9pt;color:#6b655b;border-top:1px solid #d9d2c2;padding-top:6px}
     @page{size:A4 portrait;margin:11mm 12mm} @media print{.cols{columns:3}}
   </style></head><body>
