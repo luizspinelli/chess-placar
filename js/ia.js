@@ -541,13 +541,13 @@ function exportarPDF(){
   </style></head><body>
   ${iaTexto ? relatorioIA(iaTexto) : `<h1>Análise de xadrez — ${esc(nick)}</h1>
   <p class="sub">Chess.com · ${esc(rotulo)} · modalidade: ${TIPO[aba]}</p>`}
-  <div class="placar" ${iaTexto ? 'hidden' : ''}>
+  ${iaTexto ? '' : `<div class="placar">
     <div><b>${$('nw').textContent}</b><span>vitórias</span></div>
     <div><b>${$('nd').textContent}</b><span>empates</span></div>
     <div><b>${$('nl').textContent}</b><span>derrotas</span></div>
     <div><b>${$('nr').textContent}</b><span>rating</span></div>
     <div><b>${esc($('rpct').textContent.replace(' de aproveitamento','') || '–')}</b><span>aproveitamento</span></div>
-    <div style="align-self:center;color:#6b655b;font-size:10pt">${esc($('rating').textContent.trim())}</div>
+    <div style="align-self:center;color:#6b655b;font-size:10pt">${esc($('rating').textContent.trim())}</div>`}
   </div>
   ${achados ? `<h2>Achados automáticos</h2><ul>${achados}</ul>` : ''}
   <h2>Indicadores</h2>${secoes}
