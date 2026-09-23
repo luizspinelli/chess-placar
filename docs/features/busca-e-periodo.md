@@ -12,6 +12,8 @@ Informe o nick e escolha o período. **Relativo**: atalhos de dias (1, 3, 7, 14,
 
 Nicks já usados ficam como chips abaixo do campo (até 10; × remove). Em telas até 1100 px o formulário fica recolhido atrás de "☰ Filtros e opções" (que vira "▲ Fechar filtros" quando aberto) e se fecha sozinho ao buscar. O botão "Veja um exemplo" da tela inicial busca `hikaru`.
 
+A **tela inicial** (`#inicio`) mostra em vez de só descrever: abaixo do campo do nick há uma miniatura do relatório de uma página desenhada em CSS (cabeçalho com blocos de números, diagnóstico e as três colunas coloridas — `.amostra`, sem imagem nem dado real, seguindo o tema), três argumentos em uma linha cada (motor Stockfish no navegador, relatório com plano exportável em PDF, nada sai da máquina) e um rodapé com o código e as licenças. Decisão: reforçar essa tela em vez de criar uma landing page à parte — quem chega com o próprio nick quer digitar e ver em cinco segundos, e uma página extra seria mais uma coisa a manter; uma captura de tela do perfil de exemplo foi descartada porque envelhece a cada mudança de layout, enquanto a miniatura em CSS acompanha a interface. No celular as colunas da miniatura empilham.
+
 ## Como funciona
 
 - `periodo()` devolve `[início, fim]` a partir do valor do input escondido `#periodo`: `ano` (1º de janeiro), `mes` (dia 1º), `mes-1` (mês anterior inteiro), `Nd`/`Nw` (**rolling**: N dias ou semanas contados a partir de agora, com hora), `Nm` (dia 1º de N−1 meses atrás), `custom` (campos de data/hora). Os atalhos só escrevem nesse input via `aplicarPeriodo`, para que `periodo()`, `periodoAnterior()`, `chaveBusca()` e `linkAtual()` continuem lendo um lugar só.
