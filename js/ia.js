@@ -1,5 +1,30 @@
 // Análise com IA: provedores, chaves, prompts (indicadores e dossiê de partidas), chamada com fallback e exportação em PDF.
 // o header dangerous-direct-browser-access libera CORS para chamadas feitas do navegador
+// SSE (text/event-stream): separa o buffer em eventos completos e devolve o resto ainda incompleto. Puro, para o teste.
+function parseSSE(buffer){
+  const partes = buffer.split(/\r?\n\r?\n/), resto = partes.pop(), eventos = [];
+  for (const bloco of partes) {
+    let event = 'message', data = '';
+    for (const l of bloco.split(/\r?\n/)) { if (l.startsWith('event:')) event = l.slice(6).trim(); else if (l.startsWith('data:')) data += (data ? '\n' : '') + l.slice(5).trim(); }
+    if (!data) continue;
+    let json = null; try { json = JSON.parse(data); } catch {}
+    eventos.push({event, data, json});
+  }
+  return {eventos, resto};
+}
+// lê a resposta em streaming e chama aoEvento para cada evento. Os provedores respondem em streaming porque a
+// resposta completa de um modelo que raciocina leva minutos, e conexões paradas por tanto tempo são cortadas por
+// proxies, VPNs e redes móveis — no navegador isso vira um "Failed to fetch" sem mais explicação.
+async function lerSSE(r, aoEvento){
+  const reader = r.body.getReader(), dec = new TextDecoder(); let buffer = '';
+  for (;;) {
+    const {value, done} = await reader.read();
+    buffer += done ? '' : dec.decode(value, {stream: true});
+    const {eventos, resto} = parseSSE(done ? buffer + '\n\n' : buffer); buffer = resto;
+    for (const ev of eventos) aoEvento(ev);
+    if (done) return;
+  }
+}
 const cabAnthropic = chave => ({'x-api-key': chave, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'});
 const PROVEDORES = {
   gemini: {
@@ -54,14 +79,22 @@ const PROVEDORES = {
       return (d.data || []).map(m => m.id);
     },
     // sem temperature nem thinking: os modelos atuais rejeitam sampling e o seletor aceita modelos de qualquer geração
-    async chamar(chave, modelo, prompt){
+    async chamar(chave, modelo, prompt, aoProgresso){
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', headers: {'Content-Type': 'application/json', ...cabAnthropic(chave)},
-        body: JSON.stringify({model: modelo, max_tokens: 16000, messages: [{role: 'user', content: prompt}]})
+        body: JSON.stringify({model: modelo, max_tokens: 16000, stream: true, messages: [{role: 'user', content: prompt}]})
       });
-      const d = await r.json().catch(() => ({}));
-      if (d.stop_reason === 'refusal') return {ok: false, status: r.status, erro: 'O modelo recusou a solicitação. Tente outro modelo.'};
-      return {ok: r.ok, status: r.status, erro: d.error?.message, texto: (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('')};
+      if (!r.ok) { const d = await r.json().catch(() => ({})); return {ok: false, status: r.status, erro: d.error?.message}; }
+      let texto = '', parada = null, erro = null;
+      await lerSSE(r, ({json}) => {
+        if (!json) return;
+        if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') { texto += json.delta.text; aoProgresso?.(texto.length); }
+        else if (json.type === 'message_delta') parada = json.delta?.stop_reason || parada;
+        else if (json.type === 'error') erro = json.error?.message || 'erro no streaming';
+      });
+      if (parada === 'refusal') return {ok: false, status: r.status, erro: 'O modelo recusou a solicitação. Tente outro modelo.'};
+      if (erro) return {ok: false, status: 500, erro};
+      return {ok: true, status: r.status, texto};
     }
   },
   openai: {
@@ -76,13 +109,20 @@ const PROVEDORES = {
       return (d.data || []).map(m => m.id);
     },
     // max_completion_tokens e sem temperature: os modelos de raciocínio rejeitam max_tokens e sampling
-    async chamar(chave, modelo, prompt){
+    async chamar(chave, modelo, prompt, aoProgresso){
       const r = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${chave}`},
-        body: JSON.stringify({model: modelo, messages: [{role: 'user', content: prompt}], max_completion_tokens: 16000})
+        body: JSON.stringify({model: modelo, messages: [{role: 'user', content: prompt}], max_completion_tokens: 16000, stream: true})
       });
-      const d = await r.json().catch(() => ({}));
-      return {ok: r.ok, status: r.status, erro: d.error?.message, texto: d.choices?.[0]?.message?.content || ''};
+      if (!r.ok) { const d = await r.json().catch(() => ({})); return {ok: false, status: r.status, erro: d.error?.message}; }
+      let texto = '', erro = null;
+      await lerSSE(r, ({data, json}) => {
+        if (data === '[DONE]' || !json) return;
+        if (json.error) erro = json.error.message || 'erro no streaming';
+        const t = json.choices?.[0]?.delta?.content; if (t) { texto += t; aoProgresso?.(texto.length); }
+      });
+      if (erro) return {ok: false, status: 500, erro};
+      return {ok: true, status: r.status, texto};
     }
   }
 };
@@ -460,6 +500,11 @@ async function analisarTudo(){
 }
 
 // laço da chamada: valida chave, monta o prompt, tenta o modelo escolhido e cai para os reservas
+// "Failed to fetch" é o navegador dizendo que não houve resposta nenhuma; a causa real só aparece no console
+const erroDeRede = (P, e) => {
+  const host = {Gemini: 'generativelanguage.googleapis.com', Groq: 'api.groq.com', Claude: 'api.anthropic.com', OpenAI: 'api.openai.com'}[P.nome] || 'o provedor';
+  return `Sem resposta da rede ao chamar ${P.nome} (${e.message}). Causas comuns: bloqueador de anúncios ou extensão de privacidade barrando ${host}; VPN, proxy ou rede corporativa cortando a conexão; sem internet. Abra o console do navegador (F12 → Console) para ver o motivo exato e tente de novo.`;
+};
 async function executarIA(montarPrompt){
   const p = provAtual(), P = PROVEDORES[p];
   const chave = $('iaChave').value.trim(), escolhido = $('iaModelo').value;
@@ -476,7 +521,12 @@ async function executarIA(montarPrompt){
     for (const m of modelos) {
       for (let tentativa = 0; tentativa < 3; tentativa++) {
         iaOcupado = true; iaErro = `Tentando ${P.nome} · ${m}${tentativa ? ` (${tentativa + 1}ª tentativa)` : ''}…`; renderKpis();
-        const res = await P.chamar(chave, m, prompt);
+        // progresso no lugar, sem refazer o cartão; o fetch que falha antes de qualquer resposta (rede, CORS, extensão
+        // bloqueando, conexão cortada) lança TypeError "Failed to fetch": vira status 0, repetível e com mensagem explicada
+        const progresso = n => { const el = document.querySelector('#cardIA .erro'); if (el) el.textContent = `${P.nome} · ${m} respondendo… ${n} caracteres`; };
+        let res;
+        try { res = await P.chamar(chave, m, prompt, progresso); }
+        catch (e) { res = {ok: false, status: 0, erro: erroDeRede(P, e)}; }
         if (res.ok) {
           iaTexto = res.texto || 'Resposta vazia.';
           iaMeta = {modelo: m, quando: Date.now()};
@@ -485,7 +535,7 @@ async function executarIA(montarPrompt){
           return;
         }
         ultimoErro = res.erro || `Erro ${res.status}`;
-        if (res.status === 503 || res.status === 429 || res.status >= 500) { await espera(2000 * (tentativa + 1)); continue; }
+        if (res.status === 0 || res.status === 503 || res.status === 429 || res.status >= 500) { await espera(2000 * (tentativa + 1)); continue; }
         if (res.status === 404 || res.status === 400 && /model/i.test(ultimoErro)) { modelosIA[p] = modelosIA[p].filter(x => x !== m); break; }
         throw new Error(ultimoErro);
       }
