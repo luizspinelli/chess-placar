@@ -1,6 +1,6 @@
 # Análise com IA e exportação em PDF
 
-**Arquivos**: `js/ia.js` (`PROVEDORES`, `blocoIA`, `executarIA`, `promptIndicadores`, `resumoParaIA`, `promptPartidas`, `dossiePartidas`, `mdParaHtml`, `exportarPDF`)
+**Arquivos**: `js/ia.js` (`PROVEDORES`, `blocoIA`, `analisarTudo`, `executarIA`, `promptCompleto`, `resumoParaIA`, `dossiePartidas`, `secoesMd`, `relatorioIA`, `exportarPDF`)
 
 ## Objetivo
 
@@ -47,6 +47,6 @@ Sem lances na busca (restauração do cache) a análise sai só com os indicador
 - A qualidade depende do modelo; Flash/Llama gratuitos dão análise mais rasa que Claude/GPT.
 
 ## Como testar
-Automatizado: `tests/texto.test.js` cobre `mdParaHtml`, `secoesMd` e `posicaoRelatorio` (inclusive o escape de HTML vindo da IA); `tests/dossie.test.js` cobre o tamanho do dossiê; `tests/sse.test.js` cobre `parseSSE` (eventos, resto incompleto, `[DONE]`). Para o streaming no navegador, interceptar `https://api.anthropic.com/**` com Playwright e responder `text/event-stream`; `route.abort()` reproduz o `Failed to fetch`.
+Automatizado: `tests/texto.test.js` cobre `secoesMd` e `posicaoRelatorio` (inclusive o escape de HTML vindo da IA); `tests/dossie.test.js` cobre o tamanho do dossiê; `tests/sse.test.js` cobre `parseSSE` (eventos, resto incompleto, `[DONE]`). Para o streaming no navegador, interceptar `https://api.anthropic.com/**` com Playwright e responder `text/event-stream`; `route.abort()` reproduz o `Failed to fetch`.
 
 Com uma chave gratuita do Gemini: Analisar em `7d` (deve sair "Ajustes imediatos", sem plano de 2 semanas) e em `ano` (com "O que mudou no período"). Em `file://` (sem motor) e servido por http (com motor): a segunda resposta pode citar lances e o "melhor:"; a primeira não. Parar o motor no meio: a IA não deve ser chamada. Restaurando do cache: análise só com indicadores e o aviso. Sem chave, a mensagem "Informe a chave da API". Exportar PDF com e sem análise.

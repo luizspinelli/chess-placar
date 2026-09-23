@@ -1,5 +1,5 @@
 // Modo streamer/OBS: overlay do placar e seus controles.
-let ovUltimaUrl = null, ovRatingInicio = null;
+let ovUltimaUrl = null;
 function renderOverlay(){
   const on = document.body.classList.contains('streamer');
   $('overlay').hidden = !on;

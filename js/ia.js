@@ -197,7 +197,7 @@ async function carregarModelos(){
 }
 
 // markdown da IA → [{titulo, html}], uma seção por título (o texto antes do primeiro título vira seção sem título).
-// É a base de mdParaHtml (seções em sequência) e de relatorioIA (seções em posições fixas). Sempre com HTML escapado.
+// É a base de relatorioIA, que encaixa cada seção numa posição fixa. Sempre com HTML escapado.
 function secoesMd(md){
   const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const inline = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>');
@@ -217,7 +217,6 @@ function secoesMd(md){
   fechar();
   return secoes;
 }
-function mdParaHtml(md){ return secoesMd(md).map(s => `<section>${s.titulo ? `<h3>${s.titulo}</h3>` : ''}${s.html}</section>`).join(''); }
 
 // em que posição do relatório cada seção entra, pelo título que o prompt pede (e sinônimos que os modelos usam)
 const POSICOES_RELATORIO = [
