@@ -616,9 +616,9 @@ function exportarPDF(){
     ul,ol{margin:4px 0 8px;padding-left:20px} li{margin:2px 0}
     .mini{font-size:9.5pt;columns:1;margin:0 0 6px} .cols{columns:2;column-gap:24px} .cols h4{break-after:avoid}
     /* relatório de uma página: a mesma estrutura do painel (relatorioIA), em tinta */
-    .relatorio{font-size:10pt;line-height:1.4;break-after:page} .relatorio .rodapePdf{margin-top:10px;font-size:8pt;color:#6b655b} .relatorio .cabecalho{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1.5px solid #1c1a17;padding-bottom:6px}
+    .relatorio{font-size:10pt;line-height:1.4;break-after:page} .relatorio .cabecalho{display:flex;flex-direction:column;gap:8px;border-bottom:1.5px solid #1c1a17;padding-bottom:8px}
     .relatorio .cabecalho h3{font-size:14pt;margin:0;color:#1c1a17;text-transform:none;letter-spacing:0} .relatorio .cabecalho small{color:#6b655b;font-size:9pt}
-    .relatorio .numeros{display:flex;gap:14px;text-align:right} .relatorio .numeros>div>b{display:block;font-size:13pt;line-height:1.1} .relatorio .numeros small{font-size:8pt;color:#6b655b}
+    .relatorio .numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(110pt,1fr));gap:8px} .relatorio .numeros>div{border:1px solid #d9d2c2;padding:5px 8px} .relatorio .numeros>div>b{display:block;font-size:13pt;line-height:1.1} .relatorio .numeros small{font-size:8pt;color:#6b655b}
     .relatorio .lede{border-left:3px solid #1c1a17;padding:6px 12px;margin:10px 0;display:grid;gap:12px} .relatorio .lede.comMudou{grid-template-columns:2fr 1fr}
     .relatorio .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px} .relatorio .resto{columns:2;column-gap:14px;margin-top:10px}
     .relatorio section{border:1px solid #d9d2c2;border-top:3px solid #6b655b;padding:6px 10px;break-inside:avoid} .relatorio .manter{border-top-color:#2f9e5a} .relatorio .parar{border-top-color:#d0463c} .relatorio .estudar{border-top-color:#3b6fe8}

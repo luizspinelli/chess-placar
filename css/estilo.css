@@ -276,12 +276,15 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 /* relatório de uma página (relatorioIA): cabeçalho com números, diagnóstico em destaque e as seções em duas fileiras de
    três colunas — manter · parar · estudar, plano · regras · acompanhar. Seções fora do esperado caem em .resto, em colunas. */
 .relatorio{font-size:.86rem;line-height:1.45;color:#d5d9e2;margin-top:14px}
-.relatorio .cabecalho{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px 20px;padding-bottom:8px;border-bottom:2px solid var(--border2)}
+/* cabeçalho: título em cima e os números numa faixa de blocos iguais que ocupa a largura toda — em tela larga, título à esquerda e
+   números à direita deixavam o meio vazio */
+.relatorio .cabecalho{display:flex;flex-direction:column;gap:10px}
 .relatorio .cabecalho h3{font-size:1.05rem;margin:0;color:var(--text)}
 .relatorio .cabecalho small{color:var(--muted)}
-.relatorio .numeros{display:flex;flex-wrap:wrap;gap:6px 18px;text-align:right}
-.relatorio .numeros>div>b{display:block;font-size:1.15rem;line-height:1.1;color:var(--text)}
-.relatorio .numeros small{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.relatorio .numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.relatorio .numeros>div{padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)}
+.relatorio .numeros>div>b{display:block;font-size:1.3rem;line-height:1.1;color:var(--text)}
+.relatorio .numeros small{font-size:.72rem;color:var(--muted)}
 .relatorio .lede{display:grid;gap:14px;margin:12px 0 0;padding:10px 14px;border-left:3px solid var(--accent);background:var(--surface2);border-radius:0 var(--r) var(--r) 0;font-size:.9rem}
 .relatorio .lede.comMudou{grid-template-columns:2fr 1fr}
 .relatorio .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
@@ -388,7 +391,7 @@ a:hover{text-decoration:underline}
 }
 /* celular */
 @media(max-width:820px){
-  .relatorio .tres{grid-template-columns:1fr} .relatorio .tres section:last-child:nth-child(odd){grid-column:auto} .relatorio .lede.comMudou{grid-template-columns:1fr} .relatorio .numeros{text-align:left}
+  .relatorio .tres{grid-template-columns:1fr} .relatorio .tres section:last-child:nth-child(odd){grid-column:auto} .relatorio .lede.comMudou{grid-template-columns:1fr} .relatorio .numeros{grid-template-columns:repeat(2,minmax(0,1fr))}
   main{padding:10px;gap:10px}
   form{grid-template-columns:1fr;gap:12px}
   .tally strong{font-size:1.9rem}
