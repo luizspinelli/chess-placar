@@ -84,3 +84,13 @@ test("periodo('hoje'): da meia-noite de hoje até agora", () => {
   assert.equal(duracaoEmDias('hoje'), 1, 'conta como um dia: a comparação com ontem sai automática');
   assert.equal(comparaAuto('hoje'), true);
 });
+
+test("periodoAnterior('hoje'): ontem inteiro, como os outros atalhos de calendário", () => {
+  $('periodo').value = 'hoje';
+  const [ini] = periodo();
+  const [a, z] = periodoAnterior(ini, null);
+  assert.equal(a.getHours(), 0, 'começa na meia-noite de ontem');
+  assert.equal(Math.round((ini - a) / 864e5), 1, 'recua exatamente um dia');
+  assert.equal(z.getTime(), ini.getTime() - 1000, 'termina um segundo antes de hoje');
+  assert.ok(z - a > 86e6, 'cobre o dia inteiro, não só as horas já decorridas de hoje');
+});

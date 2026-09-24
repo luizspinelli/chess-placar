@@ -74,7 +74,7 @@ js/periodo.js      período, comparação automática, blocos de evolução
 js/aberturas.js    PGN, posição a partir dos lances, modal do tabuleiro
 js/motor.js        Stockfish no Worker, fila UCI, cache de avaliações
 js/erros.js        classificação de erros, cruzamentos com relógio/fase/abertura
-js/indicadores.js  kpis(): as dez abas e os achados automáticos
+js/indicadores.js  kpis(): as nove abas de evidência e os achados do diagnóstico
 js/grafico.js      gráfico de rating ampliado (zoom, pan)
 js/ia.js           provedores, prompts, análise com IA, PDF
 js/partidas.js     lista de partidas, filtro, CSV

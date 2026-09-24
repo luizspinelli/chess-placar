@@ -500,7 +500,10 @@ $('abasKpi').addEventListener('click', e => {
 
 // o relatório tem vida própria: trocar de aba de evidência não pode refazer o bloco da IA (o campo da chave está nele)
 function renderAnalise(){
-  if (!kpiData) return;
+  if (!kpiData) { renderBotaoDiag(); $('analiseCorpo').innerHTML = ''; return; }
+  // a chave pode estar sendo digitada quando a atualização automática chega: guarda antes de refazer o bloco
+  const digitada = $('iaChave')?.value.trim();
+  if (digitada) gravarChave(provAtual(), digitada);
   $('analiseCorpo').innerHTML = blocoIA() + kpiData['Análise'];
   renderBotaoDiag();
 }
@@ -518,14 +521,12 @@ function renderKpis(){
 // ---- diagnóstico: vive no modal, alcançado pelo botão da barra ----
 // O botão leva o sinal do achado mais grave, senão o relatório — que é a promessa da tela inicial —
 // viraria um botão neutro que ninguém clica.
-const SINAIS = [['alerta', '▲'], ['atencao', '●'], ['bom', '✔']];
+const SINAIS = [['alerta', '▲'], ['atencao', '●'], ['bom', '✔'], ['info', 'ℹ']];
 function renderBotaoDiag(){
   const b = $('btnDiag');
   b.hidden = !kpiData;
   if (!kpiData) return;
-  const div = document.createElement('div');
-  div.innerHTML = kpiData['Análise'];
-  const achados = [...div.querySelectorAll('.achado')];
+  const achados = [...$('analiseCorpo').querySelectorAll('.achado')];
   const [classe, sinal] = SINAIS.find(([c]) => achados.some(a => a.classList.contains(c))) || ['', ''];
   b.className = classe;
   b.innerHTML = `${sinal ? `<i class="sinal">${sinal}</i>` : ''}Diagnóstico${achados.length ? ` <small>${achados.length}</small>` : ''}`;
@@ -533,6 +534,7 @@ function renderBotaoDiag(){
 function analiseFullscreen(abrir){
   $('modalAnalise').classList.toggle('aberto', abrir);
   $('btnDiag').setAttribute('aria-expanded', abrir);
+  (abrir ? $('anFechar') : $('btnDiag')).focus();
 }
 $('btnDiag').addEventListener('click', () => analiseFullscreen(true));
 $('anFechar').addEventListener('click', () => analiseFullscreen(false));

@@ -54,6 +54,7 @@ const filtros = abrir => {
 $('filtrosToggle').addEventListener('click', () => filtros(!document.body.classList.contains('filtrosAbertos')));
 // o painel cobre o conteúdo: fecha ao clicar fora e no Esc, como qualquer sobreposição
 document.addEventListener('click', e => {
+  if (!e.target.isConnected) return;   // alvo já removido do DOM (ex.: o × de um nick recente)
   if (document.body.classList.contains('filtrosAbertos') && !e.target.closest('#f, #filtrosToggle')) filtros(false);
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('filtrosAbertos')) filtros(false); });

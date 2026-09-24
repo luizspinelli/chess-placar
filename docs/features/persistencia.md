@@ -15,7 +15,7 @@ Duas camadas, cada uma para o que faz bem:
 | Chave | Conteúdo | Observação |
 |---|---|---|
 | `nicks` | até 10 nicks recentes | o mais recente primeiro |
-| `tema`, `modo` | `claro`/`escuro`, `simples`/`avancado` | URL tem precedência |
+| `tema` | `claro`/`escuro` | URL tem precedência |
 | `provedor`, `chave:{p}`, `modelo:{p}`, `lembrarChave` | configuração da IA | com "lembrar" desmarcado a chave fica só em `chavesMemoria` (vida da aba); desmarcar apaga as gravadas |
 | `motorProf` | profundidade escolhida | |
 | `nDossie` | tamanho do dossiê (100/200/300) | valor fora de `TAMANHOS_DOSSIE` cai para 100 |
@@ -49,7 +49,7 @@ Duas camadas, cada uma para o que faz bem:
 - Comportamento do IndexedDB em `file://` varia por navegador; no roteiro manual, conferir que o app segue funcionando com `armazem.falhou` (aviso na linha de status).
 
 ## Como testar
-Automatizado: `tests/armazem.test.js` (espelho sem IndexedDB, poda, cache do motor via armazém) e `tests/url.test.js` (abas no link, parâmetros do overlay).
+Automatizado: `tests/armazem.test.js` (espelho sem IndexedDB, poda, cache do motor via armazém) e `tests/url.test.js` (abas no link).
 
 
 Buscar, recarregar com o mesmo nick e filtros: o placar aparece na hora com "Dados salvos". Mudar um filtro: não restaura. Desmarcar "lembrar chave": a chave some do `localStorage` e permanece no campo até fechar a aba.

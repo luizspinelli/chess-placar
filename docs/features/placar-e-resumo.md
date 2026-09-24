@@ -22,7 +22,7 @@ Tudo isso vive na faixa do topo, acima das duas colunas. Com mais de uma modalid
 
 - **Sem resumo em prosa.** Ele existia quando o resumo era a única coisa visível no modo simples. Na faixa, ao lado dos números que descreve, virou eco.
 - **O gráfico no cabeçalho, não no resumo.** Numa tela de altura fixa a faixa do topo tem espaço horizontal sobrando à direita e o gráfico o aproveita, em vez de gastar altura da coluna de leitura.
-- **Sem modo simples e avançado.** Eram dois estados exclusivos para o mesmo conteúdo, com um toggle para navegar entre eles. Na página-documento o resumo abre e o aprofundamento está abaixo: a rolagem substitui o toggle, e some um eixo de estado de `linkAtual()`, do bootstrap e do CSS.
+- **Sem modo simples e avançado.** Eram dois estados exclusivos para o mesmo conteúdo, com um toggle para navegar entre eles. No painel o resumo fica no cabeçalho e o aprofundamento está nas colunas e no modal do diagnóstico — sem toggle, e com um eixo de estado a menos em `linkAtual()`, no bootstrap e no CSS.
 
 ## Limites
 

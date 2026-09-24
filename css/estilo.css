@@ -10,6 +10,9 @@ html[data-tema=claro]{
 }
 *{box-sizing:border-box}
 html,body{height:100%;overflow:hidden}
+/* exceção à casca: a tela inicial é mais alta que a viewport em telas baixas e precisa rolar */
+html:has(body.inicio),body.inicio{height:auto;overflow:visible}
+body.inicio main{height:auto;min-height:100vh}
 html[data-tema=claro] body{background:radial-gradient(1200px 600px at 20% -10%,#e6ebf7 0%,var(--bg) 60%)}
 html[data-tema=claro] input[type=date],html[data-tema=claro] input[type=time]{color-scheme:light}
 html[data-tema=claro] .achado p{color:#3b4150}
@@ -22,22 +25,23 @@ html[data-tema=claro] #modal{background:rgba(20,26,40,.45)}
 .seg button.ativa{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .seg button:hover{filter:none;color:var(--text)}
 body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#1a2030 0%,var(--bg) 60%);color:var(--text);font:15px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
-/* painel de altura fixa: a página nunca rola; quem rola são as três colunas, cada uma por dentro.
+/* painel de altura fixa: a página nunca rola; quem rola são as colunas, cada uma por dentro.
    A casca ocupa 100% da largura e da altura da viewport. */
 main{position:relative;display:grid;
   grid-template-columns:minmax(0,2.6fr) minmax(300px,1fr);
-  grid-template-rows:auto auto auto minmax(0,1fr);
-  grid-template-areas:"ctx ctx" "st st" "cab cab" "evid part";
+  grid-template-rows:auto auto auto auto minmax(0,1fr);
+  grid-template-areas:"ctx ctx" "st st" "prox prox" "cab cab" "evid part";
   gap:12px;height:100%;width:100%;padding:12px;min-height:0}
 #contexto{grid-area:ctx}
-#status,#prox{grid-area:st}
+#status{grid-area:st}
+#prox{grid-area:prox}
 #placar{grid-area:cab}
 #kpis{grid-area:evid}
 #partidas{grid-area:part}
 body:not(.listaAberta) main{
   grid-template-columns:minmax(0,1fr);
-  grid-template-rows:auto auto auto minmax(0,1fr) auto;
-  grid-template-areas:"ctx" "st" "cab" "evid" "part"}
+  grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
+  grid-template-areas:"ctx" "st" "prox" "cab" "evid" "part"}
 body:not(.listaAberta) #partidas{overflow:visible}
 body:not(.listaAberta) #partidas .pag,body:not(.listaAberta) #lista{display:none}
 /* cada coluna rola por dentro; a linha da grade e que limita a altura (minmax(0,1fr) + min-height:0) */
@@ -74,6 +78,7 @@ h2{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em
 .box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
 /* barra de contexto: o que esta na tela em uma linha, e a porta para os filtros */
 #contexto{display:flex;align-items:center;gap:8px;padding:0}
+.tituloPainel{flex:1;min-width:0;margin:0;display:flex}
 #contexto #filtrosToggle{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:var(--shadow);text-align:left;font-weight:600}
 #ctxTexto{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #contexto #filtrosToggle i{margin-left:auto;font-style:normal;color:var(--muted);transition:transform .15s}
@@ -138,7 +143,7 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 #status{color:var(--muted);margin:0;font-size:.85rem;padding:0 2px}
 #status:empty{display:none}
 #status.error{color:var(--loss);font-weight:600}
-#prox{display:none;position:relative;height:22px;margin-top:-8px;border:1px solid var(--border2);border-radius:999px;background:var(--surface2);overflow:hidden}
+#prox{display:none;position:relative;height:22px;border:1px solid var(--border2);border-radius:999px;background:var(--surface2);overflow:hidden}
 #proxBar{position:absolute;inset:0;width:0;background:linear-gradient(90deg,rgba(122,162,255,.35),rgba(122,162,255,.15));transition:width 1s linear}
 #proxTxt{position:relative;display:block;text-align:center;font-size:.75rem;line-height:20px;color:var(--muted)}
 
@@ -208,12 +213,11 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 #kpis{display:none;flex-direction:column;min-height:0;overflow:hidden;container-type:inline-size}
 /* o relatório: achados automáticos e o bloco da IA, em seção própria em vez de uma aba entre dez */
 
-#analiseCorpo{display:grid;grid-template-columns:1fr;gap:10px;align-items:start}
+#analiseCorpo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
 #analiseCorpo .ia{grid-column:1/-1}
 .tituloSecao{padding:14px 16px 0;margin:0}
 #kpis>.tituloSecao{padding:14px 16px 10px}
-#resumoGrafico{margin-top:14px}
-#resumo svg{width:100%;display:block}
+#resumoGrafico svg{width:100%;display:block}
 #resumoMini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .mini{padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;min-width:0}
 .mini h2{margin:0 0 6px}
@@ -227,7 +231,7 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 #dica{position:absolute;z-index:50;padding:10px 12px;font-size:.82rem;line-height:1.45;color:var(--text);background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--shadow)}
 #listaToggle{display:block;width:100%;text-align:left;padding:10px 14px;background:var(--surface);color:var(--text);font-weight:600;border:0;border-radius:var(--r)}
 body.listaAberta #listaToggle{border-bottom:1px solid var(--border);border-radius:var(--r) var(--r) 0 0}
-#kpiGrid{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start}
+#kpiGrid{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;display:flex;flex-wrap:wrap;align-content:flex-start;align-items:flex-start;gap:12px}
 .kpi{padding:14px 16px;min-width:0;background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
 .kpi.box{border-width:0 1px 1px 0;border-radius:0;box-shadow:none}
 #kpiGrid{background:transparent}
@@ -356,12 +360,10 @@ a:hover{text-decoration:underline}
 #modalAnalise .corpo{flex:1;min-height:0;overflow-y:auto;padding:0}
 /* em tela cheia a seção perde a moldura e os achados voltam a três colunas */
 #modalAnalise #analise{padding:16px 20px}
-#modalAnalise #analiseCorpo{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:1100px){#modalAnalise #analiseCorpo{grid-template-columns:1fr}}
 #modal svg{width:100%;height:100%;display:block;font-family:inherit}
 #modal .tip{position:absolute;pointer-events:none;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:.82rem;display:none;white-space:nowrap;box-shadow:var(--shadow)}
 
-@media(max-width:1280px){main{grid-template-columns:280px 1fr;grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);grid-template-areas:"form placar" "form kpis" "form lista"}}
 /* modo avançado no desktop: a página rola, a lista de partidas vai para baixo dos indicadores e o grid de cards
    ganha a largura toda. O grid tem 12 trilhas: card normal ocupa 4 (3 por linha) e o .span2 ocupa 6 (metade) — assim
    dois cards largos seguidos dividem a linha em vez de deixar um terço vazio; acima de 1700 px o normal ocupa 3 (4 por
@@ -390,11 +392,10 @@ a:hover{text-decoration:underline}
   .placarInfo,#resumo,#resumoGrafico{flex:1 1 100%;border-left:0;border-top:1px solid var(--border)}
   #resumoMini{grid-template-columns:repeat(2,minmax(0,1fr))}
   main,body:not(.listaAberta) main{grid-template-columns:none;grid-template-rows:none;grid-template-areas:none}
-  #contexto{flex-wrap:wrap}
+  #contexto{flex-wrap:wrap;position:sticky;top:0;z-index:30;background:var(--bg)}
   #contexto #filtrosToggle{flex:1 1 100%}
   body.inicio main{min-height:100vh;justify-content:center}
   body.inicio #inicio{margin:0 auto}
-  #resumoMini{grid-template-columns:repeat(4,minmax(0,1fr))}
   .abas{scrollbar-width:none}
   .abas::-webkit-scrollbar{display:none}
 }
@@ -410,11 +411,9 @@ a:hover{text-decoration:underline}
   #perfil .hist{margin-left:0;width:100%;gap:12px}
   #perfil .hist b{font-size:.9rem}
   .resumo{font-size:.78rem;padding:6px 10px}
-  /* placar inteiro grudado come 400px de tela no celular */
-  /* 10 abas num scroll horizontal ficam fora de alcance no celular: quebram em linhas */
-  /* dez abas em quatro linhas comiam 200 px a cada troca: no celular a barra vira um <select> com os grupos */
+  /* as abas em quatro linhas comiam 200 px a cada troca: no celular a barra vira um <select> com os grupos */
   .abasWrap{flex-wrap:nowrap;align-items:center;padding:8px;gap:8px}
-  .abasWrap{position:sticky;top:44px;z-index:4}
+  .abasWrap{position:sticky;top:0;z-index:4}
   .abasWrap #abasKpi{flex:1 1 auto;padding:0;justify-content:flex-start;min-width:0}
   .abasWrap #abasKpi .grupoAbas{display:none}
   #abasSel{display:block;width:100%;padding:9px 32px 9px 12px;font-size:.9rem;font-weight:600}
@@ -441,8 +440,8 @@ a:hover{text-decoration:underline}
   .meta{grid-column:2;text-align:left}
   .pag{flex-wrap:wrap;gap:6px}
   .pag input{width:auto;flex:1 1 150px;min-width:0}
-  #modal{padding:0}
-  #modal .janela{border-radius:0;border:0}
+  #modal,#modalAnalise{padding:0}
+  #modal .janela,#modalAnalise .janela{border-radius:0;border:0}
   #modal .topo{flex-wrap:wrap;gap:6px;padding:6px 44px 6px 8px;position:relative}
   #modal .topo .inline{margin-left:0;width:100%;justify-content:space-between}
   #modal .topo button.fechar{position:absolute;top:6px;right:8px}
@@ -455,7 +454,6 @@ a:hover{text-decoration:underline}
 }
 /* telas estreitas: KPIs em coluna única */
 @media(max-width:600px){
-  #kpiGrid{grid-template-columns:1fr}
-  .kpi.span2{grid-column:auto}
+  .kpi,.kpi.span2{flex:1 1 100%}
 }
 

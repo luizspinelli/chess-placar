@@ -28,7 +28,8 @@ function renderLista(){
   $('pagProx').disabled = pagina >= paginas;
   $('lista').scrollTop = 0;
 }
-// a lista começa recolhida em qualquer largura: é evidência para conferir depois de ler o diagnóstico, não a abertura da página
+// no desktop a lista abre por padrão (tem coluna própria); abaixo de 1100 px começa recolhida,
+// onde a página rola e 20 partidas abertas empurrariam o resto para fora da tela
 const rotuloLista = n => { const aberta = document.body.classList.contains('listaAberta'); $('listaToggle').textContent = aberta ? 'Ocultar partidas ▴' : `Ver as ${n} partida${n === 1 ? '' : 's'} ▾`; $('listaToggle').setAttribute('aria-expanded', aberta); };
 $('listaToggle').addEventListener('click', () => { document.body.classList.toggle('listaAberta'); rotuloLista(jogosAtuais.length); });
 $('pagAnt').addEventListener('click', () => { pagina--; renderLista(); });

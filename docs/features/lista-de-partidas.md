@@ -8,7 +8,7 @@ Ver e conferir as partidas que estão por trás dos números, achar o retrospect
 
 ## Como usar
 
-Terceira coluna do painel, com rolagem própria: a lista da modalidade ativa, mais recente primeiro. No desktop abre por padrão e pode ser recolhida pelo próprio título ("Ocultar partidas ▴"): fechada, ela vira uma linha no rodapé e devolve a largura para a Evidência (ver [layout](layout.md)). Abaixo de 1100 px, onde a página passa a rolar, volta a começar recolhida ("Ver as 65 partidas ▾"), porque 20 partidas abertas empurravam o resto para fora da tela: resultado (ponto colorido), adversário e rating, cor, motivo do fim, variação de rating, data e o link "ver". Paginação de 10/20/50. **Filtrar adversário** aceita parte do nick e mostra o retrospecto (`12 partidas · 10V 0E 2D`). **CSV** baixa as partidas listadas — respeitando o filtro.
+Segunda coluna do painel, com rolagem própria: a lista da modalidade ativa, mais recente primeiro. No desktop abre por padrão e pode ser recolhida pelo próprio título ("Ocultar partidas ▴"): fechada, ela vira uma linha no rodapé e devolve a largura para a Evidência (ver [layout](layout.md)). Abaixo de 1100 px, onde a página passa a rolar, volta a começar recolhida ("Ver as 65 partidas ▾"), porque 20 partidas abertas empurravam o resto para fora da tela: resultado (ponto colorido), adversário e rating, cor, motivo do fim, variação de rating, data e o link "ver". Paginação de 10/20/50. **Filtrar adversário** aceita parte do nick e mostra o retrospecto (`12 partidas · 10V 0E 2D`). **CSV** baixa as partidas listadas — respeitando o filtro.
 
 ## Como funciona
 

@@ -41,8 +41,8 @@
     <p class="rodapeInicio">Código aberto no <a href="https://github.com/luizspinelli/chess-placar" target="_blank" rel="noopener">GitHub</a> · Stockfish 19 (GPLv3) e chess.js servidos da própria página</p>
   </section>
   <header id="contexto">
-    <button type="button" id="filtrosToggle" aria-expanded="false" aria-controls="f"><span id="ctxTexto">Filtros e opções</span><i aria-hidden="true">⌄</i></button>
-    <button type="button" id="btnDiag" hidden aria-haspopup="dialog">Diagnóstico</button>
+    <h1 class="tituloPainel"><button type="button" id="filtrosToggle" aria-expanded="false" aria-controls="f"><span class="rotAmpliar">Placar Chess.com — </span><span id="ctxTexto">Filtros e opções</span><i aria-hidden="true">⌄</i></button></h1>
+    <button type="button" id="btnDiag" hidden aria-haspopup="dialog" aria-expanded="false">Diagnóstico</button>
     <button type="button" id="btnLink" title="Copia um link que abre esta página já com estes filtros">Copiar link</button>
     <div class="seg" id="tema"><button type="button" data-tema="escuro">Escuro</button><button type="button" data-tema="claro">Claro</button></div>
   </header>
@@ -137,9 +137,9 @@
       <div class="corpo" id="modalCorpo"><div class="tip" id="modalTip"></div></div>
     </div>
   </div>
-  <div id="modalAnalise">
+  <div id="modalAnalise" role="dialog" aria-modal="true" aria-labelledby="anTitulo">
     <div class="janela">
-      <div class="topo"><h2>Diagnóstico</h2><button type="button" class="fechar" id="anFechar" aria-label="Fechar">✕</button></div>
+      <div class="topo"><h2 id="anTitulo">Diagnóstico</h2><button type="button" class="fechar" id="anFechar" aria-label="Fechar">✕</button></div>
       <div class="corpo" id="anDestino">
         <section id="analise"><div id="analiseCorpo"></div></section>
       </div>

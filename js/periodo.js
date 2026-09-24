@@ -57,6 +57,7 @@ const recuaMes = (d, n) => { const x = new Date(d), dia = x.getDate(); x.setDate
 // inteiro, não só o mesmo trecho dele); no personalizado e nos rolling, a mesma duração imediatamente antes
 function periodoAnterior(ini, fim){
   const p = $('periodo').value, f = fim || new Date();
+  if (p === 'hoje') return [new Date(ini.getTime() - 864e5), new Date(ini.getTime() - 1000)];
   const meses = p === 'mes' || p === 'mes-1' ? 1 : p === 'ano' ? 12 : /^\d+m$/.test(p) ? parseInt(p) : 0;
   return meses ? [recuaMes(ini, meses), new Date(ini.getTime() - 1000)] : [new Date(ini.getTime() - (f - ini)), new Date(ini.getTime() - 1000)];
 }

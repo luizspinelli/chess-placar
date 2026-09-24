@@ -20,7 +20,9 @@ Abaixo, o **cabeçalho** numa faixa horizontal: perfil, abas de modalidade, plac
 - A grade tem quatro linhas (`auto auto auto minmax(0,1fr)`) e duas colunas: `"ctx ctx" "st st" "cab cab" "evid part"`. Só a última linha é elástica; o `minmax(0,1fr)` combinado com `min-height:0` nos filhos é o que faz as colunas recortarem em vez de esticar a página.
 - Cada coluna rola sozinha: `#kpiGrid` e `#lista`.
 - A coluna de **Partidas recolhe** (`body.listaAberta`): fechada, ela sai da faixa e vira uma linha no rodapé, e a grade passa a duas colunas — numa tela de 1920 px a Evidência vai de 1349 px para 1884 px. O bootstrap liga `listaAberta` acima de 1100 px de largura; no celular ela começa recolhida, como sempre.
-- O **Diagnóstico vive dentro de `#modalAnalise`** o tempo todo: `analiseFullscreen(abrir)` só alterna a classe `aberto`. Como a seção nunca sai do lugar, o campo da chave da IA que está dentro dela não corre risco. Fecha no ✕, no clique no fundo e no Esc.
+- O **Diagnóstico vive dentro de `#modalAnalise`** o tempo todo: `analiseFullscreen(abrir)` só alterna a classe `aberto`, põe o foco no ✕ ao abrir e o devolve ao botão ao fechar. Fecha no ✕, no clique no fundo e no Esc.
+- `renderAnalise()` **refaz `#analiseCorpo` por `innerHTML`**, e `render()` a chama a cada ciclo da atualização automática — o campo da chave da IA está dentro desse bloco. Por isso a função grava a chave digitada (`gravarChave`) **antes** de refazer: é a mesma proteção que os outros pontos de re-render já usavam. Não confundir com "a chave não corre risco": ela corre, e é esse `gravarChave` que a salva.
+- Os controles do Diagnóstico (`iaAnalisar`, `iaPdf`, `motorBtn`…) são delegados a partir de `#analiseCorpo`, não de `#kpiGrid`. `tests/delegacao.test.js` trava isso: quando o bloco mudou de nó e os listeners ficaram para trás, a feature inteira virou enfeite com os testes verdes.
 - `renderBotaoDiag()` monta o botão da barra a partir de `kpiData['Análise']`: parseia os `.achado`, pega o mais grave na ordem alerta → atenção → bom (`SINAIS`) e usa a classe dele para colorir a borda e o sinal.
 - `.faixa` é o cabeçalho horizontal: `.tally` de largura fixa, `.placarInfo` elástica, `#resumo` (os quatro mini-cards) elástico e `#resumoGrafico` de largura fixa à direita. As células do tally são flex centradas — sem isso os números ficam no topo e sobra um vazio embaixo, porque a faixa é mais alta que eles.
 - O `<form>` é `position:absolute` ancorado sob a barra e só aparece com `filtrosAbertos` no `body`. Sobrepor em vez de empurrar mantém a posição de leitura.
@@ -33,10 +35,10 @@ Abaixo, o **cabeçalho** numa faixa horizontal: perfil, abas de modalidade, plac
 ## Decisões
 
 - **Painel, não documento.** A janela é o quadro: tudo que importa cabe nela, e a leitura acontece dentro das colunas.
-- **O diagnóstico é modal, não coluna.** Numa coluna ele tinha ~485 px e roubava largura da Evidência o tempo todo, para um conteúdo que se lê de vez em quando. Em tela cheia tem ~1870 px e os achados voltam a três colunas. O preço é um clique — pago pelo botão da barra, que já diz que há algo a ver.
+- **O diagnóstico é modal, não coluna.** Numa coluna ele tinha ~485 px e roubava largura da Evidência o tempo todo, para um conteúdo que se lê de vez em quando. Em tela cheia tem ~1870 px e os achados ficam em três colunas. O preço é um clique — pago pelo botão da barra, que já diz que há algo a ver.
 - **O botão do diagnóstico carrega o sinal.** Um botão neutro escrito "Diagnóstico" não convida, e o relatório é a promessa da tela inicial. Com "▲ Diagnóstico 7" em vermelho, a tela diz que achou sete coisas e que uma delas é grave.
 - **O resumo em frase saiu.** "72 partidas de blitz, 36 vitórias… 56% de aproveitamento, rating de 1186 para 1270" repetia em prosa exatamente o que o tally e a `.placarInfo` já mostram em números, a 30 cm de distância. Só os quatro mini-cards subiram para a faixa.
-- **Cabeçalho enxuto é orçamento, não estética.** Cada pixel dele sai das três colunas. Barra (38 px) + cabeçalho (≈205 px) + gaps = ~279 px fixos; num notebook de 768 px sobram ~489 px para as colunas. Foi por isso que o tally caiu para `1.55rem`, o perfil para `7px` de padding e o sparkline para `88px`.
+- **Cabeçalho enxuto é orçamento, não estética.** Cada pixel dele sai das duas colunas. Barra (38 px) + cabeçalho (≈205 px) + gaps = ~279 px fixos; num notebook de 768 px sobram ~489 px para as colunas. Foi por isso que o tally caiu para `1.55rem`, o perfil para `7px` de padding e o sparkline para `88px`.
 - **Filtros atrás de um clique.** O formulário é "configura uma vez, lê muito"; 300 px permanentes de controles cobravam aluguel caro numa tela que não rola.
 - **A barra é rótulo, não só botão.** Com os filtros escondidos, alguma coisa precisa responder "de quem e de quando são estes números".
 - **O botão de ampliar o gráfico é só o ícone no cabeçalho.** Na faixa estreita ele competia com os números; o rótulo "Ampliar" continua no DOM (`.rotAmpliar`, escondido por `clip-path`) para leitor de tela.
@@ -45,7 +47,7 @@ Abaixo, o **cabeçalho** numa faixa horizontal: perfil, abas de modalidade, plac
 ## Limites
 
 - A premissa de "sem scroll de página" vale a partir de 1101 px. Abaixo disso a página rola.
-- Em telas muito baixas (< 600 px de altura) as três colunas ficam com pouca área útil; o conteúdo continua acessível, mas com muita rolagem interna.
+- Em telas muito baixas (< 600 px de altura) as colunas ficam com pouca área útil; o conteúdo continua acessível, mas com muita rolagem interna.
 - O painel de filtros rola por dentro quando não cabe (`max-height:calc(100vh - 80px)`).
 - O estado da coluna de Partidas não vai na URL nem fica salvo: é decisão da sessão.
 - A barra não mostra as modalidades marcadas nem os filtros de bot/comparação — só nick, modalidade em foco e período.
