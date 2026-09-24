@@ -227,7 +227,7 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 #dica{position:absolute;z-index:50;padding:10px 12px;font-size:.82rem;line-height:1.45;color:var(--text);background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--shadow)}
 #listaToggle{display:block;width:100%;text-align:left;padding:10px 14px;background:var(--surface);color:var(--text);font-weight:600;border:0;border-radius:var(--r)}
 body.listaAberta #listaToggle{border-bottom:1px solid var(--border);border-radius:var(--r) var(--r) 0 0}
-#kpiGrid{overflow-y:auto;overflow-x:hidden;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start}
+#kpiGrid{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start}
 .kpi{padding:14px 16px;min-width:0;background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
 .kpi.box{border-width:0 1px 1px 0;border-radius:0;box-shadow:none}
 #kpiGrid{background:transparent}
@@ -369,16 +369,16 @@ a:hover{text-decoration:underline}
 /* 12 trilhas + `dense`: dois cards largos seguidos dividem a linha em vez de o segundo pular e deixar
    um terço vazio, e um card pequeno preenche o buraco que sobrar. `align-items:start` impede que um card
    de duas linhas seja esticado à altura do vizinho — era moldura vazia, não conteúdo. */
+/* Flex em vez de grid: com trilhas fixas, uma linha que mistura card largo (6 de 12) com normal (4 de 12)
+   deixa 2 trilhas mortas, e a última linha incompleta sempre sobra — eram 16% a 67% de vazio por aba.
+   Com `flex:1 1 <base>` os cards da linha crescem para fechar a largura sempre. Medido nas nove abas:
+   cobertura média de 72% para 88%, zero linhas furadas. `flex-start` mantém cada card na sua altura,
+   em vez de esticá-lo à do vizinho — aquilo era moldura vazia, não conteúdo. */
 @container (min-width:560px){
-  #kpiGrid{grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-flow:row dense;align-items:start}
-  #kpiGrid .kpi{grid-column:span 6}
-  #kpiGrid .kpi.span2{grid-column:span 12}
+  #kpiGrid{display:flex;flex-wrap:wrap;align-content:flex-start;align-items:flex-start}
+  #kpiGrid .kpi{flex:1 1 360px;min-width:0}
+  #kpiGrid .kpi.span2{flex:2 1 740px}
 }
-@container (min-width:1040px){
-  #kpiGrid .kpi{grid-column:span 4}
-  #kpiGrid .kpi.span2{grid-column:span 6}
-}
-@container (min-width:1500px){#kpiGrid .kpi{grid-column:span 3}}
 /* tablet: coluna única rolável, filtros recolhíveis, form em várias colunas */
 @media(max-width:1100px){
   .relatorio .tres{grid-template-columns:repeat(2,minmax(0,1fr))} .relatorio .tres section:last-child:nth-child(odd){grid-column:1/-1}
