@@ -40,7 +40,7 @@ Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.ht
 | `intervalo` | `30`, `60`, `120`, `300` | segundos entre atualizações |
 | `tema` | `claro` | tema claro |
 
-A barra de endereço acompanha o que está na tela (busca e abas), então F5 e o link copiado reproduzem o mesmo painel — e a última busca fica guardada no navegador, aparecendo na hora enquanto a API é consultada de novo.
+A barra de endereço acompanha o que está na tela (busca e abas), então F5 e o link copiado reproduzem a mesma página — e a última busca fica guardada no navegador, aparecendo na hora enquanto a API é consultada de novo.
 
 ## Como funciona
 

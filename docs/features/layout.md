@@ -10,7 +10,7 @@ O app é uma ferramenta de evolução: você joga, depois abre para saber o que 
 
 Depois da busca, o topo mostra uma barra com **nick · modalidade · período** (`hikaru · rápida · últimos 3 meses`). Clicar nela abre o painel de filtros por cima do conteúdo; buscar, clicar fora ou Esc fecham. Ao lado ficam **Copiar link** e o seletor de tema — ajustes da vista, não filtros da busca.
 
-Abaixo da barra, em coluna única: placar, resumo ou indicadores, e a lista de partidas por último, recolhida atrás de "Ver as N partidas ▾".
+Abaixo da barra, em coluna única: **placar** e **resumo** (o cabeçalho), **Diagnóstico**, **Evidência** e, por último, a lista de partidas, recolhida atrás de "Ver as N partidas ▾".
 
 ## Como funciona
 
@@ -20,6 +20,7 @@ Abaixo da barra, em coluna única: placar, resumo ou indicadores, e a lista de p
 - `filtros(abrir)` alterna a classe e o `aria-expanded` do botão. Um listener no `document` fecha o painel no clique fora (`e.target.closest('#f, #filtrosToggle')`) e no Esc.
 - `#status` e `#prox` vivem **fora** do formulário, logo abaixo da barra: com o painel fechado eles são o único sinal de que a busca anda. `#status` tem `role="status"`, então leitor de tela anuncia "Buscando…" e os erros.
 - A lista de partidas recolhe em qualquer largura (`body.listaAberta`), não só no celular.
+- **Escada de largura**: `main` tem 1200 px; barra, placar, resumo, diagnóstico e partidas ficam num trilho de leitura de `--leitura` (860 px) centralizado; só a Evidência usa a coluna inteira. O painel de filtros acompanha o trilho (`width:min(100% - 32px,var(--leitura))`).
 
 ## Decisões
 
@@ -27,6 +28,8 @@ Abaixo da barra, em coluna única: placar, resumo ou indicadores, e a lista de p
 - **Filtros atrás de um clique em toda largura.** O formulário é "configura uma vez, lê muito"; 300 px permanentes de controles cobravam aluguel caro. O padrão já existia em telas até 1100 px (`#filtrosToggle`) — subiu para o desktop em vez de inventar outro.
 - **A barra é rótulo, não só botão.** "☰ Filtros e opções" não dizia o que estava na tela. Com os filtros escondidos, alguma coisa precisa responder "de quem e de quando são estes números".
 - **A página rola.** `html,body{overflow:hidden}` com cada seção rolando por dentro era o que um painel de transmissão precisa. Sem ele, some junto a família de `min-height:0` / `max-height:100%` que existia só para sustentar a casca.
+- **O degrau de largura é sinal, não decoração.** Texto quer linha curta (o trilho de 860 px fica perto de 72 caracteres); tabela e mapa de calor querem espaço. A Evidência alargando marca a troca de registro, de "leia isto" para "confira isto", sem precisar de um título explicando.
+- **Diagnóstico em duas colunas, não três.** No trilho de leitura, três colunas de achados dariam cartões de 270 px — grade, não documento. A Evidência é que usa 12 trilhas.
 
 ## Limites
 
@@ -35,4 +38,6 @@ Abaixo da barra, em coluna única: placar, resumo ou indicadores, e a lista de p
 
 ## Como testar
 
-`tests/periodo.test.js` cobre `rotuloPeriodo`. O resto é roteiro manual: buscar, conferir o rótulo da barra, trocar de aba de modalidade (o rótulo acompanha), abrir e fechar o painel pelos três caminhos (botão, clique fora, Esc), e conferir que buscar fecha o painel sozinho. Em 375 px de largura, o painel ocupa a tela toda e a lista continua recolhida.
+`tests/periodo.test.js` cobre `rotuloPeriodo`. O resto é roteiro manual: buscar, conferir o rótulo da barra, trocar de aba de modalidade (o rótulo acompanha), abrir e fechar o painel pelos três caminhos (botão, clique fora, Esc), e conferir que buscar fecha o painel sozinho. Em 375 px de largura, o painel ocupa a tela toda e a lista continua recolhida. A 1440 px, conferir o degrau: cabeçalho e diagnóstico a 860 px, Evidência a 1200 px.
+
+A API do Chess.com pode estar bloqueada no ambiente (responde 403). Nesse caso, gerar uma cópia do `index.html` com um stub de `fetch` servindo partidas sintéticas — ver o roteiro em `AGENTS.md`.
