@@ -47,6 +47,7 @@ Abaixo, o **cabeçalho** numa faixa horizontal: perfil, abas de modalidade, plac
 ## Limites
 
 - A premissa de "sem scroll de página" vale a partir de 1101 px. Abaixo disso a página rola.
+- **A tela inicial é a outra exceção, em qualquer largura.** `html:has(body.inicio),body.inicio{height:auto;overflow:visible}` devolve o scroll enquanto não houve busca, porque a miniatura do relatório passa da viewport num notebook de 768 px de altura (o porquê está em [busca-e-periodo.md](busca-e-periodo.md)). A regra é frágil: ela já saiu uma vez junto com um bloco `@media` removido e a tela inicial voltou a ser cortada — ao mexer no `overflow` global, conferir a tela inicial **antes** do painel.
 - Em telas muito baixas (< 600 px de altura) as colunas ficam com pouca área útil; o conteúdo continua acessível, mas com muita rolagem interna.
 - O painel de filtros rola por dentro quando não cabe (`max-height:calc(100vh - 80px)`).
 - O estado da coluna de Partidas não vai na URL nem fica salvo: é decisão da sessão.

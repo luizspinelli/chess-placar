@@ -4,6 +4,12 @@
 
 Painel que lê a API pública do Chess.com e mostra placar, evolução de rating, indicadores e análise das partidas de um jogador. Site estático em HTML, CSS e JS vanilla: sem servidor, sem build, sem cadastro — tudo roda no navegador.
 
+## Por que existe
+
+O Chess.com mostra o seu rating e a lista do que você jogou. Ele não responde as perguntas que fazem alguém melhorar: em que abertura você perde de verdade, se a derrota foi da posição ou do relógio, se você continua jogando depois da terceira derrota seguida, a que horas do dia você rende melhor. Responder isso na mão significa abrir dezenas de partidas uma a uma.
+
+Este painel lê as mesmas partidas públicas e devolve a resposta num relatório de uma página — com os achados já ordenados por gravidade. Com o Stockfish rodando no seu próprio navegador, ele vai além e aponta o lance em que cada derrota escapou; com uma chave de IA sua, transforma tudo num plano de duas semanas. Nenhuma das duas coisas é obrigatória, e nenhuma delas passa por um servidor nosso — não existe servidor nosso.
+
 ## O que faz
 
 - **Cabeçalho**: placar, aproveitamento, variação de rating e o gráfico do período, numa faixa só.

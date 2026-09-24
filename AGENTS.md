@@ -59,5 +59,6 @@ Painel que lê a API pública do Chess.com e mostra placar, indicadores e análi
 - `resumoParaIA` lê os cards genericamente (primeiras duas células de cada `<tr>`): linha de cabeçalho de coluna precisa ter a primeira célula vazia para ser ignorada.
 - Ao mexer em `promptCompleto`, manter a proibição de a IA afirmar erro em lance específico fora dos marcados pelo motor, e a exceção para esses — sem motor, isso é alucinação com cara de análise.
 - `resumoParaIA` omite de propósito linhas com poucas partidas e abas sensíveis em amostras curtas. Preservar ao mexer nele.
+- O `overflow:hidden` global do painel tem uma exceção que já foi apagada por acidente: `html:has(body.inicio),body.inicio{height:auto;overflow:visible}`. Ela saiu junto com um bloco `@media` vizinho e a tela inicial voltou a ser cortada acima de 1101 px — mexeu em `overflow` global ou removeu bloco de CSS por perto, abrir a tela inicial antes de dar por pronto.
 
 <!-- /bmad:context -->
