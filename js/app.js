@@ -69,6 +69,8 @@ $('btnLink').addEventListener('click', async () => {
   if (q.get('aba') && TIPO[q.get('aba')]) aba = q.get('aba');
   if (q.get('kpi')) abaKpi = q.get('kpi');   // renderKpis() volta para Resultados se o nome não existir
   if (q.get('auto') === '1') $('auto').checked = true;
+  // a coluna de partidas cabe no painel do desktop; no celular a lista empurraria o resto para fora da tela
+  if (innerWidth > 1100) document.body.classList.add('listaAberta');
   if (q.get('nick')) buscar(false);
   else { document.body.classList.add('inicio'); $('nickInicio').value = $('nick').value; }
 }

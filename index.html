@@ -114,7 +114,7 @@
       <div id="resumoMini"></div>
     </section>
     <section id="analise" class="box">
-      <h2>Diagnóstico</h2>
+      <div class="cabSecao"><h2>Diagnóstico</h2><button type="button" id="anAmpliar" class="ampliar" title="Ver o diagnóstico em tela cheia">⤢<span class="rotAmpliar"> Tela cheia</span></button></div>
       <div id="analiseCorpo"></div>
     </section>
   </div>
@@ -126,7 +126,6 @@
   </section>
 
   <section id="partidas" class="box">
-    <h2 class="tituloSecao">Partidas</h2>
     <button type="button" id="listaToggle" aria-expanded="false" aria-controls="lista">Ver as partidas ▾</button>
     <div class="pag">
       <span id="pagInfo"></span>
@@ -146,6 +145,12 @@
         <button type="button" class="fechar" id="modalFechar" aria-label="Fechar">✕</button></div>
       <div id="modalResumo"></div>
       <div class="corpo" id="modalCorpo"><div class="tip" id="modalTip"></div></div>
+    </div>
+  </div>
+  <div id="modalAnalise">
+    <div class="janela">
+      <div class="topo"><h2>Diagnóstico</h2><button type="button" class="fechar" id="anFechar" aria-label="Fechar">✕</button></div>
+      <div class="corpo" id="anDestino"></div>
     </div>
   </div>
   <div id="modalAb">

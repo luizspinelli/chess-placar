@@ -513,3 +513,18 @@ function renderKpis(){
   $('abasKpi').innerHTML = sel + GRUPOS.map(([nome, abas]) => `<div class="grupoAbas"><span class="grupoAba">${nome}</span><div class="botoes">${abas.filter(k => kpiData[k] !== undefined).map(k => `<button type="button" role="tab" aria-selected="${k === abaKpi}" data-aba="${k}" class="${k === abaKpi ? 'ativa' : ''}">${k}</button>`).join('')}</div></div>`).join('');
   $('kpiGrid').innerHTML = kpiData[abaKpi];
 }
+
+// ---- diagnóstico em tela cheia ----
+// O bloco da IA tem o campo da chave dentro dele, então a seção é MOVIDA para o modal e devolvida ao fechar.
+// Clonar duplicaria ids e perderia o que estiver digitado — a mesma armadilha que já custou a chave uma vez.
+function analiseFullscreen(abrir){
+  const modal = $('modalAnalise'), secao = $('analise');
+  modal.classList.toggle('aberto', abrir);
+  (abrir ? $('anDestino') : $('colDiag')).appendChild(secao);
+  if (!abrir) $('colDiag').appendChild(secao);   // volta para o fim da coluna, depois do resumo
+  $('anAmpliar').setAttribute('aria-expanded', abrir);
+}
+$('anAmpliar').addEventListener('click', () => analiseFullscreen(true));
+$('anFechar').addEventListener('click', () => analiseFullscreen(false));
+$('modalAnalise').addEventListener('click', e => { if (e.target === $('modalAnalise')) analiseFullscreen(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('modalAnalise').classList.contains('aberto')) analiseFullscreen(false); });

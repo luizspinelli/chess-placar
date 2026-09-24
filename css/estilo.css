@@ -35,6 +35,12 @@ main{position:relative;display:grid;
 #colDiag{grid-area:diag}
 #kpis{grid-area:evid}
 #partidas{grid-area:part}
+body:not(.listaAberta) main{
+  grid-template-columns:minmax(300px,1.05fr) minmax(0,2fr);
+  grid-template-rows:auto auto auto minmax(0,1fr) auto;
+  grid-template-areas:"ctx ctx" "st st" "cab cab" "diag evid" "part part"}
+body:not(.listaAberta) #partidas{overflow:visible}
+body:not(.listaAberta) #partidas .pag,body:not(.listaAberta) #lista{display:none}
 /* cada coluna rola por dentro; a linha da grade e que limita a altura (minmax(0,1fr) + min-height:0) */
 #colDiag{display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto;overflow-x:hidden}
 h1{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;margin:0 0 14px}
@@ -198,7 +204,12 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 #resumo{padding:14px 16px;flex:0 0 auto}
 /* o relatório: achados automáticos e o bloco da IA, em seção própria em vez de uma aba entre dez */
 #analise{display:none;padding:14px 16px;flex:0 0 auto}
-#analise>h2{margin-bottom:12px}
+.cabSecao{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.cabSecao h2{margin:0}
+.cabSecao .ampliar{margin-left:auto;padding:2px 6px;font-size:.9rem;line-height:1;background:none;border:0;color:var(--muted);opacity:.55}
+.cabSecao .ampliar:hover{opacity:1;color:var(--accent);background:none;border:0;filter:none}
+.cabSecao .rotAmpliar{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
 #analiseCorpo{display:grid;grid-template-columns:1fr;gap:10px;align-items:start}
 #analiseCorpo .ia{grid-column:1/-1}
 .tituloSecao{padding:14px 16px 0;margin:0}
@@ -221,7 +232,8 @@ html[data-tema=claro] #resumoTexto{color:#2b3140}
 .ajuda{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--muted);font-size:.65rem;font-weight:700;margin-left:6px;cursor:help;vertical-align:middle;text-transform:none;letter-spacing:0}
 .ajuda:hover{color:var(--accent);border-color:var(--accent)}
 #dica{position:absolute;z-index:50;padding:10px 12px;font-size:.82rem;line-height:1.45;color:var(--text);background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--shadow)}
-#listaToggle{display:none}
+#listaToggle{display:block;width:100%;text-align:left;padding:10px 14px;background:var(--surface);color:var(--text);font-weight:600;border:0;border-radius:var(--r)}
+body.listaAberta #listaToggle{border-bottom:1px solid var(--border);border-radius:var(--r) var(--r) 0 0}
 #kpiGrid{overflow-y:auto;overflow-x:hidden;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start}
 .kpi{padding:14px 16px;min-width:0;background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
 .kpi.box{border-width:0 1px 1px 0;border-radius:0;box-shadow:none}
@@ -336,19 +348,25 @@ a:hover{text-decoration:underline}
 #modalAb .aviso{margin:0;font-size:.82rem;color:var(--muted);text-align:center}
 #modalAb .corpo a{font-size:.85rem;color:var(--accent);text-decoration:none}
 #modalAb .corpo a:hover{text-decoration:underline}
-#modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.7);backdrop-filter:blur(4px);padding:24px}
-#modal.aberto{display:flex;flex-direction:column}
-#modal .janela{flex:1;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);min-height:0;box-shadow:var(--shadow);overflow:hidden}
-#modal .topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
-#modal .topo h2{margin:0}
+#modal,#modalAnalise{display:none;position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.7);backdrop-filter:blur(4px);padding:24px}
+#modal.aberto,#modalAnalise.aberto{display:flex;flex-direction:column}
+#modal .janela,#modalAnalise .janela{flex:1;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);min-height:0;box-shadow:var(--shadow);overflow:hidden}
+#modal .topo,#modalAnalise .topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
+#modal .topo h2,#modalAnalise .topo h2{margin:0}
 #modalResumo{padding:5px 14px;font-size:.82rem;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
 #modalResumo:empty{display:none}
 #modal .topo .abas{border:0;background:none;padding:0}
 #modal .topo .inline{margin-left:auto;font-size:.82rem}
 #modal .topo .inline label{font-weight:500}
 #modal .topo .inline select{padding:3px 24px 3px 8px;font-size:.8rem}
-#modal .topo button.fechar{padding:4px 10px;background:var(--surface);color:var(--text);border:1px solid var(--border2)}
+#modal .topo button.fechar,#modalAnalise .topo button.fechar{padding:4px 10px;background:var(--surface);color:var(--text);border:1px solid var(--border2)}
 #modal .corpo{flex:1;min-height:0;position:relative;padding:12px}
+#modalAnalise .corpo{flex:1;min-height:0;overflow-y:auto;padding:0}
+/* em tela cheia a seção perde a moldura e os achados voltam a três colunas */
+#modalAnalise #analise{border:0;box-shadow:none;border-radius:0;display:block!important;padding:16px 20px}
+#modalAnalise #analise .cabSecao{display:none}
+#modalAnalise #analiseCorpo{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1100px){#modalAnalise #analiseCorpo{grid-template-columns:1fr}}
 #modal svg{width:100%;height:100%;display:block;font-family:inherit}
 #modal .tip{position:absolute;pointer-events:none;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:.82rem;display:none;white-space:nowrap;box-shadow:var(--shadow)}
 
@@ -372,10 +390,7 @@ a:hover{text-decoration:underline}
   .faixa{flex-wrap:wrap}
   .faixa .tally{flex:1 1 100%;width:auto}
   .placarInfo,#resumoGrafico{flex:1 1 100%;border-left:0;border-top:1px solid var(--border)}
-  #listaToggle{display:block;width:100%;text-align:left;padding:12px 14px;background:var(--surface);color:var(--text);font-weight:600;border:0;border-radius:var(--r)}
-  body.listaAberta #listaToggle{border-bottom:1px solid var(--border);border-radius:var(--r) var(--r) 0 0}
-  body:not(.listaAberta) #partidas .pag,body:not(.listaAberta) #lista{display:none}
-  #partidas>.tituloSecao{display:none}
+  body:not(.listaAberta) main{grid-template-columns:none;grid-template-rows:none;grid-template-areas:none}
   body.inicio main{min-height:100vh;justify-content:center}
   body.inicio #inicio{margin:0 auto}
   #resumoMini{grid-template-columns:repeat(4,minmax(0,1fr))}
