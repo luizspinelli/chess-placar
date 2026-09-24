@@ -88,12 +88,12 @@ body.inicio form,body.inicio #placar,body.inicio #kpis,body.inicio #partidas,bod
 #inicio .amostraCols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 #inicio .amostraCols>div{padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--border2);border-radius:4px}
 #inicio .amostraCols .manter{border-top-color:var(--win)}#inicio .amostraCols .parar{border-top-color:var(--loss)}#inicio .amostraCols .estudar{border-top-color:var(--accent)}
-#inicio .amostra small{display:block;margin-top:10px;color:var(--muted);text-align:center}
+#inicio .amostra+small{display:block;max-width:620px;margin:10px auto 0;color:var(--muted);text-align:center}
 #inicio .porque{list-style:none;padding:0;margin:22px auto 0;max-width:680px;text-align:left;display:grid;gap:10px}
 #inicio .porque li{font-size:.9rem;color:var(--muted);padding-left:14px;border-left:2px solid var(--border2)}
 #inicio .porque li b{color:var(--text)}
 #inicio .rodapeInicio{margin:22px 0 0;font-size:.78rem;color:var(--muted)}
-#inicio .rodapeInicio a{color:var(--muted)}
+#inicio .rodapeInicio a{color:var(--accent)}
 h2{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 10px}
 .box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
 form{grid-area:form;display:grid;gap:12px;padding:18px;min-width:0;align-content:start;overflow-y:auto;max-height:100%}
@@ -370,6 +370,9 @@ a:hover{text-decoration:underline}
 @media(min-width:1101px){
   html:has(body:not(.simples):not(.inicio):not(.streamer)){height:auto;overflow:auto}
   body:not(.simples):not(.inicio):not(.streamer){height:auto;overflow:visible}
+  /* a tela inicial ficou mais alta que a viewport em telas baixas: centrada quando cabe, rolando quando não cabe */
+  html:has(body.inicio),body.inicio{height:auto;overflow:visible}
+  body.inicio main{height:auto;min-height:100vh}
   body:not(.simples):not(.inicio):not(.streamer) main{grid-template-columns:300px minmax(0,1fr);grid-template-rows:auto auto auto;grid-template-areas:"form placar" "form kpis" "form lista";height:auto;min-height:100vh;align-content:start}
   body:not(.simples):not(.inicio):not(.streamer) form{position:sticky;top:16px;max-height:calc(100vh - 32px);align-self:start}
   body:not(.simples):not(.inicio):not(.streamer) #kpis,body:not(.simples):not(.inicio):not(.streamer) #kpiGrid{overflow:visible}

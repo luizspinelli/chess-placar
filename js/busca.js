@@ -217,7 +217,7 @@ async function buscar(atualizacao){
     falhou = true;
     status.className = 'error';
     status.textContent = msg;
-    if ($('placar').style.display !== 'block' && !atualizacao) { document.body.classList.add('inicio'); $('inicio').querySelector('.erro')?.remove(); $('inicio').insertAdjacentHTML('beforeend', `<p class="erro">${escHtml(msg)}</p>`); }
+    if ($('placar').style.display !== 'block' && !atualizacao) { document.body.classList.add('inicio'); $('inicio').querySelector('.erro')?.remove(); $('inicio').querySelector('.exemplo').insertAdjacentHTML('afterend', `<p class="erro">${escHtml(msg)}</p>`); }
   } finally {
     ocupado = false;
     $('btn').disabled = false;
