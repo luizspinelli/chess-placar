@@ -60,16 +60,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.b
 $('btnInicio').addEventListener('click', () => { const n = $('nickInicio').value.trim(); if (!n) { $('nickInicio').focus(); return; } $('nick').value = n; buscar(false); });
 $('nickInicio').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnInicio').click(); });
 $('exemplo').addEventListener('click', e => { e.preventDefault(); $('nick').value = 'hikaru'; $('nickInicio').value = 'hikaru'; buscar(false); });
-$('btnAgora').addEventListener('click', () => {
-  if (!$('nick').reportValidity()) return;
-  const d = new Date(), p = n => String(n).padStart(2,'0');
-  $('data').value = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
-  $('hora').value = `${p(d.getHours())}:${p(d.getMinutes())}`;
-  $('dataFim').value = '';
-  $('periodo').value = 'custom'; $('custom').hidden = false;
-  $('auto').checked = true;
-  buscar(false);
-});
 const MAX_BUSCAS = 5;   // buscas guardadas (as mais recentes); cada uma tem ~2 KB por partida
 function chaveBusca(nick){ return JSON.stringify({nick, periodo: $('periodo').value, data: $('data').value, hora: $('hora').value, dataFim: $('dataFim').value, horaFim: $('horaFim').value, tc: [...document.querySelectorAll('input[name=tc]:checked')].map(i => i.value), bots: $('soHumanos').checked, comparar: $('comparar').checked}); }
 // guarda a busca no armazém sem o PGN bruto, mas com os lances já parseados (g._pgn, ~1,8 KB por partida): é o que deixa

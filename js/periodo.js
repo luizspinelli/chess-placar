@@ -3,6 +3,7 @@ $('data').value = new Date().toISOString().slice(0,10);
 
 function periodo(){
   const p = $('periodo').value, hoje = new Date(), y = hoje.getFullYear(), m = hoje.getMonth();
+  if (p === 'hoje') return [new Date(y, m, hoje.getDate()), null];
   if (p === 'mes') return [new Date(y, m, 1), null];
   if (p === 'mes-1') return [new Date(y, m-1, 1), new Date(y, m, 1, 0, 0, -1)];
   if (p === 'ano') return [new Date(y, 0, 1), null];
@@ -17,7 +18,7 @@ function periodo(){
 // nome curto do período para a barra de contexto ("últimas 2 semanas"); o rótulo com as datas é `estado.rotulo`
 const UNI_PERIODO = {d: ['dia', 'dias', 'último', 'últimos'], w: ['semana', 'semanas', 'última', 'últimas'], m: ['mês', 'meses', 'último', 'últimos']};
 function rotuloPeriodo(v = $('periodo').value){
-  const FIXOS = {mes: 'este mês', 'mes-1': 'mês passado', ano: 'este ano'};
+  const FIXOS = {hoje: 'hoje', mes: 'este mês', 'mes-1': 'mês passado', ano: 'este ano'};
   if (FIXOS[v]) return FIXOS[v];
   const m = v.match(/^(\d+)([dwm])$/);
   if (!m) return 'período escolhido';
@@ -60,7 +61,7 @@ function periodoAnterior(ini, fim){
   return meses ? [recuaMes(ini, meses), new Date(ini.getTime() - 1000)] : [new Date(ini.getTime() - (f - ini)), new Date(ini.getTime() - 1000)];
 }
 // duração aproximada em dias, só para decidir se a comparação sai automática
-const duracaoEmDias = v => { const m = v.match(/^(\d+)([dwm])$/); return m ? m[1] * (m[2] === 'w' ? 7 : m[2] === 'm' ? 30 : 1) : v === 'mes' || v === 'mes-1' ? 30 : Infinity; };
+const duracaoEmDias = v => { const m = v.match(/^(\d+)([dwm])$/); return m ? m[1] * (m[2] === 'w' ? 7 : m[2] === 'm' ? 30 : 1) : v === 'hoje' ? 1 : v === 'mes' || v === 'mes-1' ? 30 : Infinity; };
 // em recorte relativo curto a comparação com o período anterior vem ligada; no ano inteiro não,
 // porque seriam 12 arquivos mensais a mais só para o comparativo
 const comparaAuto = v => duracaoEmDias(v) <= 190;

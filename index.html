@@ -57,7 +57,7 @@
       <div id="relativo">
         <div class="grade"><span>Dias</span><div style="--cols:5"><button type="button" data-p="1d">1</button><button type="button" data-p="3d">3</button><button type="button" data-p="7d">7</button><button type="button" data-p="14d">14</button><button type="button" data-p="30d">30</button></div></div>
         <div class="grade"><span>Meses</span><div><button type="button" data-p="3m">3</button><button type="button" data-p="6m">6</button><button type="button" data-p="12m">12</button></div></div>
-        <div class="grade"><span>Calendário</span><div><button type="button" data-p="mes" title="Do dia 1º deste mês até agora">Mês</button><button type="button" data-p="mes-1" title="Mês passado inteiro">Anterior</button><button type="button" data-p="ano" title="De 1º de janeiro até agora">Ano</button></div></div>
+        <div class="grade"><span>Calendário</span><div><button type="button" data-p="hoje" title="Desde a meia-noite de hoje">Hoje</button><button type="button" data-p="mes" title="Do dia 1º deste mês até agora">Mês</button><button type="button" data-p="mes-1" title="Mês passado inteiro">Anterior</button><button type="button" data-p="ano" title="De 1º de janeiro até agora">Ano</button></div></div>
         <div class="livre"><input id="pNum" type="number" min="1" max="999" placeholder="duração" aria-label="Duração"><select id="pUni" aria-label="Unidade de tempo"><option value="d">dias</option><option value="w">semanas</option><option value="m">meses</option></select></div>
       </div>
     </div>
@@ -85,10 +85,6 @@
       </select>
     </div>
     <button type="submit" id="btn">Buscar partidas</button>
-    <button type="button" id="btnAgora">Monitorar a partir de agora</button>
-    <div class="acoes">
-      <div class="seg" id="modo"><button type="button" data-modo="simples">Simples</button><button type="button" data-modo="avancado">Avançado</button></div>
-    </div>
   </form>
 
   <section id="placar" class="box">
@@ -107,14 +103,20 @@
   </section>
 
   <section id="resumo" class="box" hidden>
-    <div class="cab"><h2>Resumo</h2><button type="button" id="verMais">Ver análise completa →</button></div>
     <div id="resumoTexto"></div>
     <div id="resumoGrafico"></div>
     <div id="resumoMini"></div>
   </section>
 
+  <!-- o relatório: achados automáticos e, com chave configurada, o texto da IA. Não é mais uma aba entre dez -->
+  <section id="analise" class="box">
+    <h2>Diagnóstico</h2>
+    <div id="analiseCorpo"></div>
+  </section>
+
   <section id="kpis" class="box">
-    <div class="abasWrap"><div id="abasKpi" class="abas" role="tablist"></div><button type="button" id="verMenos" title="Voltar ao resumo">← Resumo</button></div>
+    <h2 class="tituloSecao">Evidência</h2>
+    <div class="abasWrap"><div id="abasKpi" class="abas" role="tablist"></div></div>
     <div id="kpiGrid"></div>
   </section>
 

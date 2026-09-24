@@ -62,6 +62,7 @@ test('evolucaoDoPeriodo(): blocos na unidade do atalho, agrupamento acima de 12,
 });
 
 test('rotuloPeriodo(): nome curto do período, com o gênero certo na unidade', () => {
+  assert.equal(rotuloPeriodo('hoje'), 'hoje');
   assert.equal(rotuloPeriodo('mes'), 'este mês');
   assert.equal(rotuloPeriodo('mes-1'), 'mês passado');
   assert.equal(rotuloPeriodo('ano'), 'este ano');
@@ -71,4 +72,15 @@ test('rotuloPeriodo(): nome curto do período, com o gênero certo na unidade', 
   assert.equal(rotuloPeriodo('1d'), 'último dia');
   assert.equal(rotuloPeriodo('1w'), 'última semana');
   assert.equal(rotuloPeriodo('custom'), 'período escolhido');
+});
+
+test("periodo('hoje'): da meia-noite de hoje até agora", () => {
+  $('periodo').value = 'hoje';
+  const [ini, fim] = periodo(), agora = new Date();
+  assert.equal(fim, null, 'sem fim: vale até agora');
+  assert.equal(ini.getHours(), 0); assert.equal(ini.getMinutes(), 0);
+  assert.equal(ini.getDate(), agora.getDate());
+  assert.equal(ini.getMonth(), agora.getMonth());
+  assert.equal(duracaoEmDias('hoje'), 1, 'conta como um dia: a comparação com ontem sai automática');
+  assert.equal(comparaAuto('hoje'), true);
 });

@@ -6,8 +6,9 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 
 ## O que faz
 
-- **Modo simples**: placar, resumo em três frases, gráfico de rating, forma recente, brancas × pretas, sequência e ritmo.
-- **Modo avançado**: dez abas de indicadores (Análise, Resultados, Rating, Aberturas, Lances e relógio, Erros e precisão, Adversários, Sessões, Horários, Volume), com achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas.
+- **Cabeçalho**: placar, resumo em uma frase, gráfico de rating, forma recente, brancas × pretas, sequência e ritmo.
+- **Diagnóstico**: achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas — e, com chave configurada, o relatório da IA.
+- **Evidência**: nove abas de indicadores (Resultados, Rating, Aberturas, Lances e relógio, Erros e precisão, Adversários, Sessões, Horários, Volume).
 - **Evolução dentro do período**: pedindo 4 semanas, 3 meses ou 5 dias, a aba *Resultados* abre com a quebra nos mesmos blocos — semana a semana, mês a mês, dia a dia — com aproveitamento e variação de rating de cada um. Acima de 12 blocos eles são agrupados (30 dias viram 10 blocos de 3 dias).
 - **Comparação de períodos**: faixa no placar com partidas, aproveitamento, rating e precisão contra o período anterior — mês em curso × mês anterior inteiro, ano × ano anterior; nos períodos rolling e no personalizado, a mesma duração imediatamente antes. Vem ligada nos períodos relativos de até ~6 meses (desmarcar vale para as buscas seguintes) e entra também nos achados automáticos e na análise com IA.
 - **Gráfico interativo**: rating por partida ou por tempo, com zoom, média móvel e link para cada partida.
@@ -21,23 +22,22 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 
 ## Uso
 
-Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. Depois da busca, a barra do topo mostra **nick · modalidade · período** e abre os filtros num painel. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para compartilhar uma vista exata.
+Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. Depois da busca, a barra do topo mostra **nick · modalidade · período** e abre os filtros num painel. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário — Hoje, Mês, Anterior, Ano — (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para compartilhar uma vista exata.
 
 ## Parâmetros de URL
 
 | Parâmetro | Valores | Descrição |
 |---|---|---|
 | `nick` | texto | nick no Chess.com (obrigatório para abrir já buscando) |
-| `periodo` | `ano` (padrão), `mes`, `mes-1`, `Nd`, `Nw`, `Nm`, `custom` | período analisado: `7d` = últimos 7 dias, `2w` = 2 semanas, `3m` = 3 meses (a partir do dia 1º) |
+| `periodo` | `ano` (padrão), `hoje`, `mes`, `mes-1`, `Nd`, `Nw`, `Nm`, `custom` | período analisado: `7d` = últimos 7 dias, `2w` = 2 semanas, `3m` = 3 meses (a partir do dia 1º) |
 | `data`, `hora`, `dataFim`, `horaFim` | `YYYY-MM-DD`, `HH:MM` | intervalo do período `custom` (fim opcional) |
 | `tc` | `bullet,blitz,rapid,daily` | modalidades consideradas |
 | `aba` | `bullet`, `blitz`, `rapid`, `daily` | modalidade em foco (só quando a busca tem mais de uma) |
-| `kpi` | `Resultados`, `Rating`, `Aberturas`… | aba de indicadores aberta no modo avançado (padrão `Análise`) |
+| `kpi` | `Rating`, `Aberturas`… | aba de evidência aberta (padrão `Resultados`) |
 | `bots` | `1` | inclui partidas contra bots e amistosas (por padrão ficam fora) |
 | `comparar` | `1`, `0` | compara com o período anterior equivalente (dobra as requisições à API); já vem ligado nos períodos relativos de até ~6 meses, e `0` desliga |
 | `auto` | `1` | atualização automática |
 | `intervalo` | `30`, `60`, `120`, `300` | segundos entre atualizações |
-| `modo` | `avancado` | abre no modo avançado |
 | `tema` | `claro` | tema claro |
 
 A barra de endereço acompanha o que está na tela (busca e abas), então F5 e o link copiado reproduzem o mesmo painel — e a última busca fica guardada no navegador, aparecendo na hora enquanto a API é consultada de novo.

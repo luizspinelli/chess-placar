@@ -12,8 +12,8 @@ Tudo que está no formulário cabe na URL: favoritos por período, compartilhar 
 
 ## Como funciona
 
-- `linkAtual()` só inclui o que difere do padrão (exceções: `periodo` e `tc` sempre saem, para o link ser autoexplicativo). Regras que não são óbvias: `comparar=0` só sai quando o automático valeria e a caixa está desmarcada (ver [comparação](comparacao-de-periodos.md)); `modo=avancado` sai quando o body não tem `simples`.
-- O bloco final de `app.js` lê os parâmetros na carga, na ordem: tema (URL, depois `localStorage`), nick, período (`aplicarPeriodo`), datas do absoluto, modalidades, intervalo, bots, `comparar` (marca `comparManual`), `auto`, modo. Com `nick` busca na hora; sem, mostra a tela inicial.
+- `linkAtual()` só inclui o que difere do padrão (exceções: `periodo` e `tc` sempre saem, para o link ser autoexplicativo). Regras que não são óbvias: `comparar=0` só sai quando o automático valeria e a caixa está desmarcada (ver [comparação](comparacao-de-periodos.md)); `kpi` sai quando a aba de evidência não é a padrão (`Resultados`).
+- O bloco final de `app.js` lê os parâmetros na carga, na ordem: tema (URL, depois `localStorage`), nick, período (`aplicarPeriodo`), datas do absoluto, modalidades, intervalo, bots, `comparar` (marca `comparManual`), `auto`, abas. Com `nick` busca na hora; sem, mostra a tela inicial.
 
 ## Decisões
 
@@ -25,8 +25,8 @@ Tudo que está no formulário cabe na URL: favoritos por período, compartilhar 
 - A chave de IA, o modelo e a profundidade do motor **não** vão na URL — são do navegador.
 - Filtro por adversário e aba de KPI ativa não vão na URL.
 
-A barra de endereço **acompanha a tela**: `sincronizarURL()` chama `history.replaceState` com `linkAtual()` após cada busca e ao trocar de aba de modalidade (`aba`) ou de indicadores (`kpi`), sem criar entradas no histórico. Os dois parâmetros de aba só entram quando fogem do padrão (mais de uma modalidade na busca; aba diferente de Análise no modo avançado).
+A barra de endereço **acompanha a tela**: `sincronizarURL()` chama `history.replaceState` com `linkAtual()` após cada busca e ao trocar de aba de modalidade (`aba`) ou de indicadores (`kpi`), sem criar entradas no histórico. Os dois parâmetros de aba só entram quando fogem do padrão (mais de uma modalidade na busca; aba de evidência diferente de Resultados).
 
 ## Como testar
 
-Preencher tudo, Copiar link, abrir em janela anônima: a mesma vista deve aparecer (inclusive caixa de comparação, tema e modo).
+Preencher tudo, Copiar link, abrir em janela anônima: a mesma vista deve aparecer (inclusive caixa de comparação, tema e abas).

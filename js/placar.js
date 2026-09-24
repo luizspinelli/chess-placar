@@ -4,17 +4,7 @@ function renderResumo(jogos, c, total, ini, fim){
   if (!total) { el.hidden = true; return; }
   el.hidden = false;
   const {rotulo} = estado, ap = Math.round((c.w + c.d/2) / total * 100);
-  const div = document.createElement('div'); div.innerHTML = kpiData['Análise'];
-  const achados = [...div.querySelectorAll('.achado')].map(a => ({tipo: [...a.classList].find(x => ['alerta','atencao','bom','info'].includes(x)), titulo: a.querySelector('h2').textContent.replace(/^[▲●✔ℹ]\s*/, '').trim(), texto: a.querySelector('p').textContent.trim()}));
-  const frases = [];
-  frases.push(`<p>${total} partida${total > 1 ? 's' : ''} de <b>${TIPO[aba]}</b> ${rotulo}: <b class="w">${c.w}</b> vitória${c.w !== 1 ? 's' : ''}, <b class="d">${c.d}</b> empate${c.d !== 1 ? 's' : ''} e <b class="l">${c.l}</b> derrota${c.l !== 1 ? 's' : ''} — <b>${ap}%</b> de aproveitamento${ini != null && fim != null ? `, com o rating indo de ${ini} para <b>${fim}</b> (<b class="${cls(fim - ini)}">${sinal(fim - ini)}</b>)` : ''}.</p>`);
-  const naoAbertura = a => !/abertura/i.test(a.titulo);
-  const problema = achados.find(a => a.tipo === 'alerta' && naoAbertura(a)) || achados.find(a => a.tipo === 'atencao' && naoAbertura(a)) || achados.find(a => a.tipo === 'alerta' || a.tipo === 'atencao');
-  const forte = achados.find(a => a.tipo === 'bom' && naoAbertura(a)) || achados.find(a => a.tipo === 'bom');
-  if (problema) frases.push(`<p><b>O que mais pesa:</b> ${problema.texto.split(/(?<=[.!?])\s/)[0]}</p>`);
-  if (forte) frases.push(`<p><b>Ponto forte:</b> ${forte.texto.split(/(?<=[.!?])\s/)[0]}</p>`);
-  if (!problema && !forte) frases.push('<p>Nada fora do padrão neste período: cor, horário, sessões e relógio dentro da sua média.</p>');
-  $('resumoTexto').innerHTML = frases.join('');
+  $('resumoTexto').innerHTML = `<p>${total} partida${total > 1 ? 's' : ''} de <b>${TIPO[aba]}</b> ${rotulo}: <b class="w">${c.w}</b> vitória${c.w !== 1 ? 's' : ''}, <b class="d">${c.d}</b> empate${c.d !== 1 ? 's' : ''} e <b class="l">${c.l}</b> derrota${c.l !== 1 ? 's' : ''} — <b>${ap}%</b> de aproveitamento${ini != null && fim != null ? `, com o rating indo de ${ini} para <b>${fim}</b> (<b class="${cls(fim - ini)}">${sinal(fim - ini)}</b>)` : ''}.</p>`;
   const resDe = g => { const eu = g.white.username.toLowerCase() === estado.nick ? g.white : g.black; return eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l'; };
   const cron = [...jogos].sort((a, b) => a.end_time - b.end_time);
   const ult = cron.slice(-10).map(resDe);
@@ -96,10 +86,12 @@ function render(){
   renderComparativo(jogos, c, total, varTotal);
   kpiData = total ? kpis(jogos, nick) : null;
   renderKpis();
+  renderAnalise();
   renderResumo(jogos, c, total, antes[aba], depois[aba]);
   renderPerfil();
   $('placar').style.display = 'block';
   $('kpis').style.display = total ? 'flex' : 'none';
+  $('analise').style.display = total ? 'block' : 'none';
   $('partidas').style.display = total ? 'flex' : 'none';
   $('status').textContent = monitorando ? `Verificado às ${hora()}` : '';
 }

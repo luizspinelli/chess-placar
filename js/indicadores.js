@@ -498,14 +498,18 @@ $('abasKpi').addEventListener('click', e => {
   renderKpis(); sincronizarURL();
 });
 
+// o relatório tem vida própria: trocar de aba de evidência não pode refazer o bloco da IA (o campo da chave está nele)
+function renderAnalise(){
+  if (!kpiData) return;
+  $('analiseCorpo').innerHTML = blocoIA() + kpiData['Análise'];
+}
+
 function renderKpis(){
   if (!kpiData) return;
-  if (kpiData[abaKpi] === undefined) abaKpi = 'Análise';   // nome vindo da URL ou de versão antiga
-  const GRUPOS = [['Visão geral', ['Análise','Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Erros e precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
+  if (kpiData[abaKpi] === undefined || abaKpi === 'Análise') abaKpi = 'Resultados';   // nome vindo da URL ou de versão antiga
+  const GRUPOS = [['Visão geral', ['Resultados','Rating']], ['Como você joga', ['Aberturas','Lances e relógio','Erros e precisão']], ['Contexto', ['Adversários','Sessões','Horários','Volume']]];
   // no celular a barra vira um <select> com os grupos como optgroup (o CSS decide qual dos dois aparece)
   const sel = `<select id="abasSel" aria-label="Aba de indicadores">${GRUPOS.map(([nome, abas]) => `<optgroup label="${nome}">${abas.filter(k => kpiData[k] !== undefined).map(k => `<option value="${k}" ${k === abaKpi ? 'selected' : ''}>${k}</option>`).join('')}</optgroup>`).join('')}</select>`;
   $('abasKpi').innerHTML = sel + GRUPOS.map(([nome, abas]) => `<div class="grupoAbas"><span class="grupoAba">${nome}</span><div class="botoes">${abas.filter(k => kpiData[k] !== undefined).map(k => `<button type="button" role="tab" aria-selected="${k === abaKpi}" data-aba="${k}" class="${k === abaKpi ? 'ativa' : ''}">${k}</button>`).join('')}</div></div>`).join('');
-  $('kpiGrid').innerHTML = (abaKpi === 'Análise' ? blocoIA() : '') + kpiData[abaKpi];
-  $('kpiGrid').classList.toggle('analise', abaKpi === 'Análise');
-  $('kpiGrid').scrollTop = 0;
+  $('kpiGrid').innerHTML = kpiData[abaKpi];
 }

@@ -66,7 +66,7 @@ const SESSAO = 30 * 60;
 const numerar = san => san.map((mv, i) => (i % 2 ? '' : `${i/2 + 1}.`) + mv).join(' ');
 const seg = t => t == null ? '–' : t >= 3600 ? `${Math.floor(t/3600)}h${String(Math.floor(t%3600/60)).padStart(2,'0')}` : `${Math.floor(t/60)}:${String(Math.round(t%60)).padStart(2,'0')}`;
 
-let kpiData = null, abaKpi = 'Análise', iaTexto = '', iaErro = '', iaOcupado = false, iaMeta = null, curvaDados = {}, modalTc = null;
+let kpiData = null, abaKpi = 'Resultados', iaTexto = '', iaErro = '', iaOcupado = false, iaMeta = null, curvaDados = {}, modalTc = null;
 // versão do esquema de `estado` gravado no armazém: mudar quando um campo passar a ser obrigatório para render(); busca salva com
 // versão diferente é ignorada (refaz da API) em vez de ser lida com defaults improvisados
 const VERSAO_ESTADO = 2;

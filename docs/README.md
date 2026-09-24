@@ -46,8 +46,8 @@ Seções vazias são removidas, não deixadas em branco. Frases curtas; números
 |---|---|
 | Layout, barra de contexto e painel de filtros | [layout.md](features/layout.md) |
 | Busca na API e período analisado | [busca-e-periodo.md](features/busca-e-periodo.md) |
-| Placar, resumo e perfil (modo simples) | [placar-e-resumo.md](features/placar-e-resumo.md) |
-| Indicadores e achados automáticos (modo avançado) | [indicadores.md](features/indicadores.md) |
+| Placar, resumo e perfil | [placar-e-resumo.md](features/placar-e-resumo.md) |
+| Diagnóstico, indicadores e achados automáticos | [indicadores.md](features/indicadores.md) |
 | Comparação com o período anterior | [comparacao-de-periodos.md](features/comparacao-de-periodos.md) |
 | Evolução dentro do período | [evolucao-no-periodo.md](features/evolucao-no-periodo.md) |
 | Aberturas e tabuleiro | [aberturas.md](features/aberturas.md) |

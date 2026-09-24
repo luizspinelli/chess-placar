@@ -28,7 +28,7 @@ function renderLista(){
   $('pagProx').disabled = pagina >= paginas;
   $('lista').scrollTop = 0;
 }
-// no celular a lista começa recolhida: 20 partidas abertas empurravam o modo simples para quatro telas
+// a lista começa recolhida em qualquer largura: é evidência para conferir depois de ler o diagnóstico, não a abertura da página
 const rotuloLista = n => { const aberta = document.body.classList.contains('listaAberta'); $('listaToggle').textContent = aberta ? 'Ocultar partidas ▴' : `Ver as ${n} partida${n === 1 ? '' : 's'} ▾`; $('listaToggle').setAttribute('aria-expanded', aberta); };
 $('listaToggle').addEventListener('click', () => { document.body.classList.toggle('listaAberta'); rotuloLista(jogosAtuais.length); });
 $('pagAnt').addEventListener('click', () => { pagina--; renderLista(); });

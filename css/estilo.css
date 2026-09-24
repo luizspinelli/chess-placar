@@ -64,7 +64,7 @@ body.filtrosAbertos #contexto #filtrosToggle i{transform:rotate(180deg)}
 /* painel de filtros: sobrepoe o conteudo em vez de empurra-lo, para a leitura nao saltar ao abrir e fechar */
 form{position:absolute;top:56px;left:16px;right:16px;z-index:29;display:none;gap:12px 16px;padding:18px;min-width:0;align-content:start;max-height:calc(100vh - 80px);overflow-y:auto;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));align-items:start}
 body.filtrosAbertos form{display:grid}
-form .acoes,form #btn,form #btnAgora{grid-column:1/-1}
+form #btn{grid-column:1/-1}
 form>*,#custom>*{min-width:0}
 [hidden]{display:none!important}
 label{display:block;font-weight:600;font-size:.8rem;color:var(--muted);margin-bottom:4px}
@@ -112,10 +112,7 @@ button{padding:10px 14px;font:inherit;font-weight:600;background:var(--accent);c
 button:hover{filter:brightness(1.08)}
 button:active{transform:translateY(1px)}
 button:disabled{opacity:.45;cursor:default;filter:none}
-#btnAgora,#btnStreamer,#btnLink{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
 #btnStreamer,#btnLink{padding:8px 10px;font-size:.8rem}
-.acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.acoes .seg{grid-column:1/-1}
 #status{color:var(--muted);margin:0;font-size:.85rem;padding:0 2px}
 #status:empty{display:none}
 #status.error{color:var(--loss);font-weight:600}
@@ -132,8 +129,6 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 #abas button small{color:var(--muted);font-weight:500;margin-left:2px}
 .abasWrap{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--surface2);flex:0 0 auto}
 .abasWrap #abasKpi{flex:1;border-bottom:0}
-#verMenos{align-self:center;margin:0 10px;padding:5px 10px;font-size:.78rem;background:var(--surface);color:var(--muted);border:1px solid var(--border2);white-space:nowrap}
-#verMenos:hover{color:var(--text);filter:none}
 /* nunca rola: a barra escondida deixava Análise/Resultados/Rating fora da tela em colunas estreitas */
 #abasKpi{gap:0;padding:0;justify-content:center;flex-wrap:wrap;overflow-x:visible}
 #abasSel{display:none}
@@ -170,11 +165,12 @@ button:disabled{opacity:.45;cursor:default;filter:none}
 
 #kpis{display:none;flex-direction:column}
 #resumo{padding:16px 18px}
-body.simples #kpis{display:none!important}
-body:not(.simples) #resumo{display:none!important}
-#resumo .cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-#resumo .cab h2{margin:0}
-#verMais{padding:6px 12px;font-size:.82rem;background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+/* o relatório: achados automáticos e o bloco da IA, em seção própria em vez de uma aba entre dez */
+#analise{display:none;padding:16px 18px}
+#analise>h2{margin-bottom:12px}
+#analiseCorpo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+#analiseCorpo .ia{grid-column:1/-1}
+.tituloSecao{padding:14px 16px 0;margin:0}
 #resumoTexto{font-size:1rem;line-height:1.6;color:#d5d9e2}
 html[data-tema=claro] #resumoTexto{color:#2b3140}
 #resumoTexto p{margin:0 0 8px}
@@ -327,12 +323,12 @@ a:hover{text-decoration:underline}
 #modal svg{width:100%;height:100%;display:block;font-family:inherit}
 #modal .tip{position:absolute;pointer-events:none;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:.82rem;display:none;white-space:nowrap;box-shadow:var(--shadow)}
 
-@media(max-width:1500px){#kpiGrid,#kpiGrid.analise{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1500px){#kpiGrid,#kpiGrid.analise{grid-template-columns:repeat(2,minmax(0,1fr))}#analiseCorpo{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1280px){main{grid-template-columns:280px 1fr;grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);grid-template-areas:"form placar" "form kpis" "form lista"}}
 /* modo avançado no desktop: a página rola, a lista de partidas vai para baixo dos indicadores e o grid de cards
    ganha a largura toda. O grid tem 12 trilhas: card normal ocupa 4 (3 por linha) e o .span2 ocupa 6 (metade) — assim
    dois cards largos seguidos dividem a linha em vez de deixar um terço vazio; acima de 1700 px o normal ocupa 3 (4 por
-   linha). `dense` deixa um card pequeno preencher o buraco que sobrar. O modo simples mantém a lista ao lado e a altura fixa. */
+   linha). `dense` deixa um card pequeno preencher o buraco que sobrar. */
 @media(min-width:1101px){
   #kpiGrid,#kpiGrid.analise{grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-flow:row dense}
   #kpiGrid .kpi{grid-column:span 4}
@@ -371,7 +367,6 @@ a:hover{text-decoration:underline}
   .abasWrap #abasKpi{flex:1 1 auto;padding:0;justify-content:flex-start;min-width:0}
   .abasWrap #abasKpi .grupoAbas{display:none}
   #abasSel{display:block;width:100%;padding:9px 32px 9px 12px;font-size:.9rem;font-weight:600}
-  #verMenos{flex:0 0 auto;margin:0}
   /* lista recolhida por padrão; cabeçalho da paginação em duas linhas */
   .pag #pagInfo{flex-basis:100%}
   .pag .inline{width:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -409,7 +404,7 @@ a:hover{text-decoration:underline}
 }
 /* telas estreitas: KPIs em coluna única */
 @media(max-width:600px){
-  #kpiGrid,#kpiGrid.analise{grid-template-columns:1fr}
+  #kpiGrid,#kpiGrid.analise,#analiseCorpo{grid-template-columns:1fr}
   .kpi.span2{grid-column:auto}
 }
 

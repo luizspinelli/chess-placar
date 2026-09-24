@@ -97,14 +97,14 @@ async function motorAnalisar(){
       guardarEvals(g, prof, res);
       motor.progresso.feitas++;
       // a aba Erros e precisão mostra os erros: refaz os cards conforme as partidas chegam; nas outras abas só o cartão do motor
-      if (abaKpi === 'Erros e precisão') { kpiData = kpis(estado.jogos.filter(g => g.time_class === aba), nick); renderKpis(); } else renderMotor();
+      if (abaKpi === 'Erros e precisão') { kpiData = kpis(estado.jogos.filter(g => g.time_class === aba), nick); renderKpis(); renderAnalise(); } else renderMotor();
     }
   } catch (err) {
     motor.erro = err.message;
   }
   motor.rodando = false;
   kpiData = kpis(estado.jogos.filter(g => g.time_class === aba), nick);
-  renderKpis();
+  renderAnalise();
 }
 function motorParar(){ motor.cancelar = true; motor.worker?.postMessage('stop'); }
 

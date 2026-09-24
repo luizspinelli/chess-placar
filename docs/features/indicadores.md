@@ -1,6 +1,6 @@
-# Indicadores e achados automáticos (modo avançado)
+# Diagnóstico, indicadores e achados automáticos
 
-**Arquivos**: `js/indicadores.js` (`kpis`, `GLOSSARIO`, `renderKpis`) · `js/base.js` (helpers `card`, `tabela`, `kv`, `linha`)
+**Arquivos**: `js/indicadores.js` (`kpis`, `GLOSSARIO`, `renderAnalise`, `renderKpis`) · `js/base.js` (helpers `card`, `tabela`, `kv`, `linha`)
 
 ## Objetivo
 
@@ -8,7 +8,7 @@ Transformar a lista de partidas em leitura: onde o jogador rende mais e menos (c
 
 ## Como usar
 
-No modo avançado, dez abas agrupadas em **Visão geral** (Análise, Resultados, Rating), **Como você joga** (Aberturas, Lances e relógio, Erros e precisão) e **Contexto** (Adversários, Sessões, Horários, Volume). Todo card com conceito não óbvio tem um "?" com a explicação (`GLOSSARIO`) — no mouse aparece ao passar; no toque, um balão (`#dica`, em `app.js`) mostra o texto ao tocar, e o mesmo vale para as células do mapa de calor e para os ▲/▼ da faixa comparativa. No celular a barra de abas vira um `<select>` com os três grupos como `optgroup`, fixo no topo ao rolar; dez abas em quatro linhas comiam 200 px a cada troca. No desktop, o modo avançado **rola como página**: a lista de partidas vai para baixo dos indicadores e o grid de cards ocupa a largura toda, com o formulário e a barra de abas fixos ao rolar. O grid tem **12 trilhas**: card normal ocupa 4 (três por linha; acima de 1700 px ocupa 3, quatro por linha) e o card largo (`span2`, as tabelas de aberturas, motivos, marcos…) ocupa 6 — dois largos seguidos dividem a linha, em vez de o segundo pular de linha e deixar um terço vazio, como acontecia com o grid de 3 colunas em que `span2` valia dois terços. `grid-auto-flow: dense` deixa um card pequeno preencher o buraco que sobrar. Validado com os dados reais de `luizspinelli`: a aba Aberturas passou de ~55% para 93% da área coberta a 1400 px. O modo simples mantém o layout de três colunas com a lista ao lado, sem rolagem — é o modo de olhar o placar; o avançado é o de ler. A barra de abas **nunca rola**: quebra em linhas em qualquer largura — a rolagem horizontal com barra escondida deixava abas fora da tela tanto no celular quanto na coluna estreita do desktop.
+Os achados automáticos e o bloco da IA formam a seção **Diagnóstico**, logo abaixo do resumo — não são mais uma aba. Abaixo dela, a seção **Evidência**, com nove abas agrupadas em **Visão geral** (Resultados, Rating), **Como você joga** (Aberturas, Lances e relógio, Erros e precisão) e **Contexto** (Adversários, Sessões, Horários, Volume). Todo card com conceito não óbvio tem um "?" com a explicação (`GLOSSARIO`) — no mouse aparece ao passar; no toque, um balão (`#dica`, em `app.js`) mostra o texto ao tocar, e o mesmo vale para as células do mapa de calor e para os ▲/▼ da faixa comparativa. No celular a barra de abas vira um `<select>` com os três grupos como `optgroup`, fixo no topo ao rolar; dez abas em quatro linhas comiam 200 px a cada troca. A página **rola como documento** e o grid de cards ocupa a largura toda, com a barra de abas fixa ao rolar (ver [layout](layout.md)). O grid tem **12 trilhas**: card normal ocupa 4 (três por linha; acima de 1700 px ocupa 3, quatro por linha) e o card largo (`span2`, as tabelas de aberturas, motivos, marcos…) ocupa 6 — dois largos seguidos dividem a linha, em vez de o segundo pular de linha e deixar um terço vazio, como acontecia com o grid de 3 colunas em que `span2` valia dois terços. `grid-auto-flow: dense` deixa um card pequeno preencher o buraco que sobrar. Validado com os dados reais de `luizspinelli`: a aba Aberturas passou de ~55% para 93% da área coberta a 1400 px. A barra de abas **nunca rola**: quebra em linhas em qualquer largura — a rolagem horizontal com barra escondida deixava abas fora da tela tanto no celular quanto na coluna estreita do desktop.
 
 ## Como funciona
 
@@ -26,7 +26,7 @@ No modo avançado, dez abas agrupadas em **Visão geral** (Análise, Resultados,
 | Horários | período do dia, dia da semana, mapa de calor, horários | madrugada <6h, manhã <12h, tarde <18h, noite; **hora média** é circular (23h e 1h dão 0h, não 12h); mapa de calor: cor = aproveitamento ≥50% verde, intensidade = volume |
 | Volume | partidas, melhor e pior dia, aproveitamento por mês, partidas por semana | semana começa na segunda |
 
-### Achados automáticos (aba Análise)
+### Achados automáticos (seção Diagnóstico)
 
 Heurísticas com **amostra mínima**; ordenadas por prioridade (▲ alerta, ● atenção, ✔ bom, ℹ info). Se nenhuma dispara, "Nada fora do padrão".
 
@@ -49,7 +49,7 @@ Heurísticas com **amostra mínima**; ordenadas por prioridade (▲ alerta, ● 
 | vs. período anterior (4) | ver [comparacao-de-periodos.md](comparacao-de-periodos.md) |
 | do motor (4) | ver [motor-de-analise.md](motor-de-analise.md) |
 
-Os achados alimentam o resumo do modo simples, o PDF e o prompt da IA.
+Os achados alimentam o PDF e o prompt da IA.
 
 ## Decisões
 

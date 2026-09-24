@@ -196,9 +196,9 @@ function blocoIA(){
 
 async function carregarModelos(){
   const p = provAtual(), P = PROVEDORES[p], chave = $('iaChave').value.trim();
-  if (!chave) { iaErro = 'Informe a chave para listar os modelos.'; renderKpis(); return; }
+  if (!chave) { iaErro = 'Informe a chave para listar os modelos.'; renderAnalise(); return; }
   gravarChave(p, chave);
-  iaOcupado = true; iaErro = 'Buscando modelos…'; renderKpis();
+  iaOcupado = true; iaErro = 'Buscando modelos…'; renderAnalise();
   try {
     const lista = (await P.listar(chave)).filter(P.filtro).sort((a, b) => b.localeCompare(a, undefined, {numeric: true}));
     if (!lista.length) throw new Error('Nenhum modelo de texto encontrado.');
@@ -208,7 +208,7 @@ async function carregarModelos(){
   } catch (err) {
     iaErro = err.message;
   } finally {
-    iaOcupado = false; renderKpis();
+    iaOcupado = false; renderAnalise();
   }
 }
 
@@ -504,16 +504,16 @@ function resumoMotor(avaliadas, nick, noDossie = avaliadas.length){
 async function analisarTudo(){
   if (!estado) return;
   const chave = $('iaChave').value.trim();
-  if (!chave) { iaErro = 'Informe a chave da API.'; renderKpis(); return; }
+  if (!chave) { iaErro = 'Informe a chave da API.'; renderAnalise(); return; }
   // grava já: o cartão é re-renderizado enquanto o motor roda e o campo voltaria ao valor salvo, perdendo a chave digitada
   gravarChave(provAtual(), chave); gravarLS(modeloLS(provAtual()), $('iaModelo').value);
   if (typeof motorDisponivel === 'function' && motorDisponivel() && !motor.rodando) {
     const pend = pendentesMotor(estado.jogos.filter(g => g.time_class === aba), motorProf()).length;
     if (pend) {
-      iaOcupado = true; iaErro = `Avaliando ${pend} partida${pend === 1 ? '' : 's'} com o motor antes de chamar a IA.`; renderKpis();
+      iaOcupado = true; iaErro = `Avaliando ${pend} partida${pend === 1 ? '' : 's'} com o motor antes de chamar a IA.`; renderAnalise();
       await motorAnalisar();
       iaOcupado = false;
-      if (motor.cancelar) { iaErro = 'Motor interrompido; a IA não foi chamada. Clique de novo para continuar de onde parou.'; renderKpis(); return; }
+      if (motor.cancelar) { iaErro = 'Motor interrompido; a IA não foi chamada. Clique de novo para continuar de onde parou.'; renderAnalise(); return; }
     }
   }
   await executarIA(promptCompleto);
@@ -531,9 +531,9 @@ const erroDeRede = (P, e) => {
 async function executarIA(montarPrompt){
   const p = provAtual(), P = PROVEDORES[p];
   const chave = $('iaChave').value.trim(), escolhido = $('iaModelo').value;
-  if (!chave) { iaErro = 'Informe a chave da API.'; renderKpis(); return; }
+  if (!chave) { iaErro = 'Informe a chave da API.'; renderAnalise(); return; }
   gravarChave(p, chave); gravarLS(modeloLS(p), escolhido);
-  iaOcupado = true; iaErro = ''; renderKpis();
+  iaOcupado = true; iaErro = ''; renderAnalise();
   const espera = ms => new Promise(r => setTimeout(r, ms));
   try {
     const prompt = montarPrompt();
@@ -543,7 +543,7 @@ async function executarIA(montarPrompt){
     let ultimoErro = null;
     for (const m of modelos) {
       for (let tentativa = 0; tentativa < 3; tentativa++) {
-        iaOcupado = true; iaErro = `Tentando ${P.nome} · ${m}${tentativa ? ` (${tentativa + 1}ª tentativa)` : ''}…`; renderKpis();
+        iaOcupado = true; iaErro = `Tentando ${P.nome} · ${m}${tentativa ? ` (${tentativa + 1}ª tentativa)` : ''}…`; renderAnalise();
         // progresso no lugar, sem refazer o cartão; o fetch que falha antes de qualquer resposta (rede, CORS, extensão
         // bloqueando, conexão cortada) lança TypeError "Failed to fetch": vira status 0, repetível e com mensagem explicada
         // a linha de status mostra fase e tempo decorrido, atualizada a cada segundo: o Opus passa minutos raciocinando antes da
@@ -581,11 +581,11 @@ async function executarIA(montarPrompt){
   } catch (err) {
     iaErro = err.message;
   } finally {
-    iaOcupado = false; renderKpis();
+    iaOcupado = false; renderAnalise();
   }
 }
 $('kpiGrid').addEventListener('click', e => {
-  if (e.target.id === 'iaCfgToggle') { const digitada = $('iaChave')?.value.trim(); if (digitada) gravarChave(provAtual(), digitada); iaCfgAberta = $('iaCfg').hidden; renderKpis(); }
+  if (e.target.id === 'iaCfgToggle') { const digitada = $('iaChave')?.value.trim(); if (digitada) gravarChave(provAtual(), digitada); iaCfgAberta = $('iaCfg').hidden; renderAnalise(); }
   if (e.target.id === 'iaAnalisar') analisarTudo(); if (e.target.id === 'iaModelos') carregarModelos(); if (e.target.id === 'iaPdf') exportarPDF(); });
 
 function exportarPDF(){
@@ -645,8 +645,8 @@ function exportarPDF(){
   </body></html>`;
   const url = URL.createObjectURL(new Blob([html], {type: 'text/html'}));
   const w = window.open(url, '_blank');
-  if (!w) { iaErro = 'O navegador bloqueou a janela; libere pop-ups para este arquivo.'; renderKpis(); return; }
-  iaErro = 'Na janela de impressão, escolha "Salvar como PDF" e desmarque "Cabeçalhos e rodapés" para um resultado limpo.'; renderKpis();
+  if (!w) { iaErro = 'O navegador bloqueou a janela; libere pop-ups para este arquivo.'; renderAnalise(); return; }
+  iaErro = 'Na janela de impressão, escolha "Salvar como PDF" e desmarque "Cabeçalhos e rodapés" para um resultado limpo.'; renderAnalise();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 $('kpiGrid').addEventListener('change', e => {
@@ -654,10 +654,10 @@ $('kpiGrid').addEventListener('change', e => {
   // tamanho do dossiê: atualiza os textos e os controles do motor no lugar, sem refazer o cartão (a chave pode estar sendo digitada)
   if (e.target.id === 'iaProfunda') gravarLS('placar-chesscom:iaProfunda', e.target.checked ? '1' : '0');
   if (e.target.id === 'dossieN') { gravarLS('placar-chesscom:nDossie', e.target.value); document.querySelectorAll('.nDossie').forEach(el => el.textContent = nDossie()); if (typeof renderMotor === 'function') renderMotor(); }
-  if (e.target.id === 'iaProv') { gravarChave(provAtual(), $('iaChave').value.trim()); gravarLS('placar-chesscom:provedor', e.target.value); iaErro = ''; renderKpis(); }
+  if (e.target.id === 'iaProv') { gravarChave(provAtual(), $('iaChave').value.trim()); gravarLS('placar-chesscom:provedor', e.target.value); iaErro = ''; renderAnalise(); }
   if (e.target.id === 'iaLembrar') {
     gravarLS('placar-chesscom:lembrarChave', e.target.checked ? '1' : '0');
     if (e.target.checked) gravarChave(provAtual(), $('iaChave').value.trim()); else esquecerChaves();
-    renderKpis();
+    renderAnalise();
   }
 });

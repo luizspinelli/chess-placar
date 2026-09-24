@@ -1,4 +1,4 @@
-// Bootstrap: tema, modo simples/avançado, link compartilhável e leitura dos parâmetros de URL. Deve ser o último script.
+// Bootstrap: tema, link compartilhável e leitura dos parâmetros de URL. Deve ser o último script.
 const aplicarTema = t => {
   document.documentElement.dataset.tema = t;
   try { localStorage.setItem('placar-chesscom:tema', t); } catch {}
@@ -23,10 +23,9 @@ function linkAtual(){
   if ($('comparar').checked) q.set('comparar', '1');
   else if (comparaAuto($('periodo').value)) q.set('comparar', '0');
   if (document.documentElement.dataset.tema === 'claro') q.set('tema', 'claro');
-  if (!document.body.classList.contains('simples')) q.set('modo', 'avancado');
   // abas: só quando fogem do padrão, para o link continuar curto
   if (estado && new Set(estado.jogos.map(g => g.time_class)).size > 1) q.set('aba', aba);
-  if (abaKpi !== 'Análise' && !document.body.classList.contains('simples')) q.set('kpi', abaKpi);
+  if (abaKpi !== 'Resultados') q.set('kpi', abaKpi);
   return u.toString();
 }
 $('btnLink').addEventListener('click', async () => {
@@ -35,14 +34,6 @@ $('btnLink').addEventListener('click', async () => {
   catch { status.className = ''; status.textContent = link; }
 });
 
-function aplicarModo(m){
-  document.body.classList.toggle('simples', m === 'simples');
-  try { localStorage.setItem('placar-chesscom:modo', m); } catch {}
-  $('modo').querySelectorAll('button').forEach(b => b.classList.toggle('ativa', b.dataset.modo === m));
-}
-$('modo').addEventListener('click', e => { const b = e.target.closest('button'); if (b) aplicarModo(b.dataset.modo); });
-$('verMais').addEventListener('click', () => aplicarModo('avancado'));
-$('verMenos').addEventListener('click', () => aplicarModo('simples'));
 
 // ---- dica por toque: `title` só aparece com mouse. No celular, o "?" do glossário, as células do mapa de calor
 // e os ▲/▼ do comparativo mostram o texto num balão ao toque (no desktop o hover continua funcionando).
@@ -63,7 +54,7 @@ $('verMenos').addEventListener('click', () => aplicarModo('simples'));
 }
 
 // ---- parâmetros de URL (para favoritos e links compartilháveis)
-// ?nick=x&periodo=mes|mes-1|3m|6m|12m|ano|custom&data=YYYY-MM-DD&hora=HH:MM&dataFim=&horaFim=&tc=rapid,blitz&auto=1&intervalo=60&tema=claro|escuro
+// ?nick=x&periodo=mes|mes-1|3m|6m|12m|ano|custom&data=YYYY-MM-DD&hora=HH:MM&dataFim=&horaFim=&tc=rapid,blitz&auto=1&intervalo=60&kpi=Aberturas&tema=claro|escuro
 {
   const q = new URLSearchParams(location.search);
   let tema = q.get('tema'); try { tema = tema || localStorage.getItem('placar-chesscom:tema'); } catch {}
@@ -76,10 +67,8 @@ $('verMenos').addEventListener('click', () => aplicarModo('simples'));
   if (q.get('bots') === '1') $('soHumanos').checked = false;
   if (q.has('comparar')) { $('comparar').checked = q.get('comparar') === '1'; comparManual = true; }
   if (q.get('aba') && TIPO[q.get('aba')]) aba = q.get('aba');
-  if (q.get('kpi')) abaKpi = q.get('kpi');   // renderKpis() volta para Análise se o nome não existir
+  if (q.get('kpi')) abaKpi = q.get('kpi');   // renderKpis() volta para Resultados se o nome não existir
   if (q.get('auto') === '1') $('auto').checked = true;
-  let modo = q.get('modo'); try { modo = modo || localStorage.getItem('placar-chesscom:modo'); } catch {}
-  aplicarModo(modo === 'avancado' ? 'avancado' : 'simples');
   if (q.get('nick')) buscar(false);
   else { document.body.classList.add('inicio'); $('nickInicio').value = $('nick').value; }
 }
