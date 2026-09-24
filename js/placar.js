@@ -67,6 +67,7 @@ function renderPerfil(){
 }
 
 function render(){
+  renderContexto();
   const {jogos: tudo, antes, depois, aprox = {}, nick, rotulo, monitorando, ignoradas} = estado;
   // o relatório da IA é por jogador e modalidade: ao trocar de aba ou restaurar uma busca, vem o último guardado (ou nada)
   if (!iaOcupado) { const r = armazem.ler('relatorios', `${nick}|${aba}`); iaTexto = r?.texto || ''; iaMeta = r?.meta || null; }

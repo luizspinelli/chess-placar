@@ -40,9 +40,15 @@
     </ul>
     <p class="rodapeInicio">Código aberto no <a href="https://github.com/luizspinelli/chess-placar" target="_blank" rel="noopener">GitHub</a> · Stockfish 19 (GPLv3) e chess.js servidos da própria página</p>
   </section>
-  <button type="button" id="filtrosToggle" class="box">☰ Filtros e opções</button>
+  <header id="contexto">
+    <button type="button" id="filtrosToggle" aria-expanded="false" aria-controls="f"><span id="ctxTexto">Filtros e opções</span><i aria-hidden="true">⌄</i></button>
+    <button type="button" id="btnLink" title="Copia um link que abre esta página já com estes filtros">Copiar link</button>
+    <div class="seg" id="tema"><button type="button" data-tema="escuro">Escuro</button><button type="button" data-tema="claro">Claro</button></div>
+  </header>
+  <!-- o status vive fora do formulário: com o painel fechado ele continua sendo o único sinal de que a busca anda -->
+  <p id="status" role="status"></p>
+  <div id="prox"><div id="proxBar"></div><span id="proxTxt"></span></div>
   <form id="f" class="box">
-    <h1>Placar Chess.com</h1>
     <div><label for="nick">Nick</label><input id="nick" required autocomplete="off" spellcheck="false" list="nicks"><datalist id="nicks"></datalist>
       <div id="recentes" class="chips"></div></div>
     <div role="group" aria-labelledby="rotPeriodo"><label id="rotPeriodo">Período</label>
@@ -81,12 +87,8 @@
     <button type="submit" id="btn">Buscar partidas</button>
     <button type="button" id="btnAgora">Monitorar a partir de agora</button>
     <div class="acoes">
-      <button type="button" id="btnLink" title="Copia um link que abre esta página já com estes filtros (para favoritos)">Copiar link</button>
-      <div class="seg" id="tema"><button type="button" data-tema="escuro">Escuro</button><button type="button" data-tema="claro">Claro</button></div>
       <div class="seg" id="modo"><button type="button" data-modo="simples">Simples</button><button type="button" data-modo="avancado">Avançado</button></div>
     </div>
-    <p id="status"></p>
-    <div id="prox"><div id="proxBar"></div><span id="proxTxt"></span></div>
   </form>
 
   <section id="placar" class="box">

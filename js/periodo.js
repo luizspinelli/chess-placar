@@ -14,6 +14,17 @@ function periodo(){
   const fim = $('dataFim').value ? new Date($('dataFim').value + 'T' + ($('horaFim').value || '23:59') + ':59') : null;
   return [ini, fim];
 }
+// nome curto do período para a barra de contexto ("últimas 2 semanas"); o rótulo com as datas é `estado.rotulo`
+const UNI_PERIODO = {d: ['dia', 'dias', 'último', 'últimos'], w: ['semana', 'semanas', 'última', 'últimas'], m: ['mês', 'meses', 'último', 'últimos']};
+function rotuloPeriodo(v = $('periodo').value){
+  const FIXOS = {mes: 'este mês', 'mes-1': 'mês passado', ano: 'este ano'};
+  if (FIXOS[v]) return FIXOS[v];
+  const m = v.match(/^(\d+)([dwm])$/);
+  if (!m) return 'período escolhido';
+  const [s1, p1, a1, b1] = UNI_PERIODO[m[2]];
+  return +m[1] === 1 ? `${a1} ${s1}` : `${b1} ${m[1]} ${p1}`;
+}
+
 let ultimoRelativo = 'ano', comparManual = false;
 // o período vive num input escondido: os atalhos só escrevem nele e o resto do app segue lendo $('periodo').value
 function aplicarPeriodo(v, sincronizar = true){

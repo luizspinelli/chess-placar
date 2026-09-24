@@ -42,8 +42,21 @@ document.addEventListener('visibilitychange', () => {
 $('auto').addEventListener('change', agendar);
 $('intervalo').addEventListener('change', agendar);
 $('f').addEventListener('submit', e => { e.preventDefault(); buscar(false); });
-const filtros = abrir => { document.body.classList.toggle('filtrosAbertos', abrir); $('filtrosToggle').textContent = abrir ? '▲ Fechar filtros' : '☰ Filtros e opções'; };
+// o botão da barra é o rótulo do que está sendo mostrado: nick · modalidade · período. Sem busca ainda, convida a filtrar
+function renderContexto(){
+  const partes = estado ? [estado.nick, TIPO[aba], rotuloPeriodo()] : ['Filtros e opções'];
+  $('ctxTexto').textContent = partes.join(' · ');
+}
+const filtros = abrir => {
+  document.body.classList.toggle('filtrosAbertos', abrir);
+  $('filtrosToggle').setAttribute('aria-expanded', abrir);
+};
 $('filtrosToggle').addEventListener('click', () => filtros(!document.body.classList.contains('filtrosAbertos')));
+// o painel cobre o conteúdo: fecha ao clicar fora e no Esc, como qualquer sobreposição
+document.addEventListener('click', e => {
+  if (document.body.classList.contains('filtrosAbertos') && !e.target.closest('#f, #filtrosToggle')) filtros(false);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('filtrosAbertos')) filtros(false); });
 $('btnInicio').addEventListener('click', () => { const n = $('nickInicio').value.trim(); if (!n) { $('nickInicio').focus(); return; } $('nick').value = n; buscar(false); });
 $('nickInicio').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnInicio').click(); });
 $('exemplo').addEventListener('click', e => { e.preventDefault(); $('nick').value = 'hikaru'; $('nickInicio').value = 'hikaru'; buscar(false); });

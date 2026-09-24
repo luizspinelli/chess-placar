@@ -21,7 +21,7 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 
 ## Uso
 
-Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para compartilhar uma vista exata.
+Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. Depois da busca, a barra do topo mostra **nick · modalidade · período** e abre os filtros num painel. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para compartilhar uma vista exata.
 
 ## Parâmetros de URL
 

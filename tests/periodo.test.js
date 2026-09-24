@@ -60,3 +60,15 @@ test('evolucaoDoPeriodo(): blocos na unidade do atalho, agrupamento acima de 12,
   defPeriodo('ano'); assert.equal(evolucaoDoPeriodo(new Date(2026, 0, 1), null), null);
   defPeriodo('custom'); assert.equal(evolucaoDoPeriodo(new Date(2026, 0, 1), new Date(2026, 5, 1)), null);
 });
+
+test('rotuloPeriodo(): nome curto do período, com o gênero certo na unidade', () => {
+  assert.equal(rotuloPeriodo('mes'), 'este mês');
+  assert.equal(rotuloPeriodo('mes-1'), 'mês passado');
+  assert.equal(rotuloPeriodo('ano'), 'este ano');
+  assert.equal(rotuloPeriodo('7d'), 'últimos 7 dias');
+  assert.equal(rotuloPeriodo('2w'), 'últimas 2 semanas');
+  assert.equal(rotuloPeriodo('3m'), 'últimos 3 meses');
+  assert.equal(rotuloPeriodo('1d'), 'último dia');
+  assert.equal(rotuloPeriodo('1w'), 'última semana');
+  assert.equal(rotuloPeriodo('custom'), 'período escolhido');
+});
