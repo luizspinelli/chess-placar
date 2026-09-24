@@ -42,6 +42,7 @@
   </section>
   <header id="contexto">
     <button type="button" id="filtrosToggle" aria-expanded="false" aria-controls="f"><span id="ctxTexto">Filtros e opções</span><i aria-hidden="true">⌄</i></button>
+    <button type="button" id="btnDiag" hidden aria-haspopup="dialog">Diagnóstico</button>
     <button type="button" id="btnLink" title="Copia um link que abre esta página já com estes filtros">Copiar link</button>
     <div class="seg" id="tema"><button type="button" data-tema="escuro">Escuro</button><button type="button" data-tema="claro">Claro</button></div>
   </header>
@@ -103,21 +104,10 @@
         <div class="resumo" id="rating"></div>
         <div class="resumo" id="comparativo" hidden></div>
       </div>
+      <div id="resumo" hidden><div id="resumoMini"></div></div>
       <div id="resumoGrafico"></div>
     </div>
   </section>
-
-  <!-- coluna do relatório: resumo em números e, abaixo, o diagnóstico. Rola por dentro, como as outras duas -->
-  <div id="colDiag">
-    <section id="resumo" class="box" hidden>
-      <div id="resumoTexto"></div>
-      <div id="resumoMini"></div>
-    </section>
-    <section id="analise" class="box">
-      <div class="cabSecao"><h2>Diagnóstico</h2><button type="button" id="anAmpliar" class="ampliar" title="Ver o diagnóstico em tela cheia">⤢<span class="rotAmpliar"> Tela cheia</span></button></div>
-      <div id="analiseCorpo"></div>
-    </section>
-  </div>
 
   <section id="kpis" class="box">
     <h2 class="tituloSecao">Evidência</h2>
@@ -150,7 +140,9 @@
   <div id="modalAnalise">
     <div class="janela">
       <div class="topo"><h2>Diagnóstico</h2><button type="button" class="fechar" id="anFechar" aria-label="Fechar">✕</button></div>
-      <div class="corpo" id="anDestino"></div>
+      <div class="corpo" id="anDestino">
+        <section id="analise"><div id="analiseCorpo"></div></section>
+      </div>
     </div>
   </div>
   <div id="modalAb">

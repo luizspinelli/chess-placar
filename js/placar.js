@@ -3,8 +3,6 @@ function renderResumo(jogos, c, total, ini, fim){
   const el = $('resumo');
   if (!total) { el.hidden = true; $('resumoGrafico').innerHTML = ''; return; }
   el.hidden = false;
-  const {rotulo} = estado, ap = Math.round((c.w + c.d/2) / total * 100);
-  $('resumoTexto').innerHTML = `<p>${total} partida${total > 1 ? 's' : ''} de <b>${TIPO[aba]}</b> ${rotulo}: <b class="w">${c.w}</b> vitória${c.w !== 1 ? 's' : ''}, <b class="d">${c.d}</b> empate${c.d !== 1 ? 's' : ''} e <b class="l">${c.l}</b> derrota${c.l !== 1 ? 's' : ''} — <b>${ap}%</b> de aproveitamento${ini != null && fim != null ? `, com o rating indo de ${ini} para <b>${fim}</b> (<b class="${cls(fim - ini)}">${sinal(fim - ini)}</b>)` : ''}.</p>`;
   const resDe = g => { const eu = g.white.username.toLowerCase() === estado.nick ? g.white : g.black; return eu.result === 'win' ? 'w' : DRAWS.has(eu.result) ? 'd' : 'l'; };
   const cron = [...jogos].sort((a, b) => a.end_time - b.end_time);
   const ult = cron.slice(-10).map(resDe);
@@ -91,7 +89,6 @@ function render(){
   renderPerfil();
   $('placar').style.display = 'block';
   $('kpis').style.display = total ? 'flex' : 'none';
-  $('analise').style.display = total ? 'block' : 'none';
   $('partidas').style.display = total ? 'flex' : 'none';
   $('status').textContent = monitorando ? `Verificado às ${hora()}` : '';
 }

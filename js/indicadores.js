@@ -502,6 +502,7 @@ $('abasKpi').addEventListener('click', e => {
 function renderAnalise(){
   if (!kpiData) return;
   $('analiseCorpo').innerHTML = blocoIA() + kpiData['Análise'];
+  renderBotaoDiag();
 }
 
 function renderKpis(){
@@ -514,17 +515,26 @@ function renderKpis(){
   $('kpiGrid').innerHTML = kpiData[abaKpi];
 }
 
-// ---- diagnóstico em tela cheia ----
-// O bloco da IA tem o campo da chave dentro dele, então a seção é MOVIDA para o modal e devolvida ao fechar.
-// Clonar duplicaria ids e perderia o que estiver digitado — a mesma armadilha que já custou a chave uma vez.
-function analiseFullscreen(abrir){
-  const modal = $('modalAnalise'), secao = $('analise');
-  modal.classList.toggle('aberto', abrir);
-  (abrir ? $('anDestino') : $('colDiag')).appendChild(secao);
-  if (!abrir) $('colDiag').appendChild(secao);   // volta para o fim da coluna, depois do resumo
-  $('anAmpliar').setAttribute('aria-expanded', abrir);
+// ---- diagnóstico: vive no modal, alcançado pelo botão da barra ----
+// O botão leva o sinal do achado mais grave, senão o relatório — que é a promessa da tela inicial —
+// viraria um botão neutro que ninguém clica.
+const SINAIS = [['alerta', '▲'], ['atencao', '●'], ['bom', '✔']];
+function renderBotaoDiag(){
+  const b = $('btnDiag');
+  b.hidden = !kpiData;
+  if (!kpiData) return;
+  const div = document.createElement('div');
+  div.innerHTML = kpiData['Análise'];
+  const achados = [...div.querySelectorAll('.achado')];
+  const [classe, sinal] = SINAIS.find(([c]) => achados.some(a => a.classList.contains(c))) || ['', ''];
+  b.className = classe;
+  b.innerHTML = `${sinal ? `<i class="sinal">${sinal}</i>` : ''}Diagnóstico${achados.length ? ` <small>${achados.length}</small>` : ''}`;
 }
-$('anAmpliar').addEventListener('click', () => analiseFullscreen(true));
+function analiseFullscreen(abrir){
+  $('modalAnalise').classList.toggle('aberto', abrir);
+  $('btnDiag').setAttribute('aria-expanded', abrir);
+}
+$('btnDiag').addEventListener('click', () => analiseFullscreen(true));
 $('anFechar').addEventListener('click', () => analiseFullscreen(false));
 $('modalAnalise').addEventListener('click', e => { if (e.target === $('modalAnalise')) analiseFullscreen(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('modalAnalise').classList.contains('aberto')) analiseFullscreen(false); });

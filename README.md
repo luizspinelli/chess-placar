@@ -7,8 +7,8 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 ## O que faz
 
 - **Cabeçalho**: placar, aproveitamento, variação de rating e o gráfico do período, numa faixa só.
-- **Resumo**: o período em uma frase, mais forma recente, brancas × pretas, sequência e ritmo.
-- **Diagnóstico**: achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas — e, com chave configurada, o relatório da IA.
+- **Resumo**: forma recente, brancas × pretas, sequência e ritmo, na mesma faixa do placar.
+- **Diagnóstico** (em tela cheia, pelo botão da barra): achados automáticos — tilt, diferença entre cores, aberturas problemáticas, derrotas por tempo, rendimento em sessões longas — e, com chave configurada, o relatório da IA.
 - **Evidência**: nove abas de indicadores (Resultados, Rating, Aberturas, Lances e relógio, Erros e precisão, Adversários, Sessões, Horários, Volume).
 - **Evolução dentro do período**: pedindo 4 semanas, 3 meses ou 5 dias, a aba *Resultados* abre com a quebra nos mesmos blocos — semana a semana, mês a mês, dia a dia — com aproveitamento e variação de rating de cada um. Acima de 12 blocos eles são agrupados (30 dias viram 10 blocos de 3 dias).
 - **Comparação de períodos**: faixa no placar com partidas, aproveitamento, rating e precisão contra o período anterior — mês em curso × mês anterior inteiro, ano × ano anterior; nos períodos rolling e no personalizado, a mesma duração imediatamente antes. Vem ligada nos períodos relativos de até ~6 meses (desmarcar vale para as buscas seguintes) e entra também nos achados automáticos e na análise com IA.
@@ -23,7 +23,7 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 
 ## Uso
 
-Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. Depois da busca, a barra do topo mostra **nick · modalidade · período** e abre os filtros num painel; abaixo dela, o cabeçalho com o placar e três colunas — Diagnóstico, Evidência e Partidas — que ocupam o resto da janela e rolam por dentro. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário — Hoje, Mês, Anterior, Ano — (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para compartilhar uma vista exata.
+Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. Depois da busca, a barra do topo mostra **nick · modalidade · período** e abre os filtros num painel; abaixo dela, o cabeçalho com o placar e duas colunas — Evidência e Partidas — que ocupam o resto da janela e rolam por dentro. O **Diagnóstico** abre em tela cheia pelo botão da barra. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário — Hoje, Mês, Anterior, Ano — (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para compartilhar uma vista exata.
 
 ## Parâmetros de URL
 
