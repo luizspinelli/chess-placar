@@ -104,6 +104,7 @@ async function motorAnalisar(){
   }
   motor.rodando = false;
   kpiData = kpis(estado.jogos.filter(g => g.time_class === aba), nick);
+  renderKpis();
   renderAnalise();
 }
 function motorParar(){ motor.cancelar = true; motor.worker?.postMessage('stop'); }
@@ -148,5 +149,5 @@ function renderMotor(){
   if (ct) ct.innerHTML = motorControles();
   if (rs) rs.textContent = [`${PROVEDORES[provAtual()].nome} · ${lerLS(modeloLS(provAtual()), PROVEDORES[provAtual()].padrao)}`, motorResumo()].filter(Boolean).join(' · ');
 }
-$('kpiGrid').addEventListener('click', e => { if (e.target.id === 'motorBtn') motorAnalisar(); if (e.target.id === 'motorParar') motorParar(); });
-$('kpiGrid').addEventListener('change', e => { if (e.target.id === 'motorProf') { gravarLS('placar-chesscom:motorProf', e.target.value); renderMotor(); } });
+$('analiseCorpo').addEventListener('click', e => { if (e.target.id === 'motorBtn') motorAnalisar(); if (e.target.id === 'motorParar') motorParar(); });
+$('analiseCorpo').addEventListener('change', e => { if (e.target.id === 'motorProf') { gravarLS('placar-chesscom:motorProf', e.target.value); renderMotor(); } });

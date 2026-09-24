@@ -584,7 +584,7 @@ async function executarIA(montarPrompt){
     iaOcupado = false; renderAnalise();
   }
 }
-$('kpiGrid').addEventListener('click', e => {
+$('analiseCorpo').addEventListener('click', e => {
   if (e.target.id === 'iaCfgToggle') { const digitada = $('iaChave')?.value.trim(); if (digitada) gravarChave(provAtual(), digitada); iaCfgAberta = $('iaCfg').hidden; renderAnalise(); }
   if (e.target.id === 'iaAnalisar') analisarTudo(); if (e.target.id === 'iaModelos') carregarModelos(); if (e.target.id === 'iaPdf') exportarPDF(); });
 
@@ -649,7 +649,7 @@ function exportarPDF(){
   iaErro = 'Na janela de impressão, escolha "Salvar como PDF" e desmarque "Cabeçalhos e rodapés" para um resultado limpo.'; renderAnalise();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
-$('kpiGrid').addEventListener('change', e => {
+$('analiseCorpo').addEventListener('change', e => {
   if (e.target.id === 'iaModelo') gravarLS(modeloLS(provAtual()), e.target.value);
   // tamanho do dossiê: atualiza os textos e os controles do motor no lugar, sem refazer o cartão (a chave pode estar sendo digitada)
   if (e.target.id === 'iaProfunda') gravarLS('placar-chesscom:iaProfunda', e.target.checked ? '1' : '0');
