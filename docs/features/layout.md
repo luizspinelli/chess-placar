@@ -1,43 +1,48 @@
-# Layout: barra de contexto, painel de filtros e o documento
+# Layout: painel de altura fixa, barra de contexto e três colunas
 
-**Arquivos**: `index.html` (`#contexto`, `#f`, ordem das seções) · `css/estilo.css` (`main`, `#contexto`, `form`, media queries) · `js/busca.js` (`renderContexto`, `filtros`) · `js/periodo.js` (`rotuloPeriodo`)
+**Arquivos**: `index.html` (`#contexto`, `#f`, `.faixa`, `#colDiag`) · `css/estilo.css` (`main`, `#contexto`, `form`, media queries) · `js/busca.js` (`renderContexto`, `filtros`) · `js/periodo.js` (`rotuloPeriodo`)
 
 ## Objetivo
 
-O app é uma ferramenta de evolução: você joga, depois abre para saber o que fazer diferente. Isso é leitura, não monitoramento — então a tela é um documento que rola, não um painel de altura fixa com colunas fixas.
+Mostrar o período inteiro numa tela só: a janela do navegador é o quadro, e nada dele fica fora. A página **nunca rola** — quem rola são as colunas, cada uma por dentro.
 
 ## Como usar
 
-Depois da busca, o topo mostra uma barra com **nick · modalidade · período** (`hikaru · rápida · últimos 3 meses`). Clicar nela abre o painel de filtros por cima do conteúdo; buscar, clicar fora ou Esc fecham. Ao lado ficam **Copiar link** e o seletor de tema — ajustes da vista, não filtros da busca.
+O topo mostra uma barra com **nick · modalidade · período** (`hikaru · rápida · últimos 7 dias`). Clicar nela abre o painel de filtros por cima do conteúdo; buscar, clicar fora ou Esc fecham. Ao lado ficam **Copiar link** e o seletor de tema.
 
-Abaixo da barra, em coluna única: **placar** e **resumo** (o cabeçalho), **Diagnóstico**, **Evidência** e, por último, a lista de partidas, recolhida atrás de "Ver as N partidas ▾".
+Abaixo, o **cabeçalho** numa faixa horizontal: perfil, abas de modalidade, placar (vitórias, empates, derrotas, variação de rating), aproveitamento, comparativo e o gráfico de rating. E então três colunas lado a lado: **Diagnóstico** (resumo em números + achados + bloco da IA), **Evidência** (abas de indicadores) e **Partidas**.
 
 ## Como funciona
 
-- `main` é uma grade de coluna única com `position:relative`; o `<form>` é `position:absolute` ancorado sob a barra e só aparece com a classe `filtrosAbertos` no `body`. Sobrepor em vez de empurrar mantém a posição de leitura quando o painel abre e fecha.
-- `renderContexto()` monta o rótulo da barra a partir de `estado.nick`, `TIPO[aba]` e `rotuloPeriodo()`; roda no início de `render()`, então acompanha troca de aba de modalidade e nova busca. Sem `estado`, o botão diz "Filtros e opções".
-- `rotuloPeriodo(v)` traduz o valor de `#periodo` em nome curto com o gênero certo da unidade (`últimas 2 semanas`, `último dia`, `este mês`). É o rótulo sem datas; o com datas é `estado.rotulo`, que aparece no resumo.
-- `filtros(abrir)` alterna a classe e o `aria-expanded` do botão. Um listener no `document` fecha o painel no clique fora (`e.target.closest('#f, #filtrosToggle')`) e no Esc.
-- `#status` e `#prox` vivem **fora** do formulário, logo abaixo da barra: com o painel fechado eles são o único sinal de que a busca anda. `#status` tem `role="status"`, então leitor de tela anuncia "Buscando…" e os erros.
-- A lista de partidas recolhe em qualquer largura (`body.listaAberta`), não só no celular.
-- **Escada de largura**: `main` tem 1200 px; barra, placar, resumo, diagnóstico e partidas ficam num trilho de leitura de `--leitura` (860 px) centralizado; só a Evidência usa a coluna inteira. O painel de filtros acompanha o trilho (`width:min(100% - 32px,var(--leitura))`).
+- `html,body{height:100%;overflow:hidden}` e `main` com `height:100%;width:100%` — a casca ocupa a viewport exata.
+- A grade tem quatro linhas (`auto auto auto minmax(0,1fr)`) e três colunas: `"ctx ctx ctx" "st st st" "cab cab cab" "diag evid part"`. Só a última linha é elástica; o `minmax(0,1fr)` combinado com `min-height:0` nos filhos é o que faz as colunas recortarem em vez de esticar a página.
+- Cada coluna rola sozinha: `#colDiag` (`overflow-y:auto`), `#kpiGrid` e `#lista`.
+- `.faixa` é o cabeçalho horizontal: `.tally` de largura fixa, `.placarInfo` elástica no meio e `#resumoGrafico` de largura fixa à direita. As células do tally são flex centradas — sem isso os números ficam no topo e sobra um vazio embaixo, porque a faixa é mais alta que eles.
+- O `<form>` é `position:absolute` ancorado sob a barra e só aparece com `filtrosAbertos` no `body`. Sobrepor em vez de empurrar mantém a posição de leitura.
+- `renderContexto()` monta o rótulo da barra a partir de `estado.nick`, `TIPO[aba]` e `rotuloPeriodo()`; roda no início de `render()`. Sem `estado`, o botão diz "Filtros e opções".
+- `rotuloPeriodo(v)` traduz o valor de `#periodo` em nome curto com o gênero certo (`últimas 2 semanas`, `último dia`, `este mês`, `hoje`). O rótulo com datas é `estado.rotulo`.
+- `filtros(abrir)` alterna a classe e o `aria-expanded`. Um listener no `document` fecha no clique fora (`e.target.closest('#f, #filtrosToggle')`) e no Esc.
+- `#status` tem `role="status"`: com o painel fechado é o único sinal de que a busca anda, e leitor de tela o anuncia.
+- O gráfico de rating vive na faixa do cabeçalho, **fora** do `#resumo`. Por isso o listener que abre o modal está em `#placar`, não em `#resumo`, e `renderResumo` limpa `#resumoGrafico` quando não há partidas.
 
 ## Decisões
 
-- **Documento, não painel.** A grade antiga era `300px 1fr 440px`: numa tela de 1600 px, 804 px fixos para configuração e histórico bruto, e o relatório — a promessa da tela inicial — dividia o resto. Em coluna única o conteúdo ganha a largura toda.
-- **Filtros atrás de um clique em toda largura.** O formulário é "configura uma vez, lê muito"; 300 px permanentes de controles cobravam aluguel caro. O padrão já existia em telas até 1100 px (`#filtrosToggle`) — subiu para o desktop em vez de inventar outro.
-- **A barra é rótulo, não só botão.** "☰ Filtros e opções" não dizia o que estava na tela. Com os filtros escondidos, alguma coisa precisa responder "de quem e de quando são estes números".
-- **A página rola.** `html,body{overflow:hidden}` com cada seção rolando por dentro era o que um painel de transmissão precisa. Sem ele, some junto a família de `min-height:0` / `max-height:100%` que existia só para sustentar a casca.
-- **O degrau de largura é sinal, não decoração.** Texto quer linha curta (o trilho de 860 px fica perto de 72 caracteres); tabela e mapa de calor querem espaço. A Evidência alargando marca a troca de registro, de "leia isto" para "confira isto", sem precisar de um título explicando.
-- **Diagnóstico em duas colunas, não três.** No trilho de leitura, três colunas de achados dariam cartões de 270 px — grade, não documento. A Evidência é que usa 12 trilhas.
+- **Painel, não documento.** A janela é o quadro: tudo que importa cabe nela, e a leitura acontece dentro das colunas. Uma página que rola esconde metade do diagnóstico atrás de um gesto.
+- **Cabeçalho enxuto é orçamento, não estética.** Cada pixel dele sai das três colunas. Barra (38 px) + cabeçalho (≈205 px) + gaps = ~279 px fixos; num notebook de 768 px sobram ~489 px para as colunas. Foi por isso que o tally caiu para `1.55rem`, o perfil para `7px` de padding e o sparkline para `88px`.
+- **Filtros atrás de um clique.** O formulário é "configura uma vez, lê muito"; 300 px permanentes de controles cobravam aluguel caro numa tela que não rola.
+- **A barra é rótulo, não só botão.** Com os filtros escondidos, alguma coisa precisa responder "de quem e de quando são estes números".
+- **O botão de ampliar o gráfico é só o ícone no cabeçalho.** Na faixa estreita ele competia com os números; o rótulo "Ampliar" continua no DOM (`.rotAmpliar`, escondido por `clip-path`) para leitor de tela.
+- **O celular é a exceção declarada.** Abaixo de 1100 px a premissa de altura fixa não cabe: a grade vira coluna única, a página rola e a lista de partidas volta a ser recolhível (`#listaToggle`). Três colunas com 390 px de largura não é layout, é maquete.
 
 ## Limites
 
-- O painel de filtros cobre o conteúdo: em telas muito baixas ele rola por dentro (`max-height:calc(100vh - 80px)`).
-- A barra não mostra as modalidades marcadas nem os filtros de bot/comparação — só nick, modalidade em foco e período. Para o resto, abrir o painel.
+- A premissa de "sem scroll de página" vale a partir de 1101 px. Abaixo disso a página rola.
+- Em telas muito baixas (< 600 px de altura) as três colunas ficam com pouca área útil; o conteúdo continua acessível, mas com muita rolagem interna.
+- O painel de filtros rola por dentro quando não cabe (`max-height:calc(100vh - 80px)`).
+- A barra não mostra as modalidades marcadas nem os filtros de bot/comparação — só nick, modalidade em foco e período.
 
 ## Como testar
 
-`tests/periodo.test.js` cobre `rotuloPeriodo`. O resto é roteiro manual: buscar, conferir o rótulo da barra, trocar de aba de modalidade (o rótulo acompanha), abrir e fechar o painel pelos três caminhos (botão, clique fora, Esc), e conferir que buscar fecha o painel sozinho. Em 375 px de largura, o painel ocupa a tela toda e a lista continua recolhida. A 1440 px, conferir o degrau: cabeçalho e diagnóstico a 860 px, Evidência a 1200 px.
+`tests/periodo.test.js` cobre `rotuloPeriodo`. O resto é roteiro manual, e a API pode estar bloqueada no ambiente (403) — nesse caso, servir uma cópia do `index.html` com um stub de `fetch` devolvendo partidas sintéticas (ver `AGENTS.md`).
 
-A API do Chess.com pode estar bloqueada no ambiente (responde 403). Nesse caso, gerar uma cópia do `index.html` com um stub de `fetch` servindo partidas sintéticas — ver o roteiro em `AGENTS.md`.
+Conferir, com o console aberto: a página não rola em nenhum eixo (`document.documentElement.scrollHeight === clientHeight`); as três colunas rolam por dentro; o rótulo da barra acompanha a troca de aba de modalidade; o painel abre e fecha pelos três caminhos; o "⤢" do cabeçalho abre o modal do gráfico; trocar de aba de evidência **não** apaga o que estiver digitado no campo da chave da IA. Em 390 px de largura, coluna única com a lista recolhida.

@@ -57,7 +57,7 @@
       <div id="relativo">
         <div class="grade"><span>Dias</span><div style="--cols:5"><button type="button" data-p="1d">1</button><button type="button" data-p="3d">3</button><button type="button" data-p="7d">7</button><button type="button" data-p="14d">14</button><button type="button" data-p="30d">30</button></div></div>
         <div class="grade"><span>Meses</span><div><button type="button" data-p="3m">3</button><button type="button" data-p="6m">6</button><button type="button" data-p="12m">12</button></div></div>
-        <div class="grade"><span>Calendário</span><div><button type="button" data-p="hoje" title="Desde a meia-noite de hoje">Hoje</button><button type="button" data-p="mes" title="Do dia 1º deste mês até agora">Mês</button><button type="button" data-p="mes-1" title="Mês passado inteiro">Anterior</button><button type="button" data-p="ano" title="De 1º de janeiro até agora">Ano</button></div></div>
+        <div class="grade"><span>Calendário</span><div style="--cols:4"><button type="button" data-p="hoje" title="Desde a meia-noite de hoje">Hoje</button><button type="button" data-p="mes" title="Do dia 1º deste mês até agora">Mês</button><button type="button" data-p="mes-1" title="Mês passado inteiro">Anterior</button><button type="button" data-p="ano" title="De 1º de janeiro até agora">Ano</button></div></div>
         <div class="livre"><input id="pNum" type="number" min="1" max="999" placeholder="duração" aria-label="Duração"><select id="pUni" aria-label="Unidade de tempo"><option value="d">dias</option><option value="w">semanas</option><option value="m">meses</option></select></div>
       </div>
     </div>
@@ -90,29 +90,34 @@
   <section id="placar" class="box">
     <div id="perfil" hidden></div>
     <div id="abas" class="abas" role="tablist" hidden></div>
-    <div class="tally">
-      <div><strong id="nw" class="w">0</strong><span>vitórias</span></div>
-      <div><strong id="nd" class="d">0</strong><span>empates</span></div>
-      <div><strong id="nl" class="l">0</strong><span>derrotas</span></div>
-      <div><strong id="nr">0</strong><span>rating</span></div>
+    <div class="faixa">
+      <div class="tally">
+        <div><strong id="nw" class="w">0</strong><span>vitórias</span></div>
+        <div><strong id="nd" class="d">0</strong><span>empates</span></div>
+        <div><strong id="nl" class="l">0</strong><span>derrotas</span></div>
+        <div><strong id="nr">0</strong><span>rating</span></div>
+      </div>
+      <div class="placarInfo">
+        <div class="bar"><i class="w"></i><i class="d"></i><i class="l"></i></div>
+        <div class="resumo"><span id="rtotal"></span><span id="rpct"></span></div>
+        <div class="resumo" id="rating"></div>
+        <div class="resumo" id="comparativo" hidden></div>
+      </div>
+      <div id="resumoGrafico"></div>
     </div>
-    <div class="bar"><i class="w"></i><i class="d"></i><i class="l"></i></div>
-    <div class="resumo"><span id="rtotal"></span><span id="rpct"></span></div>
-    <div class="resumo" id="rating"></div>
-    <div class="resumo" id="comparativo" hidden></div>
   </section>
 
-  <section id="resumo" class="box" hidden>
-    <div id="resumoTexto"></div>
-    <div id="resumoGrafico"></div>
-    <div id="resumoMini"></div>
-  </section>
-
-  <!-- o relatório: achados automáticos e, com chave configurada, o texto da IA. Não é mais uma aba entre dez -->
-  <section id="analise" class="box">
-    <h2>Diagnóstico</h2>
-    <div id="analiseCorpo"></div>
-  </section>
+  <!-- coluna do relatório: resumo em números e, abaixo, o diagnóstico. Rola por dentro, como as outras duas -->
+  <div id="colDiag">
+    <section id="resumo" class="box" hidden>
+      <div id="resumoTexto"></div>
+      <div id="resumoMini"></div>
+    </section>
+    <section id="analise" class="box">
+      <h2>Diagnóstico</h2>
+      <div id="analiseCorpo"></div>
+    </section>
+  </div>
 
   <section id="kpis" class="box">
     <h2 class="tituloSecao">Evidência</h2>
@@ -121,6 +126,7 @@
   </section>
 
   <section id="partidas" class="box">
+    <h2 class="tituloSecao">Partidas</h2>
     <button type="button" id="listaToggle" aria-expanded="false" aria-controls="lista">Ver as partidas ▾</button>
     <div class="pag">
       <span id="pagInfo"></span>

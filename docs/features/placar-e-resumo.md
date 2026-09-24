@@ -4,22 +4,23 @@
 
 ## Objetivo
 
-Abrir o relatório respondendo "como foi meu período" em números: placar, forma recente, brancas × pretas, sequência, ritmo e o gráfico de rating. É o cabeçalho do documento — o diagnóstico vem logo abaixo, em [indicadores](indicadores.md).
+Responder "como foi meu período" em números. O **cabeçalho** (`#placar`) é uma faixa horizontal no topo do painel: perfil, placar, aproveitamento, comparativo e o gráfico de rating. O **resumo** (`#resumo`) abre a coluna de Diagnóstico com a frase do período e quatro mini-cards. Ver [layout](layout.md).
 
 ## Como usar
 
-O placar e o resumo abrem a página, sempre visíveis. Com mais de uma modalidade no período, abas (bullet/blitz/rápida/diária) trocam o recorte de tudo — placar, resumo, diagnóstico, evidência e lista.
+O cabeçalho ocupa a faixa do topo; o resumo abre a coluna da esquerda, acima do diagnóstico. Com mais de uma modalidade no período, abas (bullet/blitz/rápida/diária) trocam o recorte de tudo — placar, resumo, diagnóstico, evidência e lista.
 
 ## Como funciona
 
 - **Placar**: vitórias, empates, derrotas, variação de rating (soma das diferenças entre a primeira e a última ranqueada da modalidade), aproveitamento = (V + E/2) ÷ partidas, e a linha `rating: antes → depois`.
 - **Resumo em uma frase** (`renderResumo`): o placar em texto, com a variação de rating. Os achados automáticos **não** são destilados aqui: aparecem inteiros na seção de diagnóstico logo abaixo, e repetir os dois primeiros em cima deles era eco, não resumo.
 - **Mini-cards**: forma recente (últimas 10 partidas como pontos coloridos e pontos somados), brancas × pretas (aproveitamento de cada cor), sequência atual (com "talvez seja hora de pausar" a partir de 2 derrotas seguidas) e ritmo (partidas por dia com partidas).
-- **Gráfico**: sparkline do rating da modalidade, com pico e vale marcados; clique ou "⤢ Ampliar" abre o [gráfico interativo](grafico-de-rating.md).
+- **Gráfico**: sparkline do rating da modalidade, com pico e vale marcados, na ponta direita da faixa do cabeçalho; clique nele ou no "⤢" abre o [gráfico interativo](grafico-de-rating.md). Como o gráfico mora no `#placar` e não no `#resumo`, o listener que abre o modal está em `#placar` — e `renderResumo` limpa `#resumoGrafico` quando não há partidas, já que o early return não passa mais por dentro dele.
 - **Perfil** (`renderPerfil`): avatar, título, país (emoji da bandeira a partir do código de 2 letras), membro desde, liga; rating atual, melhor rating e histórico total da modalidade vindos de `/stats`. Se o "melhor" tem data até 30 dias após o cadastro, é o rating **provisório** inicial — nesse caso o painel mostra o melhor do período no lugar, com link para a partida.
 
 ## Decisões
 
+- **O gráfico no cabeçalho, não no resumo.** Numa tela de altura fixa a faixa do topo tem espaço horizontal sobrando à direita e o gráfico o aproveita, em vez de gastar altura da coluna de leitura.
 - **Sem modo simples e avançado.** Eram dois estados exclusivos para o mesmo conteúdo, com um toggle para navegar entre eles. Na página-documento o resumo abre e o aprofundamento está abaixo: a rolagem substitui o toggle, e some um eixo de estado de `linkAtual()`, do bootstrap e do CSS.
 
 ## Limites

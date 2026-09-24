@@ -1,7 +1,7 @@
 // Renderização do placar: render(), resumo, perfil, comparativo e abas de modalidade.
 function renderResumo(jogos, c, total, ini, fim){
   const el = $('resumo');
-  if (!total) { el.hidden = true; return; }
+  if (!total) { el.hidden = true; $('resumoGrafico').innerHTML = ''; return; }
   el.hidden = false;
   const {rotulo} = estado, ap = Math.round((c.w + c.d/2) / total * 100);
   $('resumoTexto').innerHTML = `<p>${total} partida${total > 1 ? 's' : ''} de <b>${TIPO[aba]}</b> ${rotulo}: <b class="w">${c.w}</b> vitória${c.w !== 1 ? 's' : ''}, <b class="d">${c.d}</b> empate${c.d !== 1 ? 's' : ''} e <b class="l">${c.l}</b> derrota${c.l !== 1 ? 's' : ''} — <b>${ap}%</b> de aproveitamento${ini != null && fim != null ? `, com o rating indo de ${ini} para <b>${fim}</b> (<b class="${cls(fim - ini)}">${sinal(fim - ini)}</b>)` : ''}.</p>`;
@@ -22,9 +22,9 @@ function renderResumo(jogos, c, total, ini, fim){
     <div class="mini"><h2>Sequência atual</h2><div class="val ${seqTipo === 'd' ? '' : seqTipo}">${seq} ${nomeSeq}</div><div class="sub">${seq < 2 ? 'última partida' : seqTipo === 'w' ? 'seguidas — mantenha o ritmo' : seqTipo === 'l' ? 'seguidas — talvez seja hora de pausar' : 'seguidos'}</div></div>
     <div class="mini"><h2>Ritmo</h2><div class="val">${(total / Math.max(1, dias)).toFixed(1).replace('.', ',')} <small style="font-weight:400;font-size:.8rem">por dia</small></div><div class="sub">${dias} dia${dias > 1 ? 's' : ''} com partidas</div></div>`;
   const v = (curvaDados[aba] || []).map(p => p.rating);
-  $('resumoGrafico').innerHTML = v.length > 1 ? `<div class="ratingCard"><div class="cab"><span class="tcNome">rating ${TIPO[aba]}</span><span class="stats"><span class="w">▲ ${Math.max(...v)}</span><span class="l">▼ ${Math.min(...v)}</span></span><button type="button" class="ampliar" data-tc="${aba}">⤢ Ampliar</button></div><div class="spark" data-tc="${aba}">${sparkline(v, true)}</div></div>` : '';
+  $('resumoGrafico').innerHTML = v.length > 1 ? `<div class="ratingCard"><div class="cab"><span class="tcNome">rating ${TIPO[aba]}</span><span class="stats"><span class="w">▲ ${Math.max(...v)}</span><span class="l">▼ ${Math.min(...v)}</span></span><button type="button" class="ampliar" data-tc="${aba}" title="Ampliar o gráfico">⤢<span class="rotAmpliar"> Ampliar</span></button></div><div class="spark" data-tc="${aba}">${sparkline(v, true)}</div></div>` : '';
 }
-$('resumo').addEventListener('click', e => { const sp = e.target.closest('.spark, .ampliar'); if (sp) abrirModal(sp.dataset.tc); });
+$('placar').addEventListener('click', e => { const sp = e.target.closest('.spark, .ampliar'); if (sp) abrirModal(sp.dataset.tc); });
 
 $('abas').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
