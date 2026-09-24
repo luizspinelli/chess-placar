@@ -8,7 +8,7 @@ A documentação deste projeto segue **docs as code**: mora no repositório, em 
 |---|---|---|
 | `README.md` | quem usa | o que o app faz, como usar, parâmetros de URL, privacidade, publicação |
 | `docs/features/*.md` | quem quer entender ou mexer numa feature | comportamento completo, regras e limiares, decisões e por quê, limites, como testar |
-| `CLAUDE.md` | quem mexe no código (pessoa ou agente) | arquitetura, arquivos, convenções, armadilhas |
+| `AGENTS.md` | quem mexe no código (pessoa ou agente) | arquitetura, arquivos, convenções, armadilhas |
 
 Não duplicar: um detalhe fica no lugar mais específico e os outros linkam. Limiares, constantes e nomes de função citados aqui existem no código com o mesmo valor — ao mudar um, procurar em `docs/`.
 
