@@ -101,7 +101,6 @@ function render(){
   $('kpis').style.display = total ? 'flex' : 'none';
   $('partidas').style.display = total ? 'flex' : 'none';
   $('status').textContent = monitorando ? `Verificado às ${hora()}` : '';
-  renderOverlay();
 }
 
 function renderComparativo(jogos, c, total, varTotal){

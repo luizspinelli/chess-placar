@@ -18,11 +18,10 @@ Painel que lê a API pública do Chess.com e mostra placar, evolução de rating
 - **Motor de análise**: Stockfish 19 rodando no seu navegador (WebAssembly), sem servidor. Avalia lance a lance as últimas 100 partidas da modalidade (ou 200/300, à escolha) e classifica os erros pela queda de chance de vitória (critério do Lichess: imprecisão, erro, erro grave). A aba *Erros e precisão* ganha erros por partida, por fase e **por tempo no relógio** — a taxa de erros com menos de 30 s comparada ao resto —, erros graves por abertura, viradas, e o lance em que cada derrota escapou, com link para a partida. Roda em segundo plano (uns 5 s por partida no computador, profundidade ajustável), pode ser interrompido e guarda o resultado no navegador; só as partidas novas custam da próxima vez.
 - **Análise com IA**: opcional, com a sua própria chave — Gemini e Groq (tier gratuito) ou Claude e OpenAI (uso cobrado pelo provedor). Um botão: roda o motor nas partidas ainda não avaliadas e envia à IA, numa chamada, o resumo agregado dos indicadores e o dossiê das últimas 100 partidas (ou 200/300) — 15 primeiros lances, relógio, marcos (roque, primeira captura, dama cedo, xeques) e os erros apontados pelo Stockfish, com o lance que ele preferia. Devolve diagnóstico, o que manter, o que parar de fazer, o que estudar, plano de duas semanas e regras de rotina, adaptados ao seu rating, num relatório de uma página (o PDF sai com a mesma estrutura). Sem motor (página aberta como arquivo), o prompt proíbe a IA de apontar erro em lance específico — sem tabuleiro seria chute — e ela fala de repertório, ritmo e relógio.
 - **Exportar**: PDF da análise e CSV das partidas.
-- **Modo streamer**: só o placar em tela cheia, com fundo transparente ou chroma key, para usar como fonte de navegador no OBS — com meta de rating, ticker e cartão da última partida.
 
 ## Uso
 
-Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para o OBS.
+Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.html` local) e informe o nick. O período tem duas formas: **Relativo**, com atalhos de dias, meses e calendário (ou uma duração livre), e **Absoluto**, com data e hora de início e fim. Tudo que está no formulário pode ir na URL — o botão **Copiar link** gera o endereço completo, útil para favoritos e para compartilhar uma vista exata.
 
 ## Parâmetros de URL
 
@@ -40,20 +39,8 @@ Abra [chess-placar.vercel.app](https://chess-placar.vercel.app/) (ou o `index.ht
 | `intervalo` | `30`, `60`, `120`, `300` | segundos entre atualizações |
 | `modo` | `avancado` | abre no modo avançado |
 | `tema` | `claro` | tema claro |
-| `streamer` | `1` | modo streamer |
-| `overlay` | `placar` (padrão), `compacto`, `ticker` | layout do overlay |
-| `meta` | `700` ou `+50` | meta de rating com barra de progresso |
-| `fundo` | `00ff00` | cor de fundo do overlay (chroma); vazio = transparente |
-| `escala` | `0.8` a `2` | tamanho do overlay |
-| `ultima`, `seq` | `0` | esconde o cartão da última partida / a sequência |
 
 A barra de endereço acompanha o que está na tela (busca e abas), então F5 e o link copiado reproduzem o mesmo painel — e a última busca fica guardada no navegador, aparecendo na hora enquanto a API é consultada de novo.
-
-Exemplo para o OBS (ticker no rodapé, contando a partir das 20h de hoje, meta de +30 pontos):
-
-```
-https://chess-placar.vercel.app/?nick=SEUNICK&periodo=custom&data=2026-09-08&hora=20:00&tc=rapid&streamer=1&overlay=ticker&meta=%2B30
-```
 
 ## Como funciona
 
@@ -79,7 +66,7 @@ O motor de análise roda inteiro no navegador: as partidas não vão a nenhum se
 
 ```
 index.html         marcação
-css/estilo.css     estilos (temas claro/escuro, celular, streamer)
+css/estilo.css     estilos (temas claro/escuro, celular)
 js/base.js         constantes, helpers, acesso à API, estado global
 js/armazem.js      IndexedDB com espelho em memória: buscas, avaliações do motor, relatórios
 js/periodo.js      período, comparação automática, blocos de evolução
@@ -90,7 +77,6 @@ js/indicadores.js  kpis(): as dez abas e os achados automáticos
 js/grafico.js      gráfico de rating ampliado (zoom, pan)
 js/ia.js           provedores, prompts, análise com IA, PDF
 js/partidas.js     lista de partidas, filtro, CSV
-js/overlay.js      modo streamer/OBS
 js/placar.js       renderização do placar, resumo, perfil, comparativo
 js/busca.js        busca na API, atualização automática, cache
 js/app.js          tema, modo, link e parâmetros de URL (carrega por último)

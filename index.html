@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Placar Chess.com — estatísticas e análise de partidas</title>
-<meta name="description" content="Placar, evolução de rating e análise das suas partidas do Chess.com: aberturas, precisão, sessões, tilt e horários. Sem cadastro, direto no navegador, com overlay para OBS.">
+<meta name="description" content="Placar, evolução de rating e análise das suas partidas do Chess.com: aberturas, precisão, sessões, tilt e horários. Sem cadastro, direto no navegador.">
 <meta name="theme-color" content="#0f1115">
 <link rel="canonical" href="https://chess-placar.vercel.app/">
 <meta property="og:url" content="https://chess-placar.vercel.app/">
 <meta property="og:title" content="Placar Chess.com">
-<meta property="og:description" content="Placar, evolução de rating e análise das suas partidas do Chess.com. Sem cadastro, direto no navegador, com overlay para OBS.">
+<meta property="og:description" content="Placar, evolução de rating e análise das suas partidas do Chess.com. Sem cadastro, direto no navegador.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:image" content="https://chess-placar.vercel.app/og.png">
@@ -80,20 +80,8 @@
     </div>
     <button type="submit" id="btn">Buscar partidas</button>
     <button type="button" id="btnAgora">Monitorar a partir de agora</button>
-    <details id="ovOpcoes">
-      <summary>Opções de overlay (streamer)</summary>
-      <div class="ovGrid">
-        <div><label for="ovTipo">Layout</label><select id="ovTipo"><option value="placar">Completo</option><option value="compacto">Compacto</option><option value="ticker">Ticker</option></select></div>
-        <div><label for="ovMeta">Meta de rating</label><input id="ovMeta" placeholder="ex.: 700 ou +50"></div>
-        <div><label for="ovFundo">Fundo (chroma)</label><input id="ovFundo" placeholder="00ff00"></div>
-        <div><label for="ovFonte">Escala</label><select id="ovFonte"><option value="0.8">0,8×</option><option value="1" selected>1×</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></div>
-        <label class="chk"><input type="checkbox" id="ovUltima" checked>Mostrar última partida</label>
-        <label class="chk"><input type="checkbox" id="ovSeq" checked>Mostrar sequência</label>
-      </div>
-    </details>
     <div class="acoes">
-      <button type="button" id="btnLink" title="Copia um link que abre esta página já com estes filtros (para favoritos ou OBS)">Copiar link</button>
-      <button type="button" id="btnStreamer" title="Só o placar, em tela cheia, para captura no OBS">Modo streamer</button>
+      <button type="button" id="btnLink" title="Copia um link que abre esta página já com estes filtros (para favoritos)">Copiar link</button>
       <div class="seg" id="tema"><button type="button" data-tema="escuro">Escuro</button><button type="button" data-tema="claro">Claro</button></div>
       <div class="seg" id="modo"><button type="button" data-modo="simples">Simples</button><button type="button" data-modo="avancado">Avançado</button></div>
     </div>
@@ -141,12 +129,6 @@
     </div>
     <ul id="lista"></ul>
   </section>
-  <div id="overlay" hidden>
-    <div id="ovTicker" class="box" hidden></div>
-    <div id="ovMetaBar" class="box" hidden></div>
-    <div id="ovUltimaCard" class="box" hidden></div>
-  </div>
-  <button type="button" id="sairStreamer">sair do modo streamer (Esc)</button>
   <div id="modal">
     <div class="janela">
       <div class="topo"><h2>Rating</h2><div id="modalAbas" class="abas" role="tablist"></div>
@@ -183,7 +165,6 @@
 <script src="js/grafico.js"></script>
 <script src="js/ia.js"></script>
 <script src="js/partidas.js"></script>
-<script src="js/overlay.js"></script>
 <script src="js/placar.js"></script>
 <script src="js/busca.js"></script>
 <script src="js/app.js"></script>

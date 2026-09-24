@@ -54,6 +54,5 @@ Seções vazias são removidas, não deixadas em branco. Frases curtas; números
 | Lista de partidas, filtro e CSV | [lista-de-partidas.md](features/lista-de-partidas.md) |
 | Análise com IA e exportação em PDF | [analise-com-ia.md](features/analise-com-ia.md) |
 | Motor de análise (Stockfish) | [motor-de-analise.md](features/motor-de-analise.md) |
-| Modo streamer / OBS | [modo-streamer.md](features/modo-streamer.md) |
 | Parâmetros de URL e link compartilhável | [parametros-de-url.md](features/parametros-de-url.md) |
 | Persistência no navegador | [persistencia.md](features/persistencia.md) |

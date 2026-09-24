@@ -204,7 +204,6 @@ async function buscar(atualizacao){
     estado = {jogos, antes, depois, aprox, nick, rotulo, monitorando, ignoradas, perfil, stats, comp, evolucao: evolucaoDoPeriodo(inicio, fim)};
     renderAbasModalidade(jogos, f.modalidades);
     if (atualizacao !== true) pagina = 1;
-    falhou = false;
     render();
     if (atualizacao !== true) sincronizarURL();
     salvarUltima();
@@ -214,14 +213,12 @@ async function buscar(atualizacao){
     const msg = err.status === 404 && conhecido
       ? 'A API do Chess.com está recusando as requisições agora. Aguarde um minuto e tente de novo.'
       : err.message;
-    falhou = true;
     status.className = 'error';
     status.textContent = msg;
     if ($('placar').style.display !== 'block' && !atualizacao) { document.body.classList.add('inicio'); $('inicio').querySelector('.erro')?.remove(); $('inicio').querySelector('.exemplo').insertAdjacentHTML('afterend', `<p class="erro">${escHtml(msg)}</p>`); }
   } finally {
     ocupado = false;
     $('btn').disabled = false;
-    renderOverlay();
     agendar();
   }
 }

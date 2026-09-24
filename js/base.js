@@ -22,7 +22,7 @@ const controle = tc => {
   return inc ? `${min}+${inc}` : `${min} min`;
 };
 const cache = new Map();
-let ocupado = false, timer = null, tick = null, pagina = 1, jogosAtuais = [], nickAtual = '', aba = 'rapid', falhou = false;
+let ocupado = false, timer = null, tick = null, pagina = 1, jogosAtuais = [], nickAtual = '', aba = 'rapid';
 let estado = null;
 
 const cor = nome => getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
