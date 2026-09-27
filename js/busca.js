@@ -48,6 +48,8 @@ function renderContexto(){
   $('ctxTexto').textContent = partes.join(' · ');
 }
 const filtros = abrir => {
+  // no celular o painel é `position:fixed` sob a barra (que é sticky e pode ter duas linhas): a base dela vai na variável
+  if (abrir) document.documentElement.style.setProperty('--ctxAlt', `${Math.round($('contexto').getBoundingClientRect().bottom + 6)}px`);
   document.body.classList.toggle('filtrosAbertos', abrir);
   $('filtrosToggle').setAttribute('aria-expanded', abrir);
 };

@@ -392,8 +392,14 @@ a:hover{text-decoration:underline}
   .placarInfo,#resumo,#resumoGrafico{flex:1 1 100%;border-left:0;border-top:1px solid var(--border)}
   #resumoMini{grid-template-columns:repeat(2,minmax(0,1fr))}
   main,body:not(.listaAberta) main{grid-template-columns:none;grid-template-rows:none;grid-template-areas:none}
+  /* a barra quebra em duas linhas: o rótulo (h1, que é o item flex — não o botão dentro dele) na primeira,
+     Diagnóstico + Copiar link + tema na segunda. O painel de filtros vira `fixed` logo abaixo da barra: `absolute`
+     ficava ancorado no topo do documento e, com a página rolada, abria fora da tela. `--ctxAlt` é a base da barra
+     na viewport, gravada por `filtros()` ao abrir. */
   #contexto{flex-wrap:wrap;position:sticky;top:0;z-index:30;background:var(--bg)}
-  #contexto #filtrosToggle{flex:1 1 100%}
+  #contexto .tituloPainel{flex:1 1 100%}
+  #contexto #btnDiag{flex:1}
+  form{position:fixed;top:var(--ctxAlt,96px);max-height:calc(100vh - var(--ctxAlt,96px) - 10px);max-height:calc(100dvh - var(--ctxAlt,96px) - 10px)}
   body.inicio main{min-height:100vh;justify-content:center}
   body.inicio #inicio{margin:0 auto}
   .abas{scrollbar-width:none}
@@ -403,7 +409,16 @@ a:hover{text-decoration:underline}
 @media(max-width:820px){
   .relatorio .tres{grid-template-columns:1fr} .relatorio .tres section:last-child:nth-child(odd){grid-column:auto} .relatorio .lede.comMudou{grid-template-columns:1fr} .relatorio .numeros{grid-template-columns:repeat(2,minmax(0,1fr))}
   main{padding:10px;gap:10px}
-  form{grid-template-columns:1fr;gap:12px;top:50px;left:10px;width:calc(100% - 20px)}
+  /* painel de filtros compacto: cada linha a mais é rolagem até o Buscar; o nome do app sai do rótulo (fica só para leitor de tela) */
+  form{grid-template-columns:1fr;gap:8px;padding:14px;left:10px;width:calc(100% - 20px)}
+  form label{font-size:.82rem;margin-bottom:3px}
+  #relativo{gap:4px;margin-top:6px} .livre{margin-top:0}
+  form .inline{gap:4px 12px}
+  #filtrosToggle .rotAmpliar{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  #contexto #filtrosToggle{padding:8px 12px;font-size:1rem}
+  #contexto #btnDiag,#contexto #btnLink{padding:7px 10px;white-space:nowrap;font-size:.76rem} #contexto #tema button{padding:5px 7px;font-size:.76rem}   /* os três cabem numa linha em 390 px */
+  /* configuração da IA: os parágrafos longos de explicação ficam para o desktop; aqui só os controles e o link da chave */
+  .ia .cfg .motorCfg .explica,.ia .cfg>.explica:last-of-type{display:none}
   .tally strong{font-size:1.9rem}
   .tally div{padding:10px 4px 8px}
   .tally span{font-size:.65rem}
@@ -427,7 +442,7 @@ a:hover{text-decoration:underline}
   .heat span{padding-right:2px}
   .motivos{grid-template-columns:1fr;gap:8px}
   .abas button{padding:8px 12px}
-  .grade button{padding:9px 4px}
+  .grade button{padding:8px 4px}
   .chips span{padding:6px 12px}
   /* abaixo de 16px o iOS dá zoom ao focar o campo */
   form input,form select,.pag input,#inicio input{font-size:16px}
